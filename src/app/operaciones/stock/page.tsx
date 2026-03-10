@@ -119,7 +119,7 @@ export default function StockPage() {
       setStock((prev) =>
         prev.map((item) => {
           const entry = latest.dosificationEntries.find(
-            (d) => d.product === item.itemId || d.product === item.itemName
+            (d: NonNullable<typeof latest.dosificationEntries>[number]) => d.product === item.itemId || d.product === item.itemName
           );
           if (entry && entry.doseResult > 0) {
             const dailyCons =

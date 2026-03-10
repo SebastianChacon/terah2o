@@ -12,7 +12,7 @@ import {
     useMutation as useConvexMutation,
     useQuery as useConvexQuery,
 } from "convex/react";
-import type { FunctionReference } from "convex/server";
+import type { FunctionReference, OptionalRestArgs } from "convex/server";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -49,5 +49,5 @@ export function useSafeQuery<T extends FunctionReference<"query", any, any, any>
         return undefined;
     }
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    return useConvexQuery(fn, ...args);
+    return useConvexQuery(fn, ...(args as OptionalRestArgs<T>));
 }
