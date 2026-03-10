@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingeniería de Filtración - Servicios Profesionales Tera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- MathJax for professional math rendering -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: { fontCache: 'global' }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+        
+        :root {
+            --brand-dark: #0a1128;
+            --brand-cyan: #00e5ff;
+            --brand-blue: #0066ff;
+            --slate-800: #1e293b;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc;
+        }
+
+        .hero-section {
+            background-color: var(--brand-dark);
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 229, 255, 0.08) 0%, transparent 50%);
+        }
+
+        .tab-active {
+            border-bottom: 4px solid var(--brand-cyan);
+            background-color: #ffffff;
+            color: var(--brand-dark) !important;
+        }
+
+        .tab-active i { color: var(--brand-cyan) !important; }
+
+        .tech-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tech-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            background: #e2e8f0;
+            height: 6px;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: var(--brand-cyan);
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+            border: 2px solid white;
+        }
+
+        .equation-box {
+            background: #0f172a;
+            color: #38bdf8;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            overflow-x: auto;
+        }
+
+        .gemini-gradient {
+            background: linear-gradient(135deg, #00e5ff 0%, #0066ff 100%);
+        }
+
+        .loading-shimmer {
+            background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- HEADER / HERO -->
+    <header class="hero-section text-white pt-20 pb-28 px-6 md:px-12 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto relative z-10">
+            <div class="flex items-center gap-3 mb-8">
+                <span class="bg-cyan-500/10 text-cyan-400 text-[10px] font-bold px-4 py-1.5 rounded-full uppercase tracking-[0.2em] border border-cyan-500/20">
+                    Sistemas de Potabilización
+                </span>
+                <span class="text-slate-500 flex items-center gap-2 text-[10px] uppercase font-bold tracking-widest">
+                    <i class="fas fa-microscope text-cyan-500"></i> Ingeniería Avanzada
+                </span>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tighter max-w-5xl mb-8 leading-[0.9]">
+                DISEÑO DE LECHOS <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+                    FILTRANTES
+                </span>
+            </h1>
+
+            <div class="w-24 h-2 bg-cyan-400 mb-10 rounded-full"></div>
+            
+            <p class="text-slate-400 max-w-2xl text-base md:text-lg leading-relaxed font-light">
+                Cálculo cinético y dimensionamiento hidráulico de unidades de filtración granular. Optimización de la tasa de flujo y gestión de la pérdida de carga ($h_f$) bajo estándares AWWA y CEPIS.
+            </p>
+        </div>
+        
+        <div class="absolute top-6 right-10 text-slate-700 font-bold text-[10px] tracking-[0.3em] opacity-40 uppercase text-right leading-loose">
+            Módulo II - Ingeniería de Procesos
+        </div>
+    </header>
+
+    <!-- NAVEGACIÓN TÉCNICA -->
+    <section class="max-w-7xl mx-auto -mt-14 px-6 relative z-20">
+        <div class="bg-white rounded-2xl shadow-2xl flex flex-wrap overflow-hidden border border-slate-200">
+            <button onclick="switchTab('fundamentos')" class="tab-btn flex-1 min-w-[180px] p-7 flex flex-col items-center gap-3 transition-all hover:bg-slate-50 border-r border-slate-100 tab-active" id="btn-fundamentos">
+                <i class="fas fa-atom text-slate-300 text-2xl"></i>
+                <span class="text-[11px] font-extrabold uppercase tracking-widest">Cinética y Fundamentos</span>
+            </button>
+            <button onclick="switchTab('clasificacion')" class="tab-btn flex-1 min-w-[180px] p-7 flex flex-col items-center gap-3 transition-all hover:bg-slate-50 border-r border-slate-100" id="btn-clasificacion">
+                <i class="fas fa-layer-group text-slate-300 text-2xl"></i>
+                <span class="text-[11px] font-extrabold uppercase tracking-widest">Tipologías Técnicas</span>
+            </button>
+            <button onclick="switchTab('dimensionamiento')" class="tab-btn flex-1 min-w-[180px] p-7 flex flex-col items-center gap-3 transition-all hover:bg-slate-50 border-r border-slate-100" id="btn-dimensionamiento">
+                <i class="fas fa-drafting-compass text-slate-300 text-2xl"></i>
+                <span class="text-[11px] font-extrabold uppercase tracking-widest">Dimensionamiento</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- ÁREA DE TRABAJO -->
+    <main class="max-w-7xl mx-auto py-16 px-6 space-y-16">
+        
+        <!-- PESTAÑA: FUNDAMENTOS -->
+        <div id="content-fundamentos" class="tab-content grid grid-cols-1 lg:grid-cols-12 gap-10">
+            <div class="lg:col-span-8 space-y-8">
+                <div class="bg-white p-10 rounded-3xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xs font-black text-blue-600 uppercase tracking-[0.4em] mb-8">Mecánica de la Filtración Granular</h3>
+                    <div class="prose prose-slate max-w-none text-sm leading-relaxed text-slate-600 space-y-6">
+                        <p>
+                            La remoción ocurre mediante la **transferencia de masa** desde las líneas de flujo hacia la superficie de los granos. Este fenómeno se rige por la **Ecuación de Ergun** para lechos limpios:
+                        </p>
+                        
+                        <div class="equation-box text-center">
+                            $$\frac{h_f}{L} = 150 \frac{\nu \cdot \mu \cdot (1-\epsilon)^2}{g \cdot \rho \cdot d^2 \cdot \epsilon^3} + 1.75 \frac{v^2 \cdot (1-\epsilon)}{g \cdot d \cdot \epsilon^3}$$
+                        </div>
+
+                        <div class="bg-blue-50 p-6 rounded-2xl border border-blue-100">
+                            <h4 class="text-blue-800 font-bold text-xs uppercase mb-4">Ejemplo Práctico: Pérdida de Carga Inicial</h4>
+                            <p class="text-xs mb-4">Calculamos la pérdida de carga para un filtro de arena estándar:</p>
+                            <div class="grid grid-cols-2 gap-4 text-[11px] font-mono mb-4">
+                                <div>- Velocidad ($v$): $0.0022$ m/s ($8$ m/h)</div>
+                                <div>- Diámetro grano ($d$): $0.0005$ m ($0.5$ mm)</div>
+                                <div>- Porosidad ($\epsilon$): $0.42$</div>
+                                <div>- Espesor lecho ($L$): $0.70$ m</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border border-blue-200 text-xs italic">
+                                <strong>Resultado Estimado:</strong> La pérdida de carga inicial ($h_f$) para este escenario es de aproximadamente **$0.18$ a $0.22$ m**. Si el valor observado es mayor, indica aire atrapado o colmatación biológica.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✨ GEMINI FEATURE: ASISTENTE TÉCNICO -->
+                <div class="bg-slate-900 rounded-3xl p-8 border border-slate-800 shadow-2xl overflow-hidden relative group">
+                    <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="fas fa-robot text-8xl text-cyan-400"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <h3 class="text-cyan-400 font-bold text-sm uppercase tracking-widest mb-4">Asistente de Diagnóstico ✨</h3>
+                        <p class="text-slate-400 text-sm mb-6">Describe un problema operativo (ej: "turbiedad alta en el efluente" o "carreras de filtración cortas") para obtener un análisis técnico.</p>
+                        <div class="flex gap-4">
+                            <input type="text" id="ai-query" placeholder="Ej: ¿Cómo afecta un aumento de temperatura a la pérdida de carga?" class="flex-1 bg-slate-800 border-none rounded-xl p-4 text-white text-sm outline-none focus:ring-2 focus:ring-cyan-500">
+                            <button onclick="askGemini()" id="ai-btn" class="gemini-gradient px-6 py-4 rounded-xl text-white font-bold text-sm shadow-lg hover:scale-105 transition-all">
+                                Consultar ✨
+                            </button>
+                        </div>
+                        <div id="ai-response-container" class="hidden mt-6 bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+                            <div id="ai-loading" class="hidden space-y-3">
+                                <div class="h-4 w-3/4 loading-shimmer rounded"></div>
+                                <div class="h-4 w-1/2 loading-shimmer rounded"></div>
+                            </div>
+                            <div id="ai-text" class="text-slate-300 text-sm leading-relaxed prose prose-invert prose-sm"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 space-y-6">
+                <div class="bg-slate-900 p-8 rounded-3xl text-white shadow-xl">
+                    <h4 class="text-cyan-400 font-bold text-xs uppercase tracking-widest mb-6">Parámetros de Diseño AWWA</h4>
+                    <ul class="space-y-4 text-xs">
+                        <li class="flex justify-between border-b border-slate-800 pb-3">
+                            <span class="text-slate-400">Tamaño Efectivo ($D_{10}$)</span>
+                            <span class="font-bold text-cyan-400">0.45 - 0.55 mm</span>
+                        </li>
+                        <li class="flex justify-between border-b border-slate-800 pb-3">
+                            <span class="text-slate-400">Coef. Uniformidad ($CU$)</span>
+                            <span class="font-bold text-cyan-400">&lt; 1.60</span>
+                        </li>
+                        <li class="flex justify-between border-b border-slate-800 pb-3">
+                            <span class="text-slate-400">Densidad Arena</span>
+                            <span class="font-bold text-cyan-400">2.65 g/cm³</span>
+                        </li>
+                        <li class="flex justify-between border-b border-slate-800 pb-3">
+                            <span class="text-slate-400">Esfericidad ($\psi$)</span>
+                            <span class="font-bold text-cyan-400">0.75 - 0.85</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: CLASIFICACIÓN -->
+        <div id="content-clasificacion" class="tab-content hidden space-y-12">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="tech-card bg-white p-8 rounded-3xl border border-slate-200">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-arrow-down-long"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-4 uppercase tracking-tighter">Filtros Descendentes</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                        Configuración de flujo gravitacional. El agua atraviesa el medio desde la superficie hacia los drenajes inferiores.
+                    </p>
+                </div>
+                <div class="tech-card bg-white p-8 rounded-3xl border border-slate-200">
+                    <div class="w-12 h-12 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-arrow-up-long"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-4 uppercase tracking-tighter">Filtros Ascendentes</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                        El flujo ingresa por el fondo. Utiliza el espesor total del lecho como zona de almacenamiento de sólidos.
+                    </p>
+                </div>
+                <div class="tech-card bg-white p-8 rounded-3xl border border-slate-200">
+                    <div class="w-12 h-12 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-6">
+                        <i class="fas fa-gauge-high"></i>
+                    </div>
+                    <h4 class="font-bold text-lg mb-4 uppercase tracking-tighter">Sistemas a Presión</h4>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-6">
+                        Encapsulados en tanques metálicos. Ideales para filtración directa sin romper la línea de presión hidráulica.
+                    </p>
+                </div>
+            </div>
+
+            <!-- NUEVO CUADRO: CARACTERIZACIÓN DE TIPOS DE LECHO -->
+            <div class="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 bg-slate-900 text-cyan-400 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-table"></i>
+                    </div>
+                    <h3 class="text-xl font-black uppercase tracking-tighter">Caracterización Física de Medios Filtrantes</h3>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                            <tr>
+                                <th class="p-4 border-b">Material</th>
+                                <th class="p-4 border-b">Tamaño Efectivo ($D_{10}$)</th>
+                                <th class="p-4 border-b">Coef. Uniformidad ($CU$)</th>
+                                <th class="p-4 border-b">Densidad (g/cm³)</th>
+                                <th class="p-4 border-b">Función Técnica</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            <tr>
+                                <td class="p-4 font-bold text-slate-700">Antracita (Grado Filtro)</td>
+                                <td class="p-4">$0.80 - 1.20$ mm</td>
+                                <td class="p-4">$< 1.60$</td>
+                                <td class="p-4">$1.40 - 1.60$</td>
+                                <td class="p-4 text-xs text-slate-500">Remoción de flóculos grandes; capa superior en bicapa.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-bold text-slate-700">Arena Silícea</td>
+                                <td class="p-4">$0.45 - 0.55$ mm</td>
+                                <td class="p-4">$< 1.60$</td>
+                                <td class="p-4">$2.65$</td>
+                                <td class="p-4 text-xs text-slate-500">Remoción de turbiedad fina; medio convencional monocapa.</td>
+                            </tr>
+                            <tr>
+                                <td class="p-4 font-bold text-slate-700">Granate (Garnet)</td>
+                                <td class="p-4">$0.20 - 0.40$ mm</td>
+                                <td class="p-4">$< 1.80$</td>
+                                <td class="p-4">$3.80 - 4.20$</td>
+                                <td class="p-4 text-xs text-slate-500">Filtración de pulido extremo; capa inferior en multimedia.</td>
+                            </tr>
+                            <tr class="bg-blue-50/50">
+                                <td class="p-4 font-bold text-blue-800">Grava de Soporte</td>
+                                <td class="p-4">$2.00 - 32.0$ mm</td>
+                                <td class="p-4">N/A</td>
+                                <td class="p-4">$2.50 - 2.70$</td>
+                                <td class="p-4 text-xs text-blue-600 font-medium">Distribución de flujo y soporte del medio filtrante.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: DIMENSIONAMIENTO -->
+        <div id="content-dimensionamiento" class="tab-content hidden space-y-12">
+            <!-- CALCULADORA INTERACTIVA -->
+            <div class="bg-white rounded-[2.5rem] border border-slate-200 shadow-2xl overflow-hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2">
+                    <div class="p-10 lg:p-16 bg-slate-50/50 border-r border-slate-100">
+                        <div class="flex items-center gap-4 mb-12">
+                            <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg">
+                                <i class="fas fa-sliders"></i>
+                            </div>
+                            <h3 class="text-xl font-black uppercase tracking-tighter">Inputs de Proyecto</h3>
+                        </div>
+                        
+                        <div class="space-y-12">
+                            <div class="group">
+                                <label class="flex justify-between text-[11px] font-black text-slate-400 uppercase mb-5 tracking-widest group-hover:text-blue-600 transition-colors">
+                                    <span>Caudal de Diseño ($Q$)</span>
+                                    <span class="text-blue-600 font-mono text-sm" id="val-q">100 L/s</span>
+                                </label>
+                                <input type="range" id="input-q" min="10" max="1000" value="100" oninput="calculate()" class="w-full cursor-pointer">
+                            </div>
+
+                            <div class="group">
+                                <label class="block text-[11px] font-black text-slate-400 uppercase mb-5 tracking-widest group-hover:text-blue-600 transition-colors">Régimen Hidráulico ($V_f$)</label>
+                                <select id="input-vf" onchange="calculate()" class="w-full p-5 bg-white border border-slate-200 rounded-2xl font-bold text-slate-700 focus:ring-4 focus:ring-blue-100 transition-all outline-none appearance-none">
+                                    <option value="5">Tasa Baja (5 m/h)</option>
+                                    <option value="8" selected>Tasa Estándar (8 m/h)</option>
+                                    <option value="12">Tasa Alta (12 m/h)</option>
+                                    <option value="15">Tasa Extrema (15 m/h)</option>
+                                </select>
+                            </div>
+
+                            <div class="group">
+                                <label class="block text-[11px] font-black text-slate-400 uppercase mb-5 tracking-widest">Unidades en Paralelo ($N$)</label>
+                                <div class="grid grid-cols-4 gap-4">
+                                    <button onclick="setN(2)" class="n-btn p-4 rounded-2xl border border-slate-200 font-bold hover:bg-white transition-all">2</button>
+                                    <button onclick="setN(4)" class="n-btn p-4 rounded-2xl border-2 border-blue-600 bg-blue-50 text-blue-700 font-bold shadow-sm">4</button>
+                                    <button onclick="setN(6)" class="n-btn p-4 rounded-2xl border border-slate-200 font-bold hover:bg-white transition-all">6</button>
+                                    <button onclick="setN(8)" class="n-btn p-4 rounded-2xl border border-slate-200 font-bold hover:bg-white transition-all">8</button>
+                                </div>
+                                <input type="hidden" id="input-n" value="4">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-10 lg:p-16 flex flex-col justify-center">
+                        <h3 class="text-xs font-black text-slate-400 uppercase tracking-[0.3em] mb-12">Especificaciones Técnicas</h3>
+                        <div class="space-y-8">
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="p-8 bg-slate-900 rounded-[2rem] text-white shadow-2xl group">
+                                    <p class="text-[10px] font-bold text-slate-500 uppercase mb-3">Área Superficial</p>
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-5xl font-black text-cyan-400" id="res-area">--</span>
+                                        <span class="text-sm font-bold text-slate-500">m²</span>
+                                    </div>
+                                </div>
+                                <div class="p-8 bg-white border border-slate-200 rounded-[2rem] shadow-sm">
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase mb-3">Ancho de Celda</p>
+                                    <div class="flex items-baseline gap-2">
+                                        <span class="text-5xl font-black text-slate-900" id="res-lado">--</span>
+                                        <span class="text-sm font-bold text-slate-400">m</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="p-8 bg-blue-600 rounded-[2rem] text-white shadow-xl flex justify-between items-center">
+                                <div>
+                                    <p class="text-[10px] font-bold text-blue-200 uppercase mb-2">Q de Lavado Requerido</p>
+                                    <span class="text-3xl font-black" id="res-bw">-- m³/h</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="block text-[10px] font-bold text-blue-200 uppercase tracking-widest">Backwash</span>
+                                    <span class="text-xl font-bold italic">40.0 m/h</span>
+                                </div>
+                            </div>
+                            
+                            <div class="pt-4">
+                                <button onclick="optimizeDesign()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-4 rounded-2xl flex items-center justify-center gap-3 transition-all border border-slate-200">
+                                    <span>Optimizar Diseño con IA ✨</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SECCIÓN EDUCATIVA RESTAURADA: PASO A PASO -->
+            <div class="bg-white p-10 lg:p-16 rounded-[2.5rem] border border-slate-200 shadow-sm">
+                <div class="flex items-center gap-4 mb-10">
+                    <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-black uppercase tracking-tighter">Metodología de Cálculo Paso a Paso</h3>
+                        <p class="text-xs text-slate-500 font-medium">Fundamentos matemáticos aplicados en la ingeniería de filtración.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">01</span>
+                            <h4 class="text-sm font-bold uppercase tracking-tight">Conversión de Caudal</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            El caudal operativo se normaliza a unidades volumétricas horarias para correlacionarlo con la carga superficial.
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl font-mono text-[11px] text-blue-700">
+                            $Q (m^3/h) = Q (L/s) \times 3.6$
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">02</span>
+                            <h4 class="text-sm font-bold uppercase tracking-tight">Área Total Requerida</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Cálculo del área de transferencia basado en la velocidad de aproximación o tasa de filtración ($V_f$).
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl font-mono text-[11px] text-blue-700">
+                            $A_t (m^2) = \frac{Q (m^3/h)}{V_f (m/h)}$
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">03</span>
+                            <h4 class="text-sm font-bold uppercase tracking-tight">Cálculo de Área Unitaria</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            División del área total entre el número de unidades ($N$) para asegurar la redundancia operativa (N+1).
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl font-mono text-[11px] text-blue-700">
+                            $A_u (m^2/unidad) = \frac{A_t}{N}$
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">04</span>
+                            <h4 class="text-sm font-bold uppercase tracking-tight">Cálculo del Lado (Celda)</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Dimensionamiento geométrico considerando una planta cuadrada para optimizar la distribución hidráulica.
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl font-mono text-[11px] text-blue-700">
+                            $L (m) = \sqrt{A_u}$
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3">
+                            <span class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">05</span>
+                            <h4 class="text-sm font-bold uppercase tracking-tight">Demanda de Contralavado</h4>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed">
+                            Determinación del caudal necesario para fluidizar el lecho (tasa de lavado típica de $40$ a $60$ $m/h$).
+                        </p>
+                        <div class="bg-slate-50 p-4 rounded-xl font-mono text-[11px] text-blue-700">
+                            $Q_{bw} (m^3/h) = A_u \times V_{lavado}$
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel de Resultados de Optimización IA -->
+            <div id="optimization-container" class="hidden bg-white p-10 rounded-3xl border border-blue-100 shadow-xl">
+                <div class="flex items-center gap-4 mb-8">
+                    <div class="w-10 h-10 gemini-gradient text-white rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-sparkles"></i>
+                    </div>
+                    <h3 class="text-xl font-black uppercase tracking-tighter">Reporte Técnico de Optimización ✨</h3>
+                </div>
+                <div id="optimization-loading" class="hidden space-y-4">
+                    <div class="h-6 w-1/3 loading-shimmer rounded"></div>
+                    <div class="h-4 w-full loading-shimmer rounded"></div>
+                </div>
+                <div id="optimization-text" class="text-slate-600 text-sm leading-relaxed prose prose-blue max-w-none"></div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-900 py-16 px-6 text-center border-t border-slate-800">
+        <div class="max-w-4xl mx-auto space-y-3">
+            <p class="text-sm font-bold text-slate-300 uppercase tracking-[0.4em]">
+                Ingeniería de Procesos de Potabilización 2026
+            </p>
+            <p class="text-[10px] font-medium text-slate-600 uppercase tracking-[0.1em] opacity-80">
+                Servicios Profesionales Tera - Ing. Jose Alfredo Quintero S.
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // API Key encoded in Base64
+        const encodedKey = "QUl6YVN5QmtzTXlJbmFEUS1xd3pTU0dHdHM5UGN2dkNkbTY1U0VJ";
+        const apiKey = atob(encodedKey).trim();
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById('content-' + tab).classList.remove('hidden');
+            
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('tab-active');
+                const icon = b.querySelector('i');
+                icon.classList.add('text-slate-300');
+                icon.classList.remove('text-cyan-500');
+                b.querySelector('span').classList.add('text-slate-400');
+            });
+            
+            const activeBtn = document.getElementById('btn-' + tab);
+            activeBtn.classList.add('tab-active');
+            const activeIcon = activeBtn.querySelector('i');
+            activeIcon.classList.remove('text-slate-300');
+            activeIcon.classList.add('text-cyan-500');
+            activeBtn.querySelector('span').classList.remove('text-slate-400');
+
+            if(tab === 'dimensionamiento') calculate();
+        }
+
+        function setN(val) {
+            document.getElementById('input-n').value = val;
+            document.querySelectorAll('.n-btn').forEach(b => {
+                b.classList.remove('border-2', 'border-blue-600', 'bg-blue-50', 'text-blue-700', 'shadow-sm');
+                b.classList.add('border', 'border-slate-200');
+                if(parseInt(b.innerText) === val) {
+                    b.classList.add('border-2', 'border-blue-600', 'bg-blue-50', 'text-blue-700', 'shadow-sm');
+                    b.classList.remove('border', 'border-slate-200');
+                }
+            });
+            calculate();
+        }
+
+        function calculate() {
+            const Qlps = parseFloat(document.getElementById('input-q').value);
+            const Vf = parseFloat(document.getElementById('input-vf').value);
+            const N = parseInt(document.getElementById('input-n').value);
+            
+            document.getElementById('val-q').innerText = Qlps + " L/s";
+
+            const Qm3h = Qlps * 3.6;
+            const AreaTotal = Qm3h / Vf;
+            const AreaUnitaria = AreaTotal / N;
+            const Lado = Math.sqrt(AreaUnitaria);
+            const Qbackwash = AreaUnitaria * 40;
+
+            document.getElementById('res-area').innerText = AreaUnitaria.toFixed(2);
+            document.getElementById('res-lado').innerText = Lado.toFixed(2);
+            document.getElementById('res-bw').innerText = Qbackwash.toFixed(1);
+
+            if (window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise();
+        }
+
+        function formatAIResponse(text) {
+            let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/^\* (.*?)$/gm, '<li>$1</li>');
+            formatted = formatted.replace(/\n/g, '<br>');
+            return formatted;
+        }
+
+        async function callGemini(prompt, systemInstruction) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            let delay = 1000;
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API Error');
+                    const data = await response.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "No se recibió respuesta.";
+                } catch (error) {
+                    if (i === 4) throw error;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function askGemini() {
+            const query = document.getElementById('ai-query').value;
+            if (!query) return;
+
+            const container = document.getElementById('ai-response-container');
+            const loading = document.getElementById('ai-loading');
+            const textDisplay = document.getElementById('ai-text');
+            const btn = document.getElementById('ai-btn');
+
+            container.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            textDisplay.innerHTML = "";
+            btn.disabled = true;
+
+            const systemPrompt = "Eres un Ingeniero experto en tratamiento de aguas. Responde de forma técnica. Usa MathJax ($) para símbolos.";
+
+            try {
+                const response = await callGemini(query, systemPrompt);
+                textDisplay.innerHTML = formatAIResponse(response);
+                if (window.MathJax) MathJax.typesetPromise();
+            } catch (error) {
+                textDisplay.innerText = "Error en la consulta IA.";
+            } finally {
+                loading.classList.add('hidden');
+                btn.disabled = false;
+            }
+        }
+
+        async function optimizeDesign() {
+            const container = document.getElementById('optimization-container');
+            const loading = document.getElementById('optimization-loading');
+            const textDisplay = document.getElementById('optimization-text');
+            
+            const Q = document.getElementById('input-q').value;
+            const Vf = document.getElementById('input-vf').value;
+            const Area = document.getElementById('res-area').innerText;
+
+            container.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            textDisplay.innerHTML = "";
+            container.scrollIntoView({ behavior: 'smooth' });
+
+            const prompt = `Crítica técnica de diseño: Q=${Q}L/s, Vf=${Vf}m/h, Área=${Area}m2. Evalúa riesgos e idoneidad del lecho. Usa MathJax.`;
+            const systemPrompt = "Eres un consultor de ingeniería senior. Estructura el reporte técnico con MathJax.";
+
+            try {
+                const response = await callGemini(prompt, systemPrompt);
+                textDisplay.innerHTML = formatAIResponse(response);
+                if (window.MathJax) MathJax.typesetPromise();
+            } catch (error) {
+                textDisplay.innerText = "Error al generar reporte.";
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        window.onload = () => {
+            calculate();
+        };
+    </script>
+</body>
+</html>

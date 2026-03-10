@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Módulo IV: Gestión Avanzada y Finalización - Servicios Profesionales Tera</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-dark: #000b1a;
+            --card-dark: #051124;
+            --cyan-accent: #00d4ff;
+            --navy-bright: #0047ab;
+            --text-gray: #94a3b8;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            font-family: 'Inter', sans-serif;
+            color: white;
+            scroll-behavior: smooth;
+        }
+
+        /* Estilos Portada */
+        .portada-full {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, rgba(0, 71, 171, 0.2) 0%, rgba(0, 11, 26, 1) 100%);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portada-grid {
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            mask-image: radial-gradient(ellipse at center, black, transparent 80%);
+        }
+
+        .hero-gradient {
+            background: linear-gradient(180deg, rgba(0,212,255,0.1) 0%, rgba(0,11,26,1) 100%);
+        }
+
+        .technical-block {
+            background-color: #051124;
+            border-left: 4px solid var(--cyan-accent);
+            border-radius: 4px 12px 12px 4px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+        }
+
+        .btn-cyan {
+            background-color: var(--cyan-accent);
+            color: var(--bg-dark);
+            font-weight: 800;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-cyan:hover {
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.3);
+        }
+
+        input, textarea {
+            background: #0a192f !important;
+            border: 1px solid #1e293b !important;
+            color: var(--cyan-accent) !important;
+        }
+
+        .formula-plain {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin: 1.5rem 0;
+            font-family: 'Courier New', Courier, monospace;
+        }
+
+        .status-pill {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.1em;
+            color: var(--cyan-accent);
+            text-transform: uppercase;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0) translateX(-50%);}
+            40% {transform: translateY(-10px) translateX(-50%);}
+            60% {transform: translateY(-5px) translateX(-50%);}
+        }
+    </style>
+</head>
+<body>
+
+    <!-- SECCIÓN PORTADA -->
+    <section class="portada-full px-6">
+        <div class="portada-grid"></div>
+        <div class="relative z-10 max-w-4xl">
+            <span class="status-pill mb-6">Alfabetización Científica</span>
+            <p class="text-cyan-400 font-bold tracking-[0.5em] uppercase text-xs mb-4">Servicios Profesionales Tera</p>
+            <h1 class="text-6xl md:text-8xl font-black tracking-tighter uppercase mb-6 leading-none">
+                Módulo IV<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-cyan-500">Gestión Avanzada</span>
+            </h1>
+            <div class="w-24 h-1 bg-cyan-400 mx-auto mb-8"></div>
+            <p class="text-xl text-gray-400 font-light mb-12 max-w-2xl mx-auto italic">
+                Tesis de Finalización: Ingeniería de Procesos de Potabilización y Estrategia de Sostenibilidad Hídrica para el Ecuador.
+            </p>
+            <div class="flex flex-col md:flex-row justify-center items-center gap-4">
+                <button onclick="document.getElementById('header-main').scrollIntoView({behavior:'smooth'})" class="btn-cyan px-10 py-4 rounded text-xs uppercase tracking-widest">
+                    Iniciar Módulo Final
+                </button>
+            </div>
+            <p class="mt-16 text-gray-600 text-[10px] uppercase tracking-[0.4em]">Ing. Jose Alfredo Quintero S.</p>
+        </div>
+        <div class="scroll-indicator">
+            <svg class="w-6 h-6 text-cyan-400/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+        </div>
+    </section>
+
+    <!-- Header Principal -->
+    <header id="header-main" class="hero-gradient pt-24 pb-16 px-8">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex items-center space-x-4 mb-6">
+                <span class="status-pill">Resumen Ejecutivo</span>
+                <span class="text-gray-500 text-[10px] tracking-widest uppercase">Servicios Profesionales Tera</span>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-extrabold tracking-tighter mb-4 uppercase leading-none">
+                Gestión Operativa y <br>
+                <span class="text-cyan-400">Finalización Técnica</span>
+            </h1>
+            <div class="w-32 h-1 bg-cyan-400 mb-8"></div>
+            <p class="max-w-3xl text-gray-400 text-lg leading-relaxed font-light italic">
+                Optimización de procesos críticos y diagnóstico técnico para la soberanía del recurso vital en Ecuador.
+            </p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-8 space-y-24">
+
+        <!-- 01. Desafíos Operacionales Detallados -->
+        <section>
+            <h2 class="text-3xl font-bold mb-10 uppercase tracking-tighter flex items-center">
+                <span class="text-cyan-400 mr-4">01.</span> Análisis de Patologías en Planta
+            </h2>
+            
+            <div class="grid md:grid-cols-3 gap-8 text-sm">
+                <!-- Turbidez -->
+                <div class="glass-card p-8 border-t-2 border-red-500/30">
+                    <h3 class="text-white font-bold mb-4 uppercase text-xs tracking-widest text-red-400">Turbidez Elevada</h3>
+                    <div class="text-gray-400 space-y-4">
+                        <p><strong>Causas Críticas:</strong> Exceso de velocidad hidráulica, lechos agotados o mala gradación del medio filtrante. Ruptura del lecho por cambios bruscos de caudal.</p>
+                        <div class="bg-black/20 p-4 rounded border border-white/5">
+                            <span class="text-cyan-400 font-bold block mb-2 uppercase text-[10px]">Acciones:</span>
+                            <ul class="space-y-1 text-[11px]">
+                                <li>• Reducción de tasa: 90 a 150 m3/m2/d.</li>
+                                <li>• Control de expansión: 20% a 40%.</li>
+                                <li>• Optimización de coagulación para minimizar flocs residuales.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sabor y Olor -->
+                <div class="glass-card p-8 border-t-2 border-yellow-500/30">
+                    <h3 class="text-white font-bold mb-4 uppercase text-xs tracking-widest text-yellow-400">Sabor y Olor</h3>
+                    <div class="text-gray-400 space-y-4">
+                        <p><strong>Causas Críticas:</strong> Compuestos orgánicos (Geosmina, MIB), algas en fuente o materia orgánica natural (NOM) elevada que reacciona con cloro.</p>
+                        <div class="bg-black/20 p-4 rounded border border-white/5">
+                            <span class="text-cyan-400 font-bold block mb-2 uppercase text-[10px]">Acciones:</span>
+                            <ul class="space-y-1 text-[11px]">
+                                <li>• Dosificación de Carbón Activado (CAP/CAG).</li>
+                                <li>• Oxidación avanzada (UV/H2O2 u Ozono).</li>
+                                <li>• Lavado y mantenimiento profundo de reservorios.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dosificación -->
+                <div class="glass-card p-8 border-t-2 border-purple-500/30">
+                    <h3 class="text-white font-bold mb-4 uppercase text-xs tracking-widest text-purple-400">Dosificación Química</h3>
+                    <div class="text-gray-400 space-y-4">
+                        <p><strong>Causas Críticas:</strong> Bombas descalibradas, variación de concentración del químico o aire en tuberías (golpe de ariete).</p>
+                        <div class="bg-black/20 p-4 rounded border border-white/5">
+                            <span class="text-cyan-400 font-bold block mb-2 uppercase text-[10px]">Acciones:</span>
+                            <ul class="space-y-1 text-[11px]">
+                                <li>• Calibración semanal con probeta y cronómetro.</li>
+                                <li>• Tanques de preparación con agitación mecánica.</li>
+                                <li>• Purgas de aire periódicas en líneas de succión.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 02. Tecnologías de Membrana (Física Aplicada) -->
+        <section class="technical-block p-10">
+            <h2 class="text-3xl font-bold mb-8 uppercase tracking-tighter">02. Monitoreo y Física de Membranas</h2>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="text-gray-300 space-y-6 text-sm">
+                    <h4 class="text-cyan-400 font-bold uppercase tracking-widest text-xs">Diagnóstico del Flujo Permeado</h4>
+                    <p>
+                        En la ingeniería de membranas, el monitoreo del flujo es el indicador crítico de la salud operativa. El fenómeno conocido como <strong>ensuciamiento (Fouling)</strong> requiere una detección temprana mediante la relación:
+                    </p>
+                    <div class="formula-plain text-center text-cyan-400 font-bold">
+                        Flujo = Permeabilidad x (Presión Hidráulica - Presión Osmótica)
+                    </div>
+                    <p class="text-[11px] text-gray-500 italic">
+                        Nota: La detección temprana requiere monitorear si el flujo neto de agua filtrada cae más de un 10% respecto a los valores iniciales.
+                    </p>
+                </div>
+
+                <div class="glass-card p-8 text-[11px]">
+                    <h4 class="text-white font-bold text-xs uppercase mb-6 tracking-widest border-b border-white/5 pb-2">Jerarquía de Filtración</h4>
+                    <div class="space-y-6">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-cyan-400 font-bold block mb-1">Ultrafiltración (UF)</span>
+                                <p class="text-gray-500">Poro: 0.01 - 0.1 micras. Remueve bacterias, protozoarios y coloides.</p>
+                            </div>
+                            <span class="bg-navy-bright/20 px-2 py-1 rounded text-[9px]">BAJA PRESIÓN</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-cyan-400 font-bold block mb-1">Nanofiltración (NF)</span>
+                                <p class="text-gray-500">Remueve iones divalentes (Calcio, Magnesio), color y materia orgánica natural.</p>
+                            </div>
+                            <span class="bg-navy-bright/20 px-2 py-1 rounded text-[9px]">MEDIA PRESIÓN</span>
+                        </div>
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="text-cyan-400 font-bold block mb-1">Ósmosis Inversa (OI)</span>
+                                <p class="text-gray-500">Barrera total contra sales disueltas, virus y contaminantes emergentes (PFAS).</p>
+                            </div>
+                            <span class="bg-navy-bright/20 px-2 py-1 rounded text-[9px]">ALTA PRESIÓN</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 03. Dashboard de Gestión Estratégica -->
+        <section class="space-y-12">
+            <h2 class="text-2xl font-bold flex items-center uppercase tracking-tighter">
+                <span class="text-cyan-400 mr-3">/</span> Dashboard de Inteligencia Operativa
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-8">
+                <!-- ROI -->
+                <div class="glass-card p-10 border-t-4 border-cyan-400 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg text-white mb-2 uppercase tracking-widest">Viabilidad Financiera</h3>
+                        <p class="text-[11px] text-gray-500 mb-6 leading-relaxed">
+                            <strong>Contexto:</strong> Este simulador permite justificar inversiones en modernización (CAPEX) analizando el ahorro mensual en químicos y energía frente a la inversión inicial.
+                        </p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Inversión (USD)</label>
+                            <input type="number" id="cap-inv" class="w-32 rounded p-2 text-right text-sm" value="120000">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ahorro Mensual (USD)</label>
+                            <input type="number" id="mon-sav" class="w-32 rounded p-2 text-right text-sm" value="6500">
+                        </div>
+                        <button onclick="calcPayback()" class="btn-cyan w-full py-4 mt-4 text-[10px] uppercase tracking-widest">Calcular Retorno</button>
+                    </div>
+                    <div id="roi-res" class="mt-8 pt-8 border-t border-white/5 hidden text-center">
+                        <span class="text-5xl font-black text-white" id="meses-val">0</span>
+                        <p class="text-[10px] text-cyan-400 font-bold uppercase mt-2">Meses para Recuperación total</p>
+                    </div>
+                </div>
+
+                <!-- Sostenibilidad Poblacional -->
+                <div class="glass-card p-10 border-t-4 border-navy-bright flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-lg text-white mb-2 uppercase tracking-widest">Sostenibilidad y Estrés Hídrico</h3>
+                        <p class="text-[11px] text-gray-500 mb-6 leading-relaxed">
+                            <strong>Contexto:</strong> Evaluación del balance hídrico basada en la normativa ecuatoriana (200 litros/persona/día).
+                        </p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Habitantes (Censo)</label>
+                            <input type="number" id="pop-val" class="w-32 rounded p-2 text-right text-sm" value="12000">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Caudal Fuente (m3/d)</label>
+                            <input type="number" id="src-val" class="w-32 rounded p-2 text-right text-sm" value="2800">
+                        </div>
+                        <button onclick="calcStress()" class="btn-cyan w-full py-4 mt-4 text-[10px] uppercase tracking-widest">Evaluar Seguridad Local</button>
+                    </div>
+                    <div id="stress-res" class="mt-8 pt-8 border-t border-white/5 hidden text-center">
+                        <span class="text-5xl font-black" id="balance-val">0</span>
+                        <p class="text-[10px] text-gray-500 font-bold uppercase mt-2">Balance Hídrico (m3 al día)</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Conclusión Científica -->
+        <section class="p-16 glass-card border-none bg-gradient-to-br from-navy-bright/10 to-transparent">
+            <h2 class="text-3xl font-black mb-8 text-cyan-400 uppercase tracking-tighter">Epistemología del Recurso Hídrico</h2>
+            <div class="max-w-4xl mx-auto space-y-6 text-sm text-gray-300 leading-relaxed font-light">
+                <p>
+                    El agua, como dipolo molecular único, no debe ser gestionada como una simple mercancía, sino como la base de la termodinámica biológica de las naciones. La ingeniería moderna de potabilización trasciende la remoción de sólidos; se trata de una <strong>remediación química de precisión</strong> para eliminar contaminantes persistentes que el metabolismo humano no puede procesar.
+                </p>
+                <p>
+                    La transición hacia infraestructuras hídricas inteligentes en Ecuador es un imperativo científico. La adopción de procesos de oxidación avanzada y la desalinización descentralizada permitirán mitigar el estrés hídrico sistémico, garantizando que el acceso al agua potable sea una realidad técnica y no solo una aspiración social.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center text-gray-500 py-20 border-t border-gray-900 bg-black/50">
+        <div class="max-w-6xl mx-auto px-8">
+            <p class="text-[11px] font-bold tracking-[0.4em] uppercase text-cyan-500/60 mb-4">
+                Alfabetización Científica - Programa de Especialización Técnica 2026
+            </p>
+            <div class="w-12 h-px bg-gray-800 mx-auto mb-6"></div>
+            <p class="text-lg font-bold text-gray-300 uppercase tracking-tighter">Servicios Profesionales Tera</p>
+            <p class="text-sm text-gray-600 mt-1 italic">Ing. Jose Alfredo Quintero S.</p>
+        </div>
+    </footer>
+
+    <script>
+        function calcPayback() {
+            const inv = parseFloat(document.getElementById('cap-inv').value);
+            const sav = parseFloat(document.getElementById('mon-sav').value);
+            const res = document.getElementById('roi-res');
+            if(inv > 0 && sav > 0) {
+                const meses = (inv / sav).toFixed(1);
+                document.getElementById('meses-val').innerText = meses;
+                res.classList.remove('hidden');
+                res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function calcStress() {
+            const pop = parseFloat(document.getElementById('pop-val').value);
+            const src = parseFloat(document.getElementById('src-val').value);
+            const res = document.getElementById('stress-res');
+            if(pop > 0 && src >= 0) {
+                const demanda = pop * 0.20; // 200L/hab/día = 0.20 m3
+                const balance = (src - demanda).toFixed(2);
+                const valElem = document.getElementById('balance-val');
+                valElem.innerText = balance;
+                valElem.className = balance < 0 ? 'text-5xl font-black text-red-500' : 'text-5xl font-black text-green-500';
+                res.classList.remove('hidden');
+                res.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    </script>
+</body>
+</html>

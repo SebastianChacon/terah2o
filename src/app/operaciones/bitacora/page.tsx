@@ -134,7 +134,7 @@ export default function BitacoraIntegralPage() {
   /* ── Transform data ────────────────────────────────────── */
   const designHistory: DesignRecord[] = useMemo(() => {
     if (!jarSessions) return [];
-    return jarSessions.map((s) => ({
+    return jarSessions.map((s: NonNullable<typeof jarSessions>[number]) => ({
       fecha: formatDate(s.date),
       org: s.organizationName,
       flow: `${s.plantFlow}`,
@@ -145,7 +145,7 @@ export default function BitacoraIntegralPage() {
 
   const opsHistory: OpsRecord[] = useMemo(() => {
     if (!shiftRecords) return [];
-    return shiftRecords.map((r) => ({
+    return shiftRecords.map((r: NonNullable<typeof shiftRecords>[number]) => ({
       fecha: formatDate(r.date),
       op: r.operatorName,
       flow: r.stats.avgFlow,
@@ -153,7 +153,7 @@ export default function BitacoraIntegralPage() {
       phct: r.hourlyReadings.length > 0
         ? `${r.hourlyReadings[0].ph ?? "—"} / ${r.hourlyReadings[0].color ?? "—"} / ${r.hourlyReadings[0].turbiedad ?? "—"}`
         : "—",
-      chem: r.dosificationEntries.map((d) => d.product).join(", ") || "—",
+      chem: r.dosificationEntries.map((d: NonNullable<typeof r.dosificationEntries>[number]) => d.product).join(", ") || "—",
       compliance: r.stats.compliancePercent,
       obs: r.notes || "",
     }));
@@ -161,7 +161,7 @@ export default function BitacoraIntegralPage() {
 
   const inventoryHistory: InventoryRecord[] = useMemo(() => {
     if (!inventoryItems) return [];
-    return inventoryItems.map((i) => ({
+    return inventoryItems.map((i: NonNullable<typeof inventoryItems>[number]) => ({
       fecha: i.lastUpdated || "—",
       item: i.itemName,
       consumed: `${i.dailyConsumption} ${i.unit}/día`,
@@ -172,7 +172,7 @@ export default function BitacoraIntegralPage() {
 
   const financeHistory: FinanceRecord[] = useMemo(() => {
     if (!financialProjs) return [];
-    return financialProjs.map((f) => {
+    return financialProjs.map((f: NonNullable<typeof financialProjs>[number]) => {
       const proy = f.totals.grandTotal;
       const real = f.totals.grandTotal;
       return {
@@ -207,7 +207,7 @@ export default function BitacoraIntegralPage() {
 
   const inventoryChartData = useMemo(() => {
     if (!inventoryItems) return [];
-    return inventoryItems.map((i) => ({
+    return inventoryItems.map((i: NonNullable<typeof inventoryItems>[number]) => ({
       name: i.itemName.length > 8 ? i.itemName.slice(0, 8) + "…" : i.itemName,
       consumo: i.dailyConsumption * 30,
     }));
@@ -674,7 +674,7 @@ export default function BitacoraIntegralPage() {
                       contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
                     />
                     <Bar dataKey="consumo" radius={[4, 4, 0, 0]}>
-                      {inventoryChartData.map((_, i) => (
+                      {inventoryChartData.map((_: (typeof inventoryChartData)[number], i: number) => (
                         <Cell key={i} fill={["#0ea5e9", "#ec4899", "#f59e0b", "#10b981"][i % 4]} />
                       ))}
                     </Bar>

@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingeniería de procesos: Inactivación Microbiológica - Módulo II</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&family=Playfair+Display:italic,wght@700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-serif { font-family: 'Playfair Display', serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .animate-pulse-slow { animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.1; } 50% { opacity: 0.3; } }
+        .safety-card { background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 1.5rem; padding: 1.5rem; transition: all 0.3s ease; }
+        .safety-card:hover { border-color: rgba(6, 182, 212, 0.5); background: rgba(255, 255, 255, 0.05); }
+        .nfpa-diamond { width: 80px; height: 80px; position: relative; transform: rotate(45deg); border: 1px solid #334155; }
+        .nfpa-box { position: absolute; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-weight: 900; transform: rotate(-45deg); font-size: 14px; }
+    </style>
+</head>
+<body class="bg-[#f1f5f9] text-slate-800 text-left">
+
+    <!-- PORTADA PROFESIONAL AZUL NAVY -->
+    <div id="cover" class="fixed inset-0 z-[200] bg-[#0a1128] flex flex-col items-center justify-center p-6 overflow-hidden">
+        <div class="absolute top-8 right-8 text-white/10 font-black text-[10px] tracking-[0.4em] uppercase pointer-events-none text-right">
+            Technical Resource • MOD II
+        </div>
+        <div class="absolute inset-0 pointer-events-none overflow-hidden">
+            <div class="absolute -top-20 -left-20 text-cyan-500 opacity-10 animate-pulse-slow">
+                <i data-lucide="droplets" style="width: 600px; height: 600px;"></i>
+            </div>
+            <div class="absolute -bottom-20 -right-20 text-cyan-500 opacity-10">
+                <i data-lucide="activity" style="width: 400px; height: 400px;"></i>
+            </div>
+        </div>
+
+        <div class="max-w-3xl w-full text-center space-y-12 relative z-10">
+            <div class="flex justify-center">
+                <div class="bg-white/5 p-8 rounded-[3rem] backdrop-blur-sm border border-white/10 relative group transition-all hover:scale-105">
+                    <div class="absolute -top-3 -right-3 bg-cyan-500 text-white p-2.5 rounded-full shadow-lg">
+                        <i data-lucide="shield-check" class="w-5 h-5"></i>
+                    </div>
+                    <i data-lucide="droplets" class="w-[72px] h-[72px] text-cyan-400"></i>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <h1 class="text-3xl md:text-4xl font-black text-white uppercase tracking-tighter leading-tight">
+                    Ingeniería de procesos: <br/> 
+                    <span class="text-cyan-400">Desinfección</span> <br/>
+                    <span class="text-slate-400 font-light tracking-[0.2em] text-xl md:text-2xl mt-4 block">Módulo II</span>
+                </h1>
+                <div class="w-16 h-1 bg-cyan-500 mx-auto rounded-full opacity-50"></div>
+                <p class="text-slate-400 font-medium text-base max-w-lg mx-auto leading-relaxed">
+                    Análisis de demanda química, agentes desinfectantes y protocolos de seguridad operativa para plantas potabilizadoras.
+                </p>
+            </div>
+
+            <button onclick="hideCover()" class="group bg-cyan-500 hover:bg-cyan-400 text-[#0a1128] px-12 py-5 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] transition-all shadow-2xl flex items-center gap-4 mx-auto">
+                Acceder al Panel Técnico <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+            
+            <div class="pt-16 flex flex-col items-center gap-6">
+                <div class="flex justify-center gap-8 text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">
+                    <span class="flex items-center gap-2"><i data-lucide="beaker" class="w-3.5 h-3.5"></i> Laboratorio</span>
+                    <span class="flex items-center gap-2"><i data-lucide="skull" class="w-3.5 h-3.5"></i> Seguridad</span>
+                    <span class="flex items-center gap-2 text-cyan-400 opacity-60"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Soporte IA</span>
+                </div>
+                <div class="text-[10px] font-bold text-slate-500 tracking-tight text-center italic border-t border-white/5 pt-6 w-full max-w-md">
+                    Servicios Profesionales Tera - Ing. Jose Alfredo Quintero S.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PANEL PRINCIPAL -->
+    <main id="main-panel" class="hidden min-h-screen">
+        <section class="w-full bg-[#f1f5f9] overflow-hidden border-t-8 border-[#0a1128]">
+            <!-- Header -->
+            <header class="bg-[#0a1128] text-white pt-16 pb-24 px-6 relative overflow-hidden border-b-4 border-cyan-500">
+                <div class="max-w-6xl mx-auto relative z-10 text-left">
+                    <div class="flex items-center gap-3 text-cyan-400 mb-4 font-black uppercase tracking-widest text-sm">
+                        <span class="bg-cyan-500/20 px-2 py-1 rounded">Ingeniería de Procesos</span>
+                        <div class="flex items-center gap-2 text-xs font-bold text-cyan-500/40">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Asistente de Proceso
+                        </div>
+                    </div>
+                    <h1 class="text-3xl md:text-5xl font-black mb-6 tracking-tighter uppercase leading-none text-balance">
+                        Proceso de Inactivación Microbiológica del Agua Tratada
+                    </h1>
+                    <div class="w-16 h-1 bg-cyan-500 mb-6"></div>
+                    <p class="text-lg text-slate-400 max-w-2xl font-medium leading-relaxed">
+                        Control de la demanda química y gestión de riesgos en sistemas de cloración industrial.
+                    </p>
+                </div>
+                <div class="absolute top-8 right-8 text-white/10 font-black text-[10px] tracking-[0.3em] uppercase pointer-events-none text-right">
+                    Módulo II <br/>
+                    <span class="text-[7px] tracking-normal lowercase opacity-40 font-bold">Tera Engineering</span>
+                </div>
+            </header>
+
+            <!-- Navegación Refinada -->
+            <nav class="max-w-6xl mx-auto px-6 -mt-10 relative z-30">
+                <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-wrap lg:flex-nowrap divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
+                    <button onclick="setTab('teoria')" id="tab-teoria" class="tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 bg-slate-50 border-b-cyan-500 text-[#0a1128] font-black">
+                        <div class="p-1.5 md:p-2 rounded-lg shrink-0 bg-cyan-500 text-white shadow-lg"><i data-lucide="shield-check" class="w-4 h-4"></i></div>
+                        <span class="uppercase tracking-tight text-[10px] md:text-[11px] font-bold leading-tight text-center break-words">Fundamentos</span>
+                    </button>
+                    <button onclick="setTab('demanda')" id="tab-demanda" class="tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 border-b-transparent text-slate-400 hover:bg-slate-50">
+                        <div class="p-1.5 md:p-2 rounded-lg shrink-0 bg-slate-100 text-slate-300"><i data-lucide="flask-conical" class="w-4 h-4"></i></div>
+                        <span class="uppercase tracking-tight text-[10px] md:text-[11px] font-bold leading-tight text-center break-words">Dinámica Química</span>
+                    </button>
+                    <button onclick="setTab('agentes')" id="tab-agentes" class="tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 border-b-transparent text-slate-400 hover:bg-slate-50">
+                        <div class="p-1.5 md:p-2 rounded-lg shrink-0 bg-slate-100 text-slate-300"><i data-lucide="book-open" class="w-4 h-4"></i></div>
+                        <span class="uppercase tracking-tight text-[10px] md:text-[11px] font-bold leading-tight text-center break-words">Métodos y Agentes</span>
+                    </button>
+                    <button onclick="setTab('calculo')" id="tab-calculo" class="tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 border-b-transparent text-slate-400 hover:bg-slate-50">
+                        <div class="p-1.5 md:p-2 rounded-lg shrink-0 bg-slate-100 text-slate-300"><i data-lucide="calculator" class="w-4 h-4"></i></div>
+                        <span class="uppercase tracking-tight text-[10px] md:text-[11px] font-bold leading-tight text-center break-words">Cálculo de Dosis</span>
+                    </button>
+                    <button onclick="setTab('seguridad')" id="tab-seguridad" class="tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 border-b-transparent text-slate-400 hover:bg-slate-50">
+                        <div class="p-1.5 md:p-2 rounded-lg shrink-0 bg-slate-100 text-slate-300"><i data-lucide="skull" class="w-4 h-4"></i></div>
+                        <span class="uppercase tracking-tight text-[10px] md:text-[11px] font-bold leading-tight text-center break-words">Seguridad Operativa</span>
+                    </button>
+                </div>
+            </nav>
+
+            <div class="max-w-6xl mx-auto px-6 pt-16 pb-24 text-left">
+                <!-- Panel IA Asistida -->
+                <div id="ai-panel" class="hidden mb-12 animate-in slide-in-from-top duration-500">
+                    <div class="bg-[#0a1128] p-1 rounded-3xl shadow-2xl border border-cyan-500/30 overflow-hidden">
+                        <div class="bg-slate-900/60 backdrop-blur-xl p-8 text-white relative">
+                            <div class="absolute top-0 right-0 p-8 opacity-5"><i data-lucide="brain-circuit" style="width:120px; height:120px;"></i></div>
+                            <div class="flex items-center justify-between mb-6 relative z-10">
+                                <div class="flex items-center gap-3">
+                                    <div class="bg-cyan-500 p-2 rounded-xl"><i data-lucide="sparkles" class="w-5 h-5 text-white"></i></div>
+                                    <div class="text-left">
+                                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-400 leading-none mb-1">Expert Diagnostic Assistant ✨</p>
+                                        <p id="ai-title" class="text-lg font-black tracking-tight uppercase">Análisis IA de Proceso</p>
+                                    </div>
+                                </div>
+                                <button onclick="clearAI()" class="text-slate-500 hover:text-white"><i data-lucide="refresh-cw" class="w-4.5 h-4.5"></i></button>
+                            </div>
+                            
+                            <div id="ai-content-wrapper" class="space-y-6 relative z-10">
+                                <div id="ai-content" class="text-slate-100 leading-relaxed font-medium italic text-lg border-l-4 border-cyan-500 pl-8 py-2"></div>
+                                <div id="scenario-response-area" class="hidden flex flex-col md:flex-row gap-2 mt-4">
+                                    <input id="user-solution" type="text" placeholder="Escribe tu propuesta técnica aquí..." class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-cyan-500 text-white font-medium">
+                                    <button onclick="evaluarPropuesta()" class="bg-cyan-500 text-[#0a1128] font-black px-8 py-4 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl hover:bg-cyan-400 transition-all">
+                                        Enviar Protocolo ✨
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="content-area">
+                    <!-- Inyectado dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Footer Branding -->
+            <footer class="w-full py-16 border-t border-slate-200 text-center bg-white/50 print:hidden flex flex-col items-center gap-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em] font-sans leading-none">Ingeniería de Procesos de Potabilización • 2026</p>
+                <div class="text-xs font-bold text-slate-500/80 tracking-tight italic text-center">
+                    Servicios Profesionales Tera - Ing. Jose Alfredo Quintero S.
+                </div>
+            </footer>
+        </section>
+    </main>
+
+    <!-- MODAL MANUAL TÉCNICO -->
+    <div id="manual-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#0a1128]/90 backdrop-blur-xl animate-in fade-in duration-300"></div>
+
+    <script>
+        // --- CONFIGURACIÓN IA CON CODIFICACIÓN BASE64 CORREGIDA ---
+        const b64_k = "QUl6YVN5QmtzTXlJbmFEUS1xd3pTU0dHdHM5UGN2dkNkbTY1U0VJ";
+        const apiKey = atob(b64_k); 
+        const GEMINI_MODEL = "gemini-2.5-flash-preview-09-2025";
+        
+        let state = {
+            activeTab: 'teoria',
+            demanda: 2.0,
+            residual: 0.8,
+            aiLoading: false,
+            currentScenario: ""
+        };
+
+        const agentesTecnicos = [
+            {
+                id: "cloro_gas",
+                nombre: "Cloro Gas (Cl2)",
+                icon: 'layers',
+                color: "emerald",
+                pres: "Cilindros",
+                specs: [
+                    { label: "Pureza", value: "99.5 - 99.9%" },
+                    { label: "Presentación", value: "Cilindros 68kg / Ton 907kg" },
+                    { label: "Presión (21°C)", value: "85 - 100 psi" },
+                    { label: "Aplicación", value: "Cloradores al vacío" }
+                ],
+                desc: "Agente gaseoso altamente eficiente. Genera ácido hipocloroso (HOCl) al disolverse. Es el agente más económico para grandes sistemas.",
+                manual: {
+                    mantenimiento: "Inspección semanal de tuberías de cobre flexible y sellos de plomo. Cambio anual de empaques.",
+                    operacion: "Abrir válvula del cilindro solo 1/4 de vuelta. Verificar vacío en el eyector antes de la apertura.",
+                    seguridad: "Uso obligatorio de detector de fugas por amoníaco. Kit A siempre a mano."
+                }
+            },
+            {
+                id: "hipo_sodio",
+                nombre: "Hipoclorito de Sodio",
+                icon: 'droplets',
+                color: "blue",
+                pres: "Solución",
+                specs: [
+                    { label: "Concentración", value: "10% - 15% (100-150 g/L)" },
+                    { label: "pH", value: "11.0 - 13.0" },
+                    { label: "Dosificación", value: "Bomba de diafragma" }
+                ],
+                desc: "Solución líquida de manejo más seguro que el gas. Ideal para plantas medianas y desinfección de red.",
+                manual: {
+                    mantenimiento: "Limpieza ácida mensual de válvulas de inyección para carbonatos.",
+                    operacion: "Rotar stock cada 30 días para evitar pérdida de actividad.",
+                    seguridad: "EPP: Guantes de nitrilo y protección facial completa. Corrosivo."
+                }
+            },
+            {
+                id: "hipo_calcio_g",
+                nombre: "H. Calcio (Granulado)",
+                icon: 'box',
+                color: "amber",
+                pres: "Sólido",
+                specs: [
+                    { label: "Cloro Disponible", value: "65% - 70%" },
+                    { label: "Solubilidad", value: "217 g/L" },
+                    { label: "Vida Útil", value: "Muy Alta" }
+                ],
+                desc: "Sólido concentrado ideal para sistemas rurales o de emergencia. Requiere agitación para purgar insolubles.",
+                manual: {
+                    mantenimiento: "Purgar sedimentos del tanque de mezcla cada semana.",
+                    operacion: "Añadir sólido al agua lenta y progresivamente.",
+                    seguridad: "Almacenar lejos de combustibles. Reacción violenta con humedad."
+                }
+            },
+            {
+                id: "hipo_calcio_b",
+                nombre: "H. Calcio (Briquetas)",
+                icon: 'box',
+                color: "cyan",
+                pres: "Tabletas",
+                specs: [
+                    { label: "Forma", value: "Tabletas comprimidas" },
+                    { label: "Uso", value: "Dosificadores de Erosión" },
+                    { label: "Ventaja", value: "Sin electricidad" }
+                ],
+                desc: "Diseñadas para liberación lenta por erosión de flujo. Muy seguras para transporte en zonas remotas.",
+                manual: {
+                    mantenimiento: "Desincrustación ácida del erosionador cada 15 días.",
+                    operacion: "Ajustar inmersión de briquetas según residual deseado.",
+                    seguridad: "Manejo seco. No mezclar con otros tipos de cloro granulado."
+                }
+            }
+        ];
+
+        const protocolos = [
+            { n: "01", t: "Definición Técnica", d: "Determinación de la masa de cloro consumida por oxidación de materia orgánica, amoníaco y metales previo al establecimiento del residual libre efectivo. Se expresa en mg/L." },
+            { n: "02", t: "Toma de Muestra", d: "Post-filtración. Volumen mín: 1L en frasco limpio. Analizar en la 1ra hora, evitar luz solar directa." },
+            { n: "03", t: "Medición Inicial", d: "Registrar pH, Temperatura, Turbidez y Amoníaco. Estos parámetros influyen directamente en la cinética de reacción." },
+            { n: "04", t: "Solución Patrón", d: "Preparar a 100 mg/L Cl2. Verificar siempre concentración real con método DPD antes del ensayo." },
+            { n: "05", t: "Dosificación Incremental", d: "Preparar 5-6 recipientes con dosis: 0.5, 1.0, 1.5, 2.0 y 3.0 mg/L de cloro. Mezcla suave." },
+            { n: "06", t: "Tiempo de Contacto", d: "Reposo de 30 minutos a pH y temperatura constantes para permitir reacciones completas." },
+            { n: "07", t: "Cálculo de Demanda", d: "Demanda = Dosis Aplicada − Residual Medido tras el tiempo de contacto. Se mantiene constante para una misma calidad." },
+            { n: "08", t: "Breakpoint", d: "Punto donde la demanda nitrogenada es satisfecha y comienza el residual libre estable tras oxidar cloraminas." },
+            { n: "09", t: "Dosis Operativa", d: "Dosis Total = Demanda medida + Residual objetivo deseado (Ej: 1.4 + 0.6 = 2.0 mg/L)." },
+            { n: "10", t: "Errores Frecuentes", d: "Dosificar sin medir demanda, no controlar pH, usar concentraciones nominales sin verificación." },
+            { n: "11", t: "Frecuencia Recomendada", d: "Superficial: Semanal. Lluvias: Cada 2-3 días. Cambio de fuente: Inmediato. Subterránea: Mensual." },
+            { n: "12", t: "Alcance Sanitario", d: "Procedimiento esencial para garantizar la inocuidad del agua y el cumplimiento de parámetros sanitarios normativos." }
+        ];
+
+        function hideCover() {
+            document.getElementById('cover').classList.add('hidden');
+            document.getElementById('main-panel').classList.remove('hidden');
+            renderTabContent();
+        }
+
+        function setTab(tabId) {
+            state.activeTab = tabId;
+            clearAI();
+            renderTabContent();
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                const isActive = btn.id === `tab-${tabId}`;
+                const iconDiv = btn.querySelector('div');
+                if(isActive) {
+                    btn.className = "tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 bg-slate-50 border-b-cyan-500 text-[#0a1128] font-black";
+                    iconDiv.className = "p-1.5 md:p-2 rounded-lg shrink-0 bg-cyan-500 text-white shadow-lg";
+                } else {
+                    btn.className = "tab-btn flex-1 min-w-[140px] md:min-w-[180px] flex items-center justify-center gap-2 md:gap-3 px-3 py-6 transition-all border-b-4 border-b-transparent text-slate-400 hover:bg-slate-50";
+                    iconDiv.className = "p-1.5 md:p-2 rounded-lg shrink-0 bg-slate-100 text-slate-300";
+                }
+            });
+        }
+
+        function renderTabContent() {
+            const container = document.getElementById('content-area');
+            let html = "";
+
+            if(state.activeTab === 'teoria') {
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 animate-in fade-in duration-500">
+                        <div class="md:col-span-2 bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm text-left">
+                            <h3 class="text-2xl font-black text-[#0a1128] uppercase mb-8 border-l-4 border-cyan-500 pl-4 tracking-tighter">Inactivación Sanitaria</h3>
+                            <p class="text-slate-600 mb-10 leading-relaxed font-medium text-lg italic border-l-4 border-slate-100 pl-6">"La eficacia de la desinfección se rige por el concepto CxT: Concentración por Tiempo de contacto efectivo."</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                ${[
+                                    {t: "Bacterias", d: "Cólera, Tifoidea, Shigella"},
+                                    {t: "Virus", d: "Hepatitis A, Rotavirus, Polio"},
+                                    {t: "Protozoos", d: "Giardia, Cryptosporidium"},
+                                    {t: "Biopelículas", d: "Control de crecimiento en red"}
+                                ].map(item => `
+                                    <div class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                        <div class="bg-cyan-500 text-white p-1 rounded-md shrink-0"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i></div>
+                                        <div class="text-left"><p class="text-slate-900 font-black text-[10px] uppercase leading-none mb-1">${item.t}</p><p class="text-slate-500 text-[10px] leading-tight italic">${item.d}</p></div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        <div class="space-y-6">
+                            <div class="bg-[#0a1128] text-white p-8 rounded-3xl shadow-xl border-b-8 border-cyan-500 overflow-hidden relative text-left">
+                                <h4 class="font-black uppercase tracking-wider text-sm mb-6 flex items-center gap-2"><i data-lucide="alert-triangle" class="text-yellow-500 w-5 h-5"></i> Problemas Críticos</h4>
+                                <div class="space-y-4 relative z-10 text-left">
+                                    <div class="bg-white/5 p-4 rounded-xl"><p class="text-xs text-yellow-500 font-black uppercase mb-1 leading-none text-left">Sobredosis</p><p class="text-[11px] text-slate-300 italic text-left">Olores fuertes y formación de THMs carcinógenos.</p></div>
+                                    <div class="bg-white/5 p-4 rounded-xl"><p class="text-xs text-red-500 font-black uppercase mb-1 leading-none text-left">Subdosificación</p><p class="text-[11px] text-slate-300 italic text-left">Falla catastrófica de la barrera sanitaria.</p></div>
+                                </div>
+                            </div>
+                            <button onclick="generarEscenarioIA()" class="w-full bg-cyan-500 text-[#0a1128] font-black py-4 rounded-2xl uppercase text-[10px] tracking-widest shadow-xl group hover:bg-cyan-400 transition-all flex justify-center items-center">Simular Crisis ✨</button>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'demanda') {
+                html = `
+                    <div class="bg-white p-10 rounded-[3rem] border border-slate-200 animate-in fade-in duration-500 text-left">
+                        <h3 class="text-3xl font-black text-[#0a1128] uppercase mb-12 border-l-4 border-cyan-500 pl-4 leading-none text-balance">Determinación de la Demanda de Cloro</h3>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
+                            <div class="space-y-8">
+                                <div class="bg-[#0a1128] p-10 rounded-[2.5rem] text-white shadow-2xl relative overflow-visible border-b-8 border-cyan-500">
+                                    <h4 class="text-cyan-400 font-black uppercase text-[10px] tracking-widest mb-10 text-center">Curva de Punto de Ruptura (Breakpoint)</h4>
+                                    <svg viewBox="0 0 500 250" class="w-full h-auto overflow-visible">
+                                        <line x1="40" y1="210" x2="480" y2="210" stroke="#1e293b" stroke-width="2" />
+                                        <line x1="40" y1="210" x2="40" y2="20" stroke="#1e293b" stroke-width="2" />
+                                        <text x="250" y="240" class="text-[12px] font-black fill-cyan-400 uppercase tracking-widest" text-anchor="middle">Dosis Aplicada (mg/L)</text>
+                                        <text x="-120" y="15" transform="rotate(-90)" class="text-[12px] font-black fill-cyan-400 uppercase tracking-widest" text-anchor="middle">Cloro Residual (mg/L)</text>
+                                        <path d="M 40 210 Q 150 50 200 120 T 300 200 L 450 50" fill="none" stroke="#22d3ee" stroke-width="4" />
+                                        <circle cx="295" cy="195" r="6" fill="#ef4444" class="animate-pulse" />
+                                        <text x="310" y="195" class="text-[14px] font-black fill-red-500 uppercase tracking-tighter">Breakpoint</text>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="space-y-4">
+                                <h4 class="font-black text-slate-900 uppercase text-xs border-b border-slate-100 pb-3 flex items-center gap-2 tracking-widest leading-none"><i data-lucide="clipboard-list" class="text-cyan-500"></i> Protocolo de 12 Puntos</h4>
+                                <div class="space-y-2 max-h-[500px] overflow-y-auto pr-4 custom-scrollbar bg-slate-50/30 p-6 rounded-3xl border border-slate-100">
+                                    ${protocolos.map(p => `
+                                        <div class="flex gap-4 p-4 hover:bg-white rounded-2xl border border-transparent hover:border-slate-200 transition-all hover:shadow-sm group text-left">
+                                            <div class="bg-slate-900 text-cyan-400 w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 group-hover:bg-cyan-500 group-hover:text-white transition-colors">${p.n}</div>
+                                            <div class="text-left"><p class="font-black text-slate-900 uppercase tracking-wider mb-1 leading-none">${p.t}</p><p class="text-[11px] text-slate-500 leading-snug">${p.d}</p></div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'agentes') {
+                html = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 animate-in fade-in duration-500">
+                        ${agentesTecnicos.map((ag, idx) => `
+                            <div class="bg-white p-10 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col hover:border-cyan-200 transition-all group h-full">
+                                <div class="flex items-start justify-between mb-8">
+                                    <div class="bg-slate-100 text-[#0a1128] w-16 h-16 rounded-[2rem] flex items-center justify-center shadow-xl group-hover:rotate-6 transition-transform">
+                                        <i data-lucide="${ag.icon}" class="w-8 h-8"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <h4 class="text-2xl font-black text-[#0a1128] uppercase tracking-tighter mb-1 leading-tight text-balance">${ag.nombre}</h4>
+                                        <p class="text-xs font-black uppercase text-slate-400 tracking-widest text-right">${ag.pres}</p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4 mb-8">
+                                    ${ag.specs.map(s => `
+                                        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 text-left">
+                                            <p class="text-[9px] font-black uppercase text-slate-400 mb-1 leading-none">${s.label}</p>
+                                            <p class="text-sm font-black text-slate-900 leading-tight">${s.value}</p>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                <p class="text-xs text-slate-500 font-medium italic mb-8 border-l-4 border-slate-100 pl-4 leading-relaxed text-left">${ag.desc}</p>
+                                <button onclick="openManual(${idx})" class="mt-auto w-full bg-[#0a1128] text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-cyan-500 transition-all shadow-xl flex items-center justify-center gap-3">
+                                    Abrir Manual Técnico <i data-lucide="arrow-right" class="w-3.5 h-3.5 text-cyan-400"></i>
+                                </button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else if (state.activeTab === 'calculo') {
+                html = `
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 animate-in slide-in-from-bottom-6 duration-700">
+                        <div class="lg:col-span-3 space-y-6 text-left">
+                            <div class="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden relative">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 border border-slate-100"></div>
+                                <h3 class="text-2xl font-black text-[#0a1128] uppercase mb-8 border-l-4 border-cyan-500 pl-4 tracking-tighter leading-none relative z-10 text-left">Balance Operativo de Masas</h3>
+                                
+                                <div class="bg-[#0a1128] p-10 rounded-[2.5rem] shadow-2xl mb-10 border-t-4 border-cyan-500 text-center relative z-10">
+                                    <p class="text-slate-500 font-black uppercase text-[10px] tracking-[0.4em] mb-6">Expresión Matemática de Dosificación</p>
+                                    <div class="text-3xl md:text-4xl font-serif flex items-center justify-center gap-3 text-white py-6">
+                                        <span class="italic font-bold text-cyan-400">D</span> 
+                                        <span class="text-slate-400 text-xl font-sans">=</span> 
+                                        <div class="flex flex-col items-start leading-none text-left">
+                                            <span class="italic font-bold">D</span>
+                                            <sub class="text-[9px] uppercase font-sans font-black mt-1 ml-1 text-cyan-500/70 tracking-tighter">Demanda</sub>
+                                        </div>
+                                        <span class="text-slate-400 text-xl font-sans">+</span> 
+                                        <div class="flex flex-col items-start leading-none text-left">
+                                            <span class="italic font-bold">C</span>
+                                            <sub class="text-[9px] uppercase font-sans font-black mt-1 ml-1 text-cyan-500/70 tracking-tighter">Residual</sub>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button onclick="runIAAnalysis()" class="bg-[#0a1128] text-white p-8 rounded-[2.5rem] border-2 border-cyan-500/20 flex items-center justify-between hover:border-cyan-500 transition-all shadow-xl group relative overflow-hidden text-left">
+                                    <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform"></div>
+                                    <div class="flex items-center gap-4 relative z-10">
+                                        <div class="bg-cyan-500 p-4 rounded-2xl shadow-lg shadow-cyan-500/20 group-hover:rotate-12 transition-transform"><i data-lucide="sparkles" class="w-7 h-7"></i></div>
+                                        <div class="text-left text-left">
+                                            <p class="text-xs font-black uppercase text-cyan-400 tracking-widest leading-none mb-1 text-left">Análisis Proactivo IA ✨</p>
+                                            <p class="font-black text-xl uppercase tracking-tighter leading-none text-left">Validar Escenario Actual</p>
+                                        </div>
+                                    </div>
+                                    <i data-lucide="chevron-right" class="text-cyan-500 group-hover:translate-x-2 transition-transform"></i>
+                                </button>
+                                <div class="mt-8 bg-cyan-50 p-6 rounded-2xl border border-cyan-100 flex items-start gap-4">
+                                    <i data-lucide="info" class="text-cyan-500 shrink-0 w-6 h-6"></i>
+                                    <p class="text-cyan-900 font-bold text-xs uppercase pt-1 italic tracking-tight leading-relaxed text-left text-left">La dosis final (D) debe ajustarse sumando la demanda puntual de la fuente al residual de seguridad exigido por norma (0.5 - 1.0 mg/L).</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="lg:col-span-2 bg-white p-10 rounded-[2.5rem] border shadow-2xl flex flex-col border-b-8 border-[#0a1128] relative text-left text-left">
+                            <h4 class="text-center font-black text-[#0a1128] uppercase text-xs tracking-widest mb-10 pb-4 border-b leading-none text-left text-left">Simulador Operativo</h4>
+                            <div class="space-y-12 flex-grow relative z-10 text-left">
+                                <div class="space-y-4 text-left">
+                                    <div class="flex justify-between font-black text-[10px] text-slate-400 uppercase tracking-widest leading-none text-left">
+                                        <span>Demanda Química (mg/L)</span>
+                                        <span class="text-blue-600 text-lg leading-none">${state.demanda}</span>
+                                    </div>
+                                    <input type="range" min="0" max="8" step="0.1" value="${state.demanda}" oninput="updateDemanda(this.value)" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2 text-left">
+                                </div>
+                                <div class="space-y-4 text-left text-left">
+                                    <div class="flex justify-between font-black text-[10px] text-slate-400 uppercase tracking-widest leading-none text-left text-left">
+                                        <span>Residual Deseado (mg/L)</span>
+                                        <span class="text-blue-600 text-lg leading-none text-left">${state.residual}</span>
+                                    </div>
+                                    <input type="range" min="0" max="2" step="0.1" value="${state.residual}" oninput="updateResidual(this.value)" class="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-cyan-500 mt-2 text-left">
+                                </div>
+                                <div class="pt-10 border-t border-slate-100 text-center mt-auto text-left text-left">
+                                    <p class="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-[0.3em] opacity-50 leading-none text-left">Dosis Aplicada Requerida</p>
+                                    <div class="flex items-baseline justify-center gap-2 text-[#0a1128] text-left">
+                                        <span class="text-7xl font-black tracking-tighter leading-none">${(parseFloat(state.demanda) + parseFloat(state.residual)).toFixed(2)}</span>
+                                        <span class="text-xl font-black text-cyan-500 italic uppercase leading-none tracking-widest">mg/L</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (state.activeTab === 'seguridad') {
+                html = `
+                    <div class="animate-in zoom-in duration-500 space-y-8 pb-20 text-left">
+                        <!-- Panel Crítico Cloro Gas -->
+                        <div class="bg-[#1a0a0a] border-t-8 border-red-600 rounded-[3rem] p-12 text-white shadow-2xl relative overflow-hidden text-left">
+                            <div class="absolute top-0 right-0 p-10 opacity-5"><i data-lucide="skull" style="width: 280px; height: 280px;"></i></div>
+                            <div class="relative z-10 text-left">
+                                <div class="flex flex-col md:flex-row gap-8 items-start mb-12 text-left">
+                                    <div class="bg-red-600 p-4 rounded-2xl shadow-xl shrink-0 border border-red-500/30"><i data-lucide="skull" class="w-11 h-11 text-left"></i></div>
+                                    <div class="text-left"><h3 class="text-4xl font-black uppercase tracking-tighter leading-none mb-3 italic underline decoration-red-600 underline-offset-8 text-white">Seguridad Crítica Cl<sub>2</sub></h3><p class="text-slate-400 font-black uppercase text-xs leading-none text-left">Propiedades Críticas y Respuesta en Emergencia</p></div>
+                                </div>
+
+                                <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 text-white text-left mb-12">
+                                    <div class="bg-white/5 border border-white/10 p-10 rounded-[2.5rem] backdrop-blur-md shadow-2xl text-left relative overflow-hidden">
+                                        <div class="absolute top-4 right-4 nfpa-diamond">
+                                            <div class="nfpa-box top-0 left-0 bg-blue-600 text-white" style="left:0; top:0;">4</div>
+                                            <div class="nfpa-box top-0 right-0 bg-red-600 text-white" style="left:40px; top:0;">0</div>
+                                            <div class="nfpa-box bottom-0 left-0 bg-yellow-500 text-black" style="left:0; top:40px;">0</div>
+                                            <div class="nfpa-box bottom-0 right-0 bg-white text-black font-black" style="left:40px; top:40px;">OX</div>
+                                        </div>
+                                        <p class="text-red-500 font-black uppercase text-[10px] tracking-widest mb-6 flex items-center gap-2 leading-none"><i data-lucide="shield-alert" class="w-4 h-4"></i> Niveles de Exposición (PPM)</p>
+                                        <ul class="space-y-4 font-bold uppercase text-xs text-white text-left">
+                                            <li class="flex justify-between border-b border-white/5 pb-2 text-slate-400"><span>Umbral de Detección</span> <span class="">0.2 - 0.4 PPM</span></li>
+                                            <li class="flex justify-between border-b border-white/5 pb-2 text-slate-200"><span>Irritación Grave</span> <span class="">1.0 - 5.0 PPM</span></li>
+                                            <li class="flex justify-between border-b border-white/5 pb-2 text-red-500"><span>Peligro Inmediato (IDLH)</span> <span class="font-black underline">10 PPM</span></li>
+                                            <li class="flex justify-between text-red-700 font-black border-t border-red-900/50 pt-4 mt-2"><span>Dosis Letal (30 min)</span> <span class="bg-red-900/30 px-2 py-1 rounded">430 PPM</span></li>
+                                        </ul>
+                                    </div>
+                                    <div class="bg-slate-900/80 border-2 border-cyan-500/20 p-10 rounded-[2.5rem] shadow-2xl relative overflow-hidden text-left">
+                                        <p class="text-cyan-500 font-black uppercase text-[10px] tracking-widest mb-6 flex items-center gap-2 relative z-10"><i data-lucide="message-square" class="w-4 h-4"></i> Consultor HSE IA ✨</p>
+                                        <div class="flex gap-2 relative z-10 text-left"><input id="safety-query" type="text" placeholder="Consultar protocolo de emergencia..." class="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-cyan-500 font-medium text-white text-left text-left text-left"><button onclick="runHSEQuery()" class="bg-cyan-500 p-4 rounded-2xl hover:bg-cyan-600 shadow-lg transition-all text-left"><i data-lucide="send" class="w-5 h-5 text-[#0a1128]"></i></button></div>
+                                        <p class="text-[9px] text-slate-500 mt-4 uppercase font-bold tracking-widest">Protocolos basados en estándares OSHA / AWWA</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-white mt-8 text-left">
+                                    <div class="safety-card group">
+                                        <p class="text-red-500 font-black uppercase text-[10px] mb-4 flex items-center gap-2 text-left text-left"><i data-lucide="wind" class="w-4 h-4 text-left"></i> Propiedades Físicas</p>
+                                        <p class="text-4xl font-black mb-2 tracking-tighter leading-none text-left">2.5x <span class="text-sm font-light text-slate-400">Aire</span></p>
+                                        <p class="text-[11px] text-slate-400 italic leading-relaxed text-left text-left text-left">Gas denso; se acumula en zonas bajas y desplaza oxígeno. Extractores obligatorios a nivel de piso.</p>
+                                    </div>
+                                    <div class="safety-card">
+                                        <p class="text-cyan-500 font-black uppercase text-[10px] mb-4 flex items-center gap-2 text-left"><i data-lucide="shield" class="w-4 h-4 text-left text-left"></i> EPP Requerido</p>
+                                        <p class="text-[11px] text-slate-300 leading-relaxed text-left text-left">Equipo de Respiración Autónoma (ERA) de presión positiva. Trajes Nivel A encapsulados para intervención de fugas.</p>
+                                    </div>
+                                    <div class="safety-card">
+                                        <p class="text-yellow-500 font-black uppercase text-[10px] mb-4 flex items-center gap-2 text-left text-left"><i data-lucide="flask-conical" class="w-4 h-4 text-left text-left"></i> Neutralización</p>
+                                        <p class="text-[11px] text-slate-300 leading-relaxed text-left text-left">Intervención con Soda Cáustica (NaOH) al 15% o Bisulfito Sódico para control de vapores tóxicos.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información Técnica Adicional -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                            <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm relative overflow-hidden text-left">
+                                <h4 class="font-black uppercase text-[#0a1128] text-sm mb-6 tracking-widest border-b pb-4 leading-none text-left">Detección de Fugas (Método Técnico)</h4>
+                                <div class="flex items-start gap-4 text-left">
+                                    <div class="bg-slate-100 p-4 rounded-2xl text-[#0a1128] text-left"><i data-lucide="test-tube" class="w-6 h-6 text-left text-left"></i></div>
+                                    <p class="text-sm text-slate-600 leading-relaxed text-left">Utilizar un trapo saturado con solución de <strong>Amoníaco (10%)</strong> cerca de juntas y válvulas. La aparición de <strong>humo blanco (Cloruro de Amonio)</strong> indica la ubicación exacta de la fuga, incluso si es imperceptible al olfato.</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-sm relative overflow-hidden text-left">
+                                <h4 class="font-black uppercase text-[#0a1128] text-sm mb-6 tracking-widest border-b pb-4 leading-none text-left">Zonificación de Riesgo</h4>
+                                <ul class="space-y-3 text-xs font-medium text-slate-500 text-left">
+                                    <li class="flex items-center gap-2 text-left"><span class="w-3 h-3 bg-red-600 rounded-full text-left text-left"></span> <strong>Zona Caliente:</strong> Área de exclusión (Solo personal EPP Nivel A).</li>
+                                    <li class="flex items-center gap-2 text-left"><span class="w-3 h-3 bg-yellow-500 rounded-full text-left text-left"></span> <strong>Zona Tibia:</strong> Área de descontaminación de personal.</li>
+                                    <li class="flex items-center gap-2 text-left"><span class="w-3 h-3 bg-green-500 rounded-full text-left text-left text-left"></span> <strong>Zona Fría:</strong> Puesto de mando y servicios médicos.</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-12 rounded-[3.5rem] border border-slate-200 shadow-sm flex flex-col md:flex-row gap-10 items-center relative overflow-hidden text-left">
+                            <div class="bg-slate-100 p-8 rounded-[2rem] text-[#0a1128] shrink-0 shadow-inner text-left"><i data-lucide="thermometer" class="w-12 h-12 text-left text-left text-left"></i></div>
+                            <div class="text-left"><h4 class="font-black uppercase text-[#0a1128] text-sm mb-3 tracking-widest leading-none text-left text-left text-left">Mecanismo Pasivo: Tapones Fusibles</h4><p class="text-slate-500 text-base font-medium leading-relaxed max-w-2xl italic text-left text-left">Calibrados para fundirse entre <strong>70°C y 74°C</strong>. Evitan explosiones por sobrepresión (BLEVE) ante incendios liberando controladamente el gas del envase.</p></div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        // --- FUNCIONES IA ASISTIDA ---
+        async function runIAAnalysis() {
+            document.getElementById('ai-title').innerText = "Análisis IA de Proceso";
+            document.getElementById('scenario-response-area').classList.add('hidden');
+            const prompt = `Analiza técnicamente: Demanda ${state.demanda} mg/L, Residual ${state.residual} mg/L, Dosis Total ${(parseFloat(state.demanda) + parseFloat(state.residual)).toFixed(2)} mg/L. Comenta formación de subproductos y riesgos sanitarios.`;
+            await callGeminiAPI(prompt, "Eres un Ingeniero Senior de Procesos en tratamiento de aguas potable.");
+        }
+
+        async function runHSEQuery() {
+            document.getElementById('ai-title').innerText = "Consultoría HSE ✨";
+            document.getElementById('scenario-response-area').classList.add('hidden');
+            const query = document.getElementById('safety-query').value;
+            if(!query) return;
+            await callGeminiAPI(query, "Eres un Consultor HSE experto en seguridad química y cloro gas industrial.");
+        }
+
+        async function generarEscenarioIA() {
+            document.getElementById('ai-title').innerText = "Simulador de Crisis ✨";
+            const prompt = "Genera un desafío técnico de emergencia corto en desinfección de agua potable (ej: fuga de gas, aumento repentino de amoníaco, fallo de eyector). Describe solo el problema, no des la solución.";
+            await callGeminiAPI(prompt, "Instructor senior de plantas de tratamiento de agua.", true);
+        }
+
+        async function evaluarPropuesta() {
+            const userSolution = document.getElementById('user-solution').value;
+            if (!userSolution.trim()) return;
+
+            document.getElementById('ai-title').innerText = "Evaluación Técnica IA ✨";
+            const prompt = `Escenario planteado: ${state.currentScenario}. Mi solución técnica es: ${userSolution}. Evalúa mi respuesta indicando si es correcta, qué omití y qué estándares internacionales aplican.`;
+            
+            document.getElementById('scenario-response-area').classList.add('hidden');
+            await callGeminiAPI(prompt, "Evaluador riguroso de higiene y seguridad industrial.");
+        }
+
+        async function callGeminiAPI(prompt, system, isScenario = false) {
+            document.getElementById('ai-panel').classList.remove('hidden');
+            const content = document.getElementById('ai-content');
+            const responseArea = document.getElementById('scenario-response-area');
+            
+            content.innerHTML = '<div class="flex items-center gap-4 animate-pulse text-left"><i data-lucide="loader-2" class="animate-spin w-6 h-6 text-left"></i><span class="font-black uppercase text-[10px] text-left">Analizando variables técnicas...</span></div>';
+            lucide.createIcons();
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { parts: [{ text: system }] }
+                    })
+                });
+                
+                if (!response.ok) throw new Error("Error en la autenticación o conexión.");
+
+                const data = await response.json();
+                const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se recibió respuesta del asistente.";
+                
+                content.innerText = resultText;
+
+                if (isScenario) {
+                    state.currentScenario = resultText;
+                    responseArea.classList.remove('hidden');
+                    document.getElementById('user-solution').value = "";
+                } else {
+                    responseArea.classList.add('hidden');
+                }
+
+            } catch (e) {
+                content.innerText = "Error: Verifica tu conexión o API Key. Detalles: " + e.message;
+            }
+        }
+
+        function clearAI() {
+            document.getElementById('ai-panel').classList.add('hidden');
+            state.currentScenario = "";
+        }
+
+        function updateDemanda(val) {
+            state.demanda = val;
+            renderTabContent();
+        }
+
+        function updateResidual(val) {
+            state.residual = val;
+            renderTabContent();
+        }
+
+        function openManual(idx) {
+            const ag = agentesTecnicos[idx];
+            const modal = document.getElementById('manual-modal');
+            modal.innerHTML = `
+                <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border border-slate-200 animate-in fade-in zoom-in duration-300 text-left">
+                    <div class="bg-[#0a1128] p-10 text-white flex justify-between items-center relative text-left">
+                        <div class="absolute top-0 right-0 p-8 opacity-5 text-left"><i data-lucide="wrench" style="width:140px; height:140px; text-left"></i></div>
+                        <div class="relative z-10 text-left"><p class="text-cyan-500 font-black uppercase text-[10px] tracking-[0.4em] mb-2 leading-none text-left">Manual de Ingeniería</p><h4 class="text-3xl font-black uppercase tracking-tighter leading-none text-white text-balance text-left">Guía: ${ag.nombre}</h4></div>
+                        <button onclick="closeManual()" class="relative z-10 bg-white/10 p-3 rounded-full transition-colors hover:bg-white/20 text-left text-left"><i data-lucide="x" class="w-6 h-6 text-left text-left"></i></button>
+                    </div>
+                    <div class="p-10 space-y-10 text-left">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
+                            <div class="space-y-8 text-left">
+                                <div class="flex gap-4 text-left"><div class="bg-slate-100 p-3 rounded-2xl text-[#0a1128] h-fit text-left text-left"><i data-lucide="wrench" class="w-6 h-6 text-left"></i></div><div class="text-left text-left"><p class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest leading-none text-left">Mantenimiento</p><p class="text-sm text-slate-600 font-medium italic pt-1 text-left">${ag.manual.mantenimiento}</p></div></div>
+                                <div class="flex gap-4 text-left text-left"><div class="bg-slate-100 p-3 rounded-2xl text-[#0a1128] h-fit text-left text-left"><i data-lucide="activity" class="w-6 h-6 text-left text-left"></i></div><div class="text-left text-left"><p class="text-[10px] font-black uppercase text-slate-400 mb-1 tracking-widest leading-none text-left text-left">Operación</p><p class="text-sm text-slate-600 font-medium italic pt-1 text-left text-left">${ag.manual.operacion}</p></div></div>
+                            </div>
+                            <div class="bg-red-50 p-8 rounded-[2.5rem] border-2 border-red-100 shadow-inner text-left text-left">
+                                <div class="flex items-center gap-3 text-red-600 mb-4 font-black uppercase text-xs tracking-widest leading-none text-left text-left text-left"><i data-lucide="shield-check" class="w-6 h-6 text-left"></i> Seguridad Crítica</div>
+                                <p class="text-sm text-red-800 leading-relaxed font-bold italic text-left text-left">${ag.manual.seguridad}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="p-6 bg-slate-50 border-t border-slate-100 text-center font-black text-[9px] uppercase tracking-[0.3em] text-slate-400 text-left">Fin del Protocolo Técnico • Ingeniería de Procesos</div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function closeManual() {
+            document.getElementById('manual-modal').classList.add('hidden');
+        }
+
+        window.onload = () => { lucide.createIcons(); };
+    </script>
+</body>
+</html>
