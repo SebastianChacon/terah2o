@@ -1,0 +1,79 @@
+============================================================
+  TAREAS MANUALES PENDIENTES - PROYECTO TERAH2O
+  Fecha: 2026-03-10
+============================================================
+
+1. CONVEX - ARCHIVOS GENERADOS (CRITICO)
+   ------------------------------------------------------------
+   El build de produccion falla porque faltan archivos generados
+   de Convex en: convex/_generated/server.ts
+
+   SOLUCION: Ejecutar el proceso de Convex para regenerar:
+
+     cd app
+     npx convex dev
+
+   Esto iniciara el servidor de desarrollo de Convex y generara
+   los archivos necesarios en convex/_generated/.
+
+   Si no tienes Convex configurado aun:
+     npx convex init
+     npx convex deploy
+
+   Sin esto, la app funciona en dev pero NO se puede hacer build
+   de produccion.
+
+2. API KEY DE GEMINI (FUNCIONALIDAD IA)
+   ------------------------------------------------------------
+   Los botones de IA en la Bitacora Integral (Global Audit,
+   Diagnostico Calidad, Predecir Stock, Auditoria Economica)
+   requieren una API key de Gemini configurada.
+
+   Verifica que tu archivo .env.local tenga:
+     GEMINI_API_KEY=tu-api-key-aqui
+
+   Y que la ruta /api/gemini este configurada con esa key.
+
+3. VARIABLE DE ENTORNO CONVEX (CONECTIVIDAD)
+   ------------------------------------------------------------
+   Verifica que .env.local contenga:
+     NEXT_PUBLIC_CONVEX_URL=tu-url-de-convex
+
+   Sin esta variable, las consultas a Convex no funcionaran
+   y las tablas de la bitacora mostraran estados vacios.
+
+============================================================
+  RESUMEN DE CAMBIOS REALIZADOS
+============================================================
+
+ARCHIVOS MODIFICADOS:
+  - src/app/operaciones/bitacora/page.tsx
+    (Reemplazado completamente con la version integral)
+  - src/lib/gemini-prompts.ts
+    (Agregado contexto "bitacora-audit")
+
+FUNCIONALIDADES IMPLEMENTADAS:
+  - 4 pestanas: Diseno Tecnico, Operacion Turnos,
+    Control Insumos, Reporte Financiero
+  - Graficas con Recharts (barras, dona, comparativas)
+  - Integracion con IA (Gemini) para auditorias
+  - Busqueda global de registros
+  - Conexion con datos de Convex (shiftRecords,
+    inventoryItems, financialProjections, jarTestSessions)
+  - Modal de IA para insights
+  - Botones de exportacion
+  - Navegacion completa (flecha atras -> /operaciones)
+
+RUTAS VERIFICADAS (TODAS OK - HTTP 200):
+  /                              OK
+  /operaciones                   OK
+  /operaciones/consola-tecnica   OK
+  /operaciones/hoja-operativa    OK
+  /operaciones/stock             OK
+  /operaciones/finanzas          OK
+  /operaciones/bitacora          OK
+  /asistencia                    OK
+  /academia                      OK
+  /motor-inteligencia            OK
+
+============================================================

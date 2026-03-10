@@ -1,26 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --navy-solid: #05051a;
+  --navy-deep: #0a192f;
+  --navy-light: #112240;
+  --navy-blue: #000040;
+  --brand-sky: #0ea5e9;
+  --blue-accent: #3b82f6;
+  --blue-light: #60a5fa;
+  --accent-cyan: #00d4ff;
+  --success-green: #10b981;
+  --danger-red: #ef4444;
+  --amber: #f59e0b;
+  --gold-comercial: #d4af37;
+  --violet: #8b5cf6;
+  --white-dim: rgba(255, 255, 255, 0.7);
+  --white-muted: rgba(255, 255, 255, 0.45);
+  --border-dim: rgba(255, 255, 255, 0.12);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-navy-solid: var(--navy-solid);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-light: var(--navy-light);
+  --color-navy-blue: var(--navy-blue);
+  --color-brand-sky: var(--brand-sky);
+  --color-accent-cyan: var(--accent-cyan);
+  --color-success-green: var(--success-green);
+  --color-danger-red: var(--danger-red);
+  --color-gold-comercial: var(--gold-comercial);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Dot grid background pattern */
+.dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+/* Glass morphism panel */
+.glass-panel {
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(14, 165, 233, 0.3);
+  background: rgba(15, 23, 42, 0.8);
+  transform: translateY(-4px);
+}
+
+/* Card shadow for light theme sections */
+.card-shadow {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+}
+
+/* Active tab indicator */
+.tab-active {
+  border-bottom: 4px solid var(--navy-blue);
+  color: var(--navy-blue);
+  font-weight: 800;
+  opacity: 1 !important;
+}
+
+/* Pulsing alert animation */
+.pulse-alert {
+  animation: pulseAlert 1.5s infinite;
+}
+
+@keyframes pulseAlert {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(22px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  body { padding-bottom: 0; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #233554; border-radius: 10px; }
