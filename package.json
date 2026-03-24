@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@convex-dev/auth": "^0.0.91",
     "convex": "^1.32.0",
     "katex": "^0.16.38",
     "lucide-react": "^0.577.0",
@@ -16,7 +17,8 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-katex": "^3.1.0",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

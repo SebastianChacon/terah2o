@@ -1,7 +1,13 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
+  // ── Auth tables (generadas por @convex-dev/auth) ──────────────────────────
+  ...authTables,
+
+  // ── Tablas existentes (sin cambios excepto organizationId opcional) ────────
+
   visitas: defineTable({
     idInforme: v.string(),
     tipoCliente: v.union(v.literal("CARTERA"), v.literal("POTENCIAL")),
@@ -49,7 +55,12 @@ export default defineSchema({
       ),
       totalQuote: v.optional(v.string()),
     }),
-  }).index("by_tipo", ["tipoCliente"]),
+    lat: v.optional(v.number()),
+    lng: v.optional(v.number()),
+    organizationId: v.optional(v.id("organizations")),
+  })
+    .index("by_tipo", ["tipoCliente"])
+    .index("by_organizationId", ["organizationId"]),
 
   plantSettings: defineTable({
     location: v.string(),
@@ -58,7 +69,8 @@ export default defineSchema({
     avgDose: v.number(),
     avgConc: v.number(),
     lastFetch: v.optional(v.string()),
-  }),
+    organizationId: v.optional(v.id("organizations")),
+  }).index("by_organizationId", ["organizationId"]),
 
   inventoryItems: defineTable({
     itemId: v.string(),
@@ -69,7 +81,10 @@ export default defineSchema({
     dailyConsumption: v.number(),
     isCorrelated: v.boolean(),
     lastUpdated: v.optional(v.string()),
-  }).index("by_itemId", ["itemId"]),
+    organizationId: v.optional(v.id("organizations")),
+  })
+    .index("by_itemId", ["itemId"])
+    .index("by_organizationId", ["organizationId"]),
 
   shiftRecords: defineTable({
     operatorName: v.string(),
@@ -84,6 +99,10 @@ export default defineSchema({
         cloro: v.optional(v.number()),
         color: v.optional(v.number()),
         turbiedad: v.optional(v.number()),
+        rawPh: v.optional(v.number()),
+        rawCloro: v.optional(v.number()),
+        rawColor: v.optional(v.number()),
+        rawTurbiedad: v.optional(v.number()),
         status: v.optional(v.string()),
       })
     ),
@@ -104,7 +123,10 @@ export default defineSchema({
     }),
     notes: v.optional(v.string()),
     aiConsultation: v.optional(v.string()),
-  }).index("by_date", ["date"]),
+    organizationId: v.optional(v.id("organizations")),
+  })
+    .index("by_date", ["date"])
+    .index("by_organizationId", ["organizationId"]),
 
   financialProjections: defineTable({
     institutionName: v.string(),
@@ -153,7 +175,8 @@ export default defineSchema({
       grandTotal: v.number(),
       costPerM3: v.number(),
     }),
-  }),
+    organizationId: v.optional(v.id("organizations")),
+  }).index("by_organizationId", ["organizationId"]),
 
   jarTestSessions: defineTable({
     organizationName: v.string(),
@@ -177,14 +200,72 @@ export default defineSchema({
     ),
     observations: v.optional(v.string()),
     aiDiagnosis: v.optional(v.string()),
-  }),
+    organizationId: v.optional(v.id("organizations")),
+  }).index("by_organizationId", ["organizationId"]),
 
   bitacoraEntries: defineTable({
     date: v.string(),
     source: v.string(),
     category: v.string(),
     summary: v.string(),
+    organizationId: v.optional(v.id("organizations")),
   })
     .index("by_date", ["date"])
-    .index("by_category", ["category"]),
+    .index("by_category", ["category"])
+    .index("by_organizationId", ["organizationId"]),
+
+  // ── Nuevas tablas de negocio ───────────────────────────────────────────────
+
+  // users extiende la tabla de authTables — todos los campos opcionales para
+  // que @convex-dev/auth pueda insertar {email:"..."} sin error de validación.
+  // upsertCurrentUser() completa role, tokenIdentifier, createdAt tras el login.
+  users: defineTable({
+    // Campos base de @convex-dev/auth (opcionales — gestionados por el auth)
+    name: v.optional(v.string()),
+    image: v.optional(v.string()),
+    email: v.optional(v.string()),
+    emailVerificationTime: v.optional(v.number()),
+    phone: v.optional(v.string()),
+    phoneVerificationTime: v.optional(v.number()),
+    isAnonymous: v.optional(v.boolean()),
+    // Campos de negocio (opcionales — completados por upsertCurrentUser)
+    tokenIdentifier: v.optional(v.string()),
+    role: v.optional(v.union(v.literal("admin"), v.literal("operator"))),
+    organizationId: v.optional(v.id("organizations")),
+    createdAt: v.optional(v.number()),
+  })
+    .index("by_tokenIdentifier", ["tokenIdentifier"])
+    .index("by_organizationId", ["organizationId"]),
+
+  organizations: defineTable({
+    name: v.string(),
+    adminUserId: v.id("users"),
+    maxOperators: v.number(), // default 5
+    createdAt: v.number(),
+  }),
+
+  subscriptions: defineTable({
+    organizationId: v.id("organizations"),
+    status: v.union(
+      v.literal("trialing"),
+      v.literal("active"),
+      v.literal("past_due"),
+      v.literal("canceled")
+    ),
+    plan: v.union(v.literal("starter"), v.literal("pro")),
+    trialEndsAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_organizationId", ["organizationId"]),
+
+  operatorPermissions: defineTable({
+    operatorId: v.id("users"),
+    organizationId: v.id("organizations"),
+    canAccessOperaciones: v.boolean(),
+    canAccessAsistencia: v.boolean(),
+    canAccessAcademia: v.boolean(),
+    canAccessBitacora: v.boolean(),
+  })
+    .index("by_operatorId", ["operatorId"])
+    .index("by_organizationId", ["organizationId"]),
 });

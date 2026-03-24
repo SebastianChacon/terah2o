@@ -18,6 +18,7 @@ import { AiButton } from "@/components/ai/AiButton";
 import { InputField } from "@/components/ui/InputField";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { CHEMICAL_PRODUCTS } from "@/types/chemical";
 import { MOCK_INVENTORY } from "@/lib/constants";
 import {
@@ -98,6 +99,10 @@ export default function HojaOperativaPage() {
       cloro: undefined,
       color: undefined,
       turbiedad: undefined,
+      rawPh: undefined,
+      rawCloro: undefined,
+      rawColor: undefined,
+      rawTurbiedad: undefined,
       status: undefined,
     }))
   );
@@ -111,11 +116,15 @@ export default function HojaOperativaPage() {
       const next = [...prev];
       const num = val === "" ? undefined : parseFloat(val);
       next[idx] = { ...next[idx], [field]: num };
-      // Auto-evaluate status
+      // Auto-evaluate status (INEN 1108: pH 6.5-8.5, Cloro ≥0.3, Color ≤15, Turbiedad ≤5)
       const r = next[idx];
-      if (r.ph !== undefined && r.cloro !== undefined) {
-        const ok = r.ph >= 6.5 && r.ph <= 8.5 && r.cloro >= 1.0;
-        next[idx].status = ok ? "CUMPLE" : "CRÍTICO";
+      if (r.ph !== undefined || r.cloro !== undefined || r.color !== undefined || r.turbiedad !== undefined) {
+        const phOk = r.ph === undefined || (r.ph >= 6.5 && r.ph <= 8.5);
+        const cloroOk = r.cloro === undefined || r.cloro >= 0.3;
+        const colorOk = r.color === undefined || r.color <= 15;
+        const turbOk = r.turbiedad === undefined || r.turbiedad <= 5;
+        const hasAny = r.ph !== undefined || r.cloro !== undefined || r.color !== undefined || r.turbiedad !== undefined;
+        next[idx].status = hasAny ? (phOk && cloroOk && colorOk && turbOk ? "CUMPLE" : "CRÍTICO") : undefined;
       }
       return next;
     });
@@ -225,9 +234,9 @@ export default function HojaOperativaPage() {
           <div class="stat"><div class="stat-val">${stats.volumeTurno} m³</div><div class="stat-label">Volumen Turno</div></div>
           <div class="stat"><div class="stat-val">${stats.projection24h} m³</div><div class="stat-label">Proyección 24h</div></div>
           <div class="stat"><div class="stat-val">${stats.compliancePercent}%</div><div class="stat-label">Cumplimiento</div></div>
-          <h2>Monitoreo Horario</h2>
-          <table><thead><tr><th>Hora</th><th>Caudal</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turbiedad</th><th>Estado</th></tr></thead><tbody>
-          ${readings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
+          <h2>Monitoreo Horario — Barreras Sanitarias</h2>
+          <table><thead><tr><th rowspan="2">Hora</th><th rowspan="2">Caudal</th><th colspan="4" style="background:#92400e;color:#fff">Agua Cruda</th><th colspan="4" style="background:#065f46;color:#fff">Agua Tratada</th><th rowspan="2">Estado</th></tr><tr><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th></tr></thead><tbody>
+          ${readings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.rawPh ?? "-"}</td><td>${r.rawCloro ?? "-"}</td><td>${r.rawColor ?? "-"}</td><td>${r.rawTurbiedad ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
           </tbody></table>
           <h2>Dosificación</h2>
           <table><thead><tr><th>Producto</th><th>ml/min</th><th>Conc %</th><th>Dosis mg/L</th><th>Autonomía</th></tr></thead><tbody>
@@ -265,12 +274,7 @@ export default function HojaOperativaPage() {
             </p>
           </div>
         </div>
-        <div className="text-right hidden sm:block">
-          <div className="font-black text-lg text-white">{today}</div>
-          <div className="text-[9px] text-sky-300 font-bold uppercase tracking-widest italic">
-            Sesión de Planta Activa
-          </div>
-        </div>
+        <NavbarUser />
       </header>
 
       <main className="max-w-6xl mx-auto px-4 mt-6 space-y-6 pb-12">
@@ -470,7 +474,7 @@ export default function HojaOperativaPage() {
           </div>
 
           <div className="w-full overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-[800px] w-full text-[13px] border-collapse">
+            <table className="min-w-[1100px] w-full text-[13px] border-collapse">
               <thead>
                 <tr>
                   <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
@@ -480,24 +484,30 @@ export default function HojaOperativaPage() {
                     Caudal (L/s)
                   </th>
                   <th
-                    colSpan={2}
-                    className="bg-slate-800 text-white p-3 font-black text-[10px] uppercase border-b border-white/10"
+                    colSpan={4}
+                    className="bg-amber-700 text-white p-2 font-black text-[10px] uppercase text-center border-b border-white/10"
                   >
-                    Barreras Sanitarias
+                    Agua Cruda
                   </th>
-                  <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
-                    Color (UC)
-                  </th>
-                  <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
-                    Turb. (NTU)
+                  <th
+                    colSpan={4}
+                    className="bg-emerald-700 text-white p-2 font-black text-[10px] uppercase text-center border-b border-white/10"
+                  >
+                    Agua Tratada
                   </th>
                   <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
                     Estado
                   </th>
                 </tr>
-                <tr className="bg-slate-700 text-[9px] text-white">
-                  <th className="p-2 font-bold border-r border-white/5">pH (6.5-8.5)</th>
-                  <th className="p-2 font-bold">Cloro (≥1.0)</th>
+                <tr className="text-[9px] text-white">
+                  <th className="bg-amber-800/80 p-2 font-bold">pH</th>
+                  <th className="bg-amber-800/80 p-2 font-bold">Cloro</th>
+                  <th className="bg-amber-800/80 p-2 font-bold">Color</th>
+                  <th className="bg-amber-800/80 p-2 font-bold">Turb.</th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">pH (6.5-8.5)</th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">Cloro (≥0.3)</th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">Color (≤15)</th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">Turb. (≤5)</th>
                 </tr>
               </thead>
               <tbody>
@@ -510,58 +520,46 @@ export default function HojaOperativaPage() {
                       <input
                         type="number"
                         step="0.1"
-                        className="w-20 text-center text-xs font-bold border border-slate-200 rounded-lg p-2"
+                        className="w-16 text-center text-xs font-bold border border-slate-200 rounded-lg p-2"
                         placeholder="0.0"
                         value={r.caudal ?? ""}
                         onChange={(e) => updateReading(idx, "caudal", e.target.value)}
                       />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="w-16 text-xs font-black rounded-lg p-2 bg-navy-deep text-white border border-white/20 text-center"
-                        placeholder="-"
-                        value={r.ph ?? ""}
-                        onChange={(e) => updateReading(idx, "ph", e.target.value)}
-                      />
+                    {/* Agua Cruda */}
+                    <td className="p-1 bg-amber-50/50">
+                      <input type="number" step="0.1" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawPh ?? ""} onChange={(e) => updateReading(idx, "rawPh", e.target.value)} />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        step="0.1"
-                        className="w-16 text-xs font-black rounded-lg p-2 bg-navy-deep text-white border border-white/20 text-center"
-                        placeholder="-"
-                        value={r.cloro ?? ""}
-                        onChange={(e) => updateReading(idx, "cloro", e.target.value)}
-                      />
+                    <td className="p-1 bg-amber-50/50">
+                      <input type="number" step="0.1" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawCloro ?? ""} onChange={(e) => updateReading(idx, "rawCloro", e.target.value)} />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        className="w-16 text-xs text-center font-bold border border-slate-200 rounded-lg p-2"
-                        placeholder="-"
-                        value={r.color ?? ""}
-                        onChange={(e) => updateReading(idx, "color", e.target.value)}
-                      />
+                    <td className="p-1 bg-amber-50/50">
+                      <input type="number" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawColor ?? ""} onChange={(e) => updateReading(idx, "rawColor", e.target.value)} />
                     </td>
-                    <td className="p-2">
-                      <input
-                        type="number"
-                        className="w-16 text-xs text-center font-bold border border-slate-200 rounded-lg p-2"
-                        placeholder="-"
-                        value={r.turbiedad ?? ""}
-                        onChange={(e) => updateReading(idx, "turbiedad", e.target.value)}
-                      />
+                    <td className="p-1 bg-amber-50/50">
+                      <input type="number" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawTurbiedad ?? ""} onChange={(e) => updateReading(idx, "rawTurbiedad", e.target.value)} />
                     </td>
-                    <td className="p-2 font-black text-[9px] uppercase">
+                    {/* Agua Tratada */}
+                    <td className="p-1 bg-emerald-50/50">
+                      <input type="number" step="0.1" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.ph ?? ""} onChange={(e) => updateReading(idx, "ph", e.target.value)} />
+                    </td>
+                    <td className="p-1 bg-emerald-50/50">
+                      <input type="number" step="0.1" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.cloro ?? ""} onChange={(e) => updateReading(idx, "cloro", e.target.value)} />
+                    </td>
+                    <td className="p-1 bg-emerald-50/50">
+                      <input type="number" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.color ?? ""} onChange={(e) => updateReading(idx, "color", e.target.value)} />
+                    </td>
+                    <td className="p-1 bg-emerald-50/50">
+                      <input type="number" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.turbiedad ?? ""} onChange={(e) => updateReading(idx, "turbiedad", e.target.value)} />
+                    </td>
+                    <td className="p-2 font-black text-[9px] uppercase text-center">
                       {r.status === "CUMPLE" ? (
                         <span className="bg-green-100 text-green-800 font-black rounded-md px-2 py-1 text-[10px]">
                           CUMPLE
                         </span>
                       ) : r.status === "CRÍTICO" ? (
                         <span className="bg-red-100 text-red-800 font-black rounded-md px-2 py-1 text-[10px]">
-                          CRÍTICO
+                          NO CUMPLE
                         </span>
                       ) : (
                         <span className="text-slate-300">-</span>

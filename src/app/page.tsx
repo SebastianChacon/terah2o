@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { WhatsAppFab } from "@/components/fab/WhatsAppFab";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 
 export default function HomePage() {
   return (
@@ -16,8 +19,13 @@ export default function HomePage() {
       <div className="fixed inset-0 z-[1] bg-[radial-gradient(ellipse_at_50%_40%,rgba(59,130,246,0.07)_0%,transparent_70%),linear-gradient(to_bottom,rgba(5,5,26,0.6)_0%,rgba(5,5,26,0.85)_100%)]" />
 
       <div className="relative z-[2] min-h-screen flex flex-col">
+        {/* Top navbar con widget de usuario */}
+        <div className="flex justify-end px-6 pt-4 animate-[fadeDown_0.8s_ease_both]">
+          <NavbarUser />
+        </div>
+
         {/* Header */}
-        <header className="flex flex-col items-center pt-10 px-4 animate-[fadeDown_0.8s_ease_both]">
+        <header className="flex flex-col items-center pt-6 px-4 animate-[fadeDown_0.8s_ease_both]">
           <div className="text-[clamp(2rem,5vw,3rem)] font-bold tracking-[0.04em] leading-none">
             <span className="text-white">TERA</span>
             <span className="text-blue-500">H2O</span>

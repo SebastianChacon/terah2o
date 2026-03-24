@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { INEN_1108_PARAMS, IVA_RATE } from "@/lib/constants";
@@ -13,8 +14,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { InputField } from "@/components/ui/InputField";
 import { ComplianceGauge } from "@/components/ui/ComplianceGauge";
 import { AiButton } from "@/components/ai/AiButton";
-import { useSafeMutation } from "@/hooks/useConvex";
+import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../convex/_generated/api";
+import { exportToExcel } from "@/lib/export/excel";
 
 interface DosageRow {
   id: number;
@@ -46,6 +48,53 @@ export default function AsistenciaPage() {
   const { toast, showToast } = useToast();
   const [activeTab, setActiveTab] = useState<TabKey>("recoleccion");
   const [tipoCliente, setTipoCliente] = useState<"CARTERA" | "POTENCIAL">("CARTERA");
+
+  /* ── Archivo Central: Convex data ──────────────────────── */
+  const allVisitas = useSafeQuery(api.visitas.getAll);
+  const [archiveSearch, setArchiveSearch] = useState("");
+
+  const cartera = (allVisitas ?? []).filter((v: NonNullable<typeof allVisitas>[number]) => v.tipoCliente === "CARTERA");
+  const prospectos = (allVisitas ?? []).filter((v: NonNullable<typeof allVisitas>[number]) => v.tipoCliente === "POTENCIAL");
+
+  const aq = archiveSearch.toLowerCase();
+  const filteredCartera = cartera.filter((v: NonNullable<typeof allVisitas>[number]) =>
+    !aq || `${v.org} ${v.provincia} ${v.canton}`.toLowerCase().includes(aq)
+  );
+  const filteredProspectos = prospectos.filter((v: NonNullable<typeof allVisitas>[number]) =>
+    !aq || `${v.org} ${v.provincia} ${v.canton}`.toLowerCase().includes(aq)
+  );
+
+  function exportCarteraExcel() {
+    if (filteredCartera.length === 0) return showToast("No hay datos de cartera para exportar.", "error");
+    exportToExcel(
+      filteredCartera.map((v: NonNullable<typeof allVisitas>[number]) => ({
+        Fecha: new Date(v._creationTime).toLocaleDateString("es-EC"),
+        Institución: v.org,
+        Ubicación: `${v.provincia ?? ""} - ${v.canton ?? ""}`,
+        Teléfono: v.telefono,
+        "Cumplimiento %": v.compliance ?? "—",
+      })),
+      "Cartera Técnica",
+      `Cartera_Tecnica_${new Date().toISOString().slice(0, 10)}`
+    );
+    showToast("Excel de Cartera Técnica descargado.", "info");
+  }
+
+  function exportProspectosExcel() {
+    if (filteredProspectos.length === 0) return showToast("No hay datos de prospectos para exportar.", "error");
+    exportToExcel(
+      filteredProspectos.map((v: NonNullable<typeof allVisitas>[number]) => ({
+        Fecha: new Date(v._creationTime).toLocaleDateString("es-EC"),
+        Prospecto: v.org,
+        Provincia: v.provincia ?? "—",
+        "Total Ofertado": v.comercial?.totalQuote ?? "—",
+        Contacto: v.telefono,
+      })),
+      "Pipeline Comercial",
+      `Pipeline_Comercial_${new Date().toISOString().slice(0, 10)}`
+    );
+    showToast("Excel de Prospectos descargado.", "info");
+  }
 
   // Form state
   const [org, setOrg] = useState("");
@@ -207,8 +256,8 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
 
     try {
       await createVisita({
-        tipo: tipoCliente === "CARTERA" ? "cartera" : "prospecto",
-        institucion: org,
+        tipoCliente,
+        org,
         telefono,
         correo: correo || undefined,
         autoridad: autoridad || undefined,
@@ -217,17 +266,36 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
         canton: canton || undefined,
         caudal: parseFloat(caudal) || undefined,
         horasOperacion: parseFloat(horasOp) || undefined,
-        parametros: params
+        compliance,
+        observaciones: observaciones || undefined,
+        params: params
           .filter((p) => p.treated !== "")
           .map((p) => ({
             name: p.name,
             raw: p.raw ? parseFloat(p.raw) : undefined,
             treated: parseFloat(p.treated),
             limit: p.limit,
-            unit: p.unit,
+            ok: (() => { const val = parseFloat(p.treated); return !isNaN(val) && val <= p.limit && val >= p.min; })(),
           })),
-        cumplimiento: compliance,
-        observaciones: observaciones || undefined,
+        dosages: dosageRows.map((row) => {
+          const res = getDoseResult(row);
+          return { product: row.product, mgL: String(res.dose), days: String(res.days) };
+        }),
+        comercial: {
+          proveedor: comProveedor || undefined,
+          marketProducts,
+          adquisicion: comAdquisicion || undefined,
+          contratacion: comContratacion || undefined,
+          fechaCompra: comFechaCompra || undefined,
+          comentarios: comComentarios || undefined,
+          cotizacion: quoteRows.map((r) => ({
+            prod: r.prod,
+            qty: r.qty,
+            price: r.price,
+            total: String(parseFloat(r.qty || "0") * parseFloat(r.price || "0")),
+          })),
+          totalQuote: String(quoteRows.reduce((s, r) => s + parseFloat(r.qty || "0") * parseFloat(r.price || "0"), 0)),
+        },
       });
       await createBitacora({
         date: today,
@@ -255,13 +323,16 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
       {/* Header */}
       <header className="bg-navy-blue p-10 md:p-14 text-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-wrap items-center gap-4 mb-4">
-            <Link href="/" className="text-white/60 hover:text-white transition-colors">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <span className="bg-white/10 text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] uppercase border border-white/20">
-              SERVICIOS PROFESIONALES TERA
-            </span>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-white/60 hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <span className="bg-white/10 text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] uppercase border border-white/20">
+                SERVICIOS PROFESIONALES TERA
+              </span>
+            </div>
+            <NavbarUser />
           </div>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
             Sistema Inteligente de Asistencia Técnica Multicliente
@@ -824,13 +895,25 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                 </p>
               </div>
               <div className="flex gap-4">
-                <button className="bg-blue-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition shadow-xl tracking-widest">
+                <button onClick={exportCarteraExcel} className="bg-blue-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition shadow-xl tracking-widest">
                   Excel Cartera Técnica
                 </button>
-                <button className="bg-amber-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-amber-600 transition shadow-xl tracking-widest">
+                <button onClick={exportProspectosExcel} className="bg-amber-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-amber-600 transition shadow-xl tracking-widest">
                   Excel Prospectos
                 </button>
               </div>
+            </div>
+
+            {/* Buscador */}
+            <div className="relative max-w-xl">
+              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+              <input
+                type="text"
+                value={archiveSearch}
+                onChange={(e) => setArchiveSearch(e.target.value)}
+                placeholder="Buscar por institución, provincia..."
+                className="w-full rounded-2xl py-3.5 pl-12 pr-6 text-slate-900 placeholder-slate-400 border border-slate-200 focus:outline-none focus:border-blue-500 transition-all bg-white shadow-sm"
+              />
             </div>
 
             <div className="space-y-14">
@@ -851,12 +934,29 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-slate-100">
-                      <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
-                          Los registros se cargarán cuando Convex esté
-                          configurado.
-                        </td>
-                      </tr>
+                      {filteredCartera.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
+                            No hay registros de cartera.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredCartera.map((v: NonNullable<typeof allVisitas>[number]) => (
+                          <tr key={v._id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-6 font-mono text-xs text-slate-500">{new Date(v._creationTime).toLocaleDateString("es-EC")}</td>
+                            <td className="p-6 font-black text-navy-blue">{v.org}</td>
+                            <td className="p-6 text-slate-600">{v.provincia ?? "—"} — {v.canton ?? ""}</td>
+                            <td className="p-6 text-center">
+                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${(v.compliance ?? 0) >= 80 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                                {v.compliance ?? 0}%
+                              </span>
+                            </td>
+                            <td className="p-6 text-center">
+                              <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase">Activo</span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -879,12 +979,25 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-slate-100">
-                      <tr>
-                        <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
-                          Los registros se cargarán cuando Convex esté
-                          configurado.
-                        </td>
-                      </tr>
+                      {filteredProspectos.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
+                            No hay prospectos registrados.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredProspectos.map((v: NonNullable<typeof allVisitas>[number]) => (
+                          <tr key={v._id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-6 font-mono text-xs text-slate-500">{new Date(v._creationTime).toLocaleDateString("es-EC")}</td>
+                            <td className="p-6 font-black text-navy-blue">{v.org}</td>
+                            <td className="p-6 text-slate-600">{v.provincia ?? "—"}</td>
+                            <td className="p-6 text-center font-black text-gold-comercial">{v.comercial?.totalQuote ? `$ ${v.comercial.totalQuote}` : "—"}</td>
+                            <td className="p-6 text-center">
+                              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase">Prospecto</span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
                 </div>

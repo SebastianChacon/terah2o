@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Zap, FileBarChart, Package, DollarSign } from "lucide-react";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 
 const modules = [
   {
@@ -29,9 +30,9 @@ const modules = [
     icon: <Package className="w-5 h-5" />,
     title: "Stock & Kardex",
     description: "Control de inventarios y autonomía operativa.",
-    iconColor: "text-pink-400",
-    iconBg: "bg-pink-500/10",
-    iconHoverBg: "group-hover:bg-pink-500",
+    iconColor: "text-violet-400",
+    iconBg: "bg-violet-500/10",
+    iconHoverBg: "group-hover:bg-violet-500",
   },
   {
     href: "/operaciones/finanzas",
@@ -46,7 +47,7 @@ const modules = [
 
 export default function OperacionesPage() {
   return (
-    <div className="dot-grid min-h-screen flex flex-col bg-[#0a1120] text-white">
+    <div className="dot-grid min-h-screen flex flex-col bg-navy-solid text-white">
       {/* Navbar */}
       <nav className="relative z-20 p-8 max-w-7xl mx-auto w-full flex justify-between items-center fade-in">
         <div className="flex items-center gap-3">
@@ -57,10 +58,7 @@ export default function OperacionesPage() {
             T
           </Link>
         </div>
-        <div className="text-white/30 text-[10px] font-medium uppercase tracking-[0.2em] text-right">
-          V.10.1 <br />
-          INGENIERÍA DE POTABILIZACIÓN
-        </div>
+        <NavbarUser />
       </nav>
 
       {/* Content */}

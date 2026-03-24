@@ -5,6 +5,10 @@ export interface HourlyReading {
   cloro?: number;
   color?: number;
   turbiedad?: number;
+  rawPh?: number;
+  rawCloro?: number;
+  rawColor?: number;
+  rawTurbiedad?: number;
   status?: string;
 }
 

@@ -17,6 +17,7 @@ import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useGemini } from "@/hooks/useGemini";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { useSafeMutation } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 
@@ -501,14 +502,7 @@ export default function ConsolaTecnicaPage() {
               </p>
             </div>
           </div>
-          <div className="text-right hidden sm:block">
-            <p className="text-white/40 text-[10px] font-black uppercase tracking-widest">
-              TeraH2O
-            </p>
-            <p className="text-sky-500/80 text-[10px] font-black uppercase tracking-widest mt-1">
-              Inteligencia Operativa
-            </p>
-          </div>
+          <NavbarUser />
         </div>
       </header>
 

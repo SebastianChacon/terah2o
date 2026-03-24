@@ -1,5 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
+
 
 export const create = mutation({
   args: {
@@ -50,26 +52,53 @@ export const create = mutation({
     }),
   },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    const user = userId ? await ctx.db.get(userId) : null;
+
     const idInforme = `TERA-${Date.now()}`;
-    return await ctx.db.insert("visitas", { idInforme, ...args });
+    return await ctx.db.insert("visitas", {
+      idInforme,
+      ...args,
+      organizationId: user?.organizationId,
+    });
   },
 });
 
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("visitas").order("desc").collect();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
+    if (!user?.organizationId) {
+      // Compatibilidad: devolver sin filtro si no hay org (usuarios legacy)
+      return await ctx.db.query("visitas").order("desc").collect();
+    }
+    return await ctx.db
+      .query("visitas")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", user.organizationId)
+      )
+      .order("desc")
+      .collect();
   },
 });
 
 export const getByTipo = query({
   args: { tipoCliente: v.union(v.literal("CARTERA"), v.literal("POTENCIAL")) },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const user = await ctx.db.get(userId);
+
+    const all = await ctx.db
       .query("visitas")
       .withIndex("by_tipo", (q) => q.eq("tipoCliente", args.tipoCliente))
       .order("desc")
       .collect();
+
+    if (!user?.organizationId) return all;
+    return all.filter((v) => v.organizationId === user.organizationId);
   },
 });
 
@@ -130,7 +159,6 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args;
-    // Remove undefined fields
     const updates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) updates[key] = value;

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useWeather } from "@/hooks/useWeather";
@@ -133,10 +134,11 @@ export default function MotorInteligenciaPage() {
           </div>
           <div className="flex items-center gap-2">
             {weatherLoading && <span className="animate-spin text-blue-400 text-xl">🌀</span>}
-            <Link href="/" className="text-white/40 hover:text-white text-xs mr-4 transition-colors">← Inicio</Link>
-            <button onClick={handleSync} className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all">
+            <Link href="/" className="text-white/40 hover:text-white text-xs mr-2 transition-colors">← Inicio</Link>
+            <button onClick={handleSync} className="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white text-[10px] font-bold px-4 py-2 rounded uppercase tracking-widest shadow-lg hover:translate-y-[-1px] transition-all mr-2">
               Sincronizar Datos Clima
             </button>
+            <NavbarUser />
           </div>
         </div>
       </header>

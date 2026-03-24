@@ -16,6 +16,7 @@ import { AiButton } from "@/components/ai/AiButton";
 import { InputField } from "@/components/ui/InputField";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { HR_ROLES } from "@/lib/constants";
 import { calculateMonthlyVolume, calculateBillableVolume } from "@/lib/calculations/hydraulic";
 import {
@@ -270,6 +271,7 @@ export default function FinanzasPage() {
                 </p>
               </div>
             </div>
+            <NavbarUser />
           </div>
         </div>
         {/* Mode toggle */}

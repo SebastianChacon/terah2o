@@ -28,11 +28,13 @@ import {
   Legend,
 } from "recharts";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useGemini } from "@/hooks/useGemini";
 import { useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
+import { exportToExcel } from "@/lib/export/excel";
 
 /* ── Types ────────────────────────────────────────────────── */
 type TabId = "design" | "ops" | "inventory" | "finance";
@@ -295,13 +297,77 @@ export default function BitacoraIntegralPage() {
     );
   }
 
-  function exportarActual(tipo: string) {
-    showToast(`Exportando archivo de ${tipo.toUpperCase()}...`, "info");
+  function exportarExcel(tipo: string) {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    switch (tipo) {
+      case "Diseño":
+        if (filteredDesign.length === 0) return showToast("No hay datos de diseño para exportar.", "error");
+        exportToExcel(
+          filteredDesign.map((r) => ({ Fecha: r.fecha, "Entidad / Planta": r.org, "Caudal Evaluado": r.flow, Optimización: r.opt, "Horas Op.": r.cost })),
+          "Diseño Técnico",
+          `Bitacora_Diseno_${dateStr}`
+        );
+        break;
+      case "Operación":
+        if (filteredOps.length === 0) return showToast("No hay registros de operación para exportar.", "error");
+        exportToExcel(
+          filteredOps.map((r) => ({ Fecha: r.fecha, Operador: r.op, "Caudal (L/s)": r.flow, "Volumen (m³)": r.vol, "pH/Color/Turb": r.phct, Químicos: r.chem, "% Cumplimiento": r.compliance, Observaciones: r.obs })),
+          "Operación Turnos",
+          `Bitacora_Operacion_${dateStr}`
+        );
+        break;
+      case "Insumos":
+        if (filteredInventory.length === 0) return showToast("No hay datos de insumos para exportar.", "error");
+        exportToExcel(
+          filteredInventory.map((r) => ({ Fecha: r.fecha, Producto: r.item, "Consumo Real": r.consumed, Autonomía: r.auto, "Saldo Bodega": r.saldo })),
+          "Control Insumos",
+          `Bitacora_Insumos_${dateStr}`
+        );
+        break;
+      case "Finanzas":
+        if (filteredFinance.length === 0) return showToast("No hay reportes financieros para exportar.", "error");
+        exportToExcel(
+          filteredFinance.map((r) => ({ Periodo: r.mes, "Proyectado (USD)": r.proy, "Real (USD)": r.real, "% Cumplimiento": r.comp, Diferencia: r.diff })),
+          "Reporte Financiero",
+          `Bitacora_Finanzas_${dateStr}`
+        );
+        break;
+    }
+    showToast(`Archivo Excel de ${tipo.toUpperCase()} descargado.`, "info");
+  }
+
+  function exportarPDF(tipo: string) {
+    const dateStr = new Date().toLocaleDateString("es-EC");
+    let rows = "";
+    let headers = "";
+
+    switch (tipo) {
+      case "Diseño":
+        headers = "<th>Fecha</th><th>Entidad</th><th>Caudal</th><th>Optimización</th><th>Horas</th>";
+        rows = filteredDesign.map((r) => `<tr><td>${r.fecha}</td><td>${r.org}</td><td>${r.flow} L/s</td><td>${r.opt}</td><td>${r.cost}</td></tr>`).join("");
+        break;
+      case "Operación":
+        headers = "<th>Fecha</th><th>Operador</th><th>Caudal</th><th>pH/Color/Turb</th><th>Químicos</th><th>%Cumpl.</th><th>Obs.</th>";
+        rows = filteredOps.map((r) => `<tr><td>${r.fecha}</td><td>${r.op}</td><td>${r.flow}</td><td>${r.phct}</td><td>${r.chem}</td><td>${r.compliance}%</td><td>${r.obs}</td></tr>`).join("");
+        break;
+      case "Insumos":
+        headers = "<th>Fecha</th><th>Producto</th><th>Consumo</th><th>Autonomía</th><th>Saldo</th>";
+        rows = filteredInventory.map((r) => `<tr><td>${r.fecha}</td><td>${r.item}</td><td>${r.consumed}</td><td>${r.auto}</td><td>${r.saldo}</td></tr>`).join("");
+        break;
+      case "Finanzas":
+        headers = "<th>Periodo</th><th>Proyectado</th><th>Real</th><th>% Cumpl.</th><th>Diferencia</th>";
+        rows = filteredFinance.map((r) => `<tr><td>${r.mes}</td><td>$${r.proy.toLocaleString()}</td><td>$${r.real.toLocaleString()}</td><td>${r.comp}%</td><td>${r.diff}</td></tr>`).join("");
+        break;
+    }
+
+    const html = `<html><head><title>Bitácora ${tipo} — TERAH2O</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{font-size:18px;margin-bottom:4px}p{font-size:12px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:#fff;padding:8px;text-align:center}td{padding:8px;text-align:center;border-bottom:1px solid #e2e8f0}</style></head><body><h1>TERAH2O — Bitácora ${tipo}</h1><p>Fecha de emisión: ${dateStr}</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); w.print(); }
   }
 
   /* ── Render ────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#060d1a", color: "#e2e8f0" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "var(--navy-solid)", color: "#e2e8f0" }}>
       {/* AI Modal */}
       {aiModalOpen && (
         <div
@@ -356,7 +422,7 @@ export default function BitacoraIntegralPage() {
       <header
         className="sticky top-0 z-50 pt-6 pb-4 px-8"
         style={{
-          background: "rgba(6, 13, 26, 0.95)",
+          background: "rgba(10, 10, 27, 0.95)",
           backdropFilter: "blur(12px)",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}
@@ -378,7 +444,8 @@ export default function BitacoraIntegralPage() {
               </h1>
             </div>
           </div>
-          <div className="flex gap-4">
+          <div className="flex items-center gap-4">
+            <NavbarUser />
             <button
               onClick={runGlobalAudit}
               className="flex items-center gap-2 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase"
@@ -447,10 +514,14 @@ export default function BitacoraIntegralPage() {
               <h2 className="text-sm font-black uppercase text-white tracking-widest">
                 Memorias de Tratabilidad y Optimización
               </h2>
-              <button onClick={() => exportarActual("Diseño")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
-                <Download className="w-4 h-4" />
-                Exportar Informes
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => exportarExcel("Diseño")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button onClick={() => exportarPDF("Diseño")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
+              </div>
             </div>
             <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
               {filteredDesign.length === 0 ? (
@@ -509,9 +580,14 @@ export default function BitacoraIntegralPage() {
                   <Zap className="w-3.5 h-3.5" /> Diagnóstico Calidad
                 </button>
               </div>
-              <button onClick={() => exportarActual("Operación")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
-                <Download className="w-4 h-4" /> Exportar Registros
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => exportarExcel("Operación")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button onClick={() => exportarPDF("Operación")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
+              </div>
             </div>
 
             {/* Charts */}
@@ -656,9 +732,14 @@ export default function BitacoraIntegralPage() {
                   <Zap className="w-3.5 h-3.5" /> Predecir Stock
                 </button>
               </div>
-              <button onClick={() => exportarActual("Insumos")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
-                <Download className="w-4 h-4" /> Exportar Kardex
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => exportarExcel("Insumos")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button onClick={() => exportarPDF("Insumos")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
+              </div>
             </div>
 
             {/* Chart */}
@@ -742,9 +823,14 @@ export default function BitacoraIntegralPage() {
                   <Zap className="w-3.5 h-3.5" /> Auditoría Económica
                 </button>
               </div>
-              <button onClick={() => exportarActual("Finanzas")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
-                <Download className="w-4 h-4" /> Exportar Finanzas
-              </button>
+              <div className="flex items-center gap-2">
+                <button onClick={() => exportarExcel("Finanzas")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button onClick={() => exportarPDF("Finanzas")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
+              </div>
             </div>
 
             {/* Chart */}

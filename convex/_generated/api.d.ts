@@ -8,12 +8,18 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as bitacoraEntries from "../bitacoraEntries.js";
 import type * as financialProjections from "../financialProjections.js";
+import type * as http from "../http.js";
 import type * as inventoryItems from "../inventoryItems.js";
 import type * as jarTestSessions from "../jarTestSessions.js";
+import type * as operatorPermissions from "../operatorPermissions.js";
+import type * as organizations from "../organizations.js";
 import type * as plantSettings from "../plantSettings.js";
 import type * as shiftRecords from "../shiftRecords.js";
+import type * as subscriptions from "../subscriptions.js";
+import type * as users from "../users.js";
 import type * as visitas from "../visitas.js";
 
 import type {
@@ -23,12 +29,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   bitacoraEntries: typeof bitacoraEntries;
   financialProjections: typeof financialProjections;
+  http: typeof http;
   inventoryItems: typeof inventoryItems;
   jarTestSessions: typeof jarTestSessions;
+  operatorPermissions: typeof operatorPermissions;
+  organizations: typeof organizations;
   plantSettings: typeof plantSettings;
   shiftRecords: typeof shiftRecords;
+  subscriptions: typeof subscriptions;
+  users: typeof users;
   visitas: typeof visitas;
 }>;
 

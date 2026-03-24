@@ -17,6 +17,7 @@ import {
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 import { DEFAULT_STOCK_ITEMS } from "@/types/inventory";
 import type { StockItem } from "@/types/inventory";
 import { calculateAutonomy } from "@/lib/calculations/dosification";
@@ -196,7 +197,8 @@ export default function StockPage() {
             </div>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex items-center gap-3">
+            <NavbarUser />
             <button
               onClick={handlePdf}
               className="bg-navy-light hover:bg-slate-700 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all border border-slate-600 shadow-lg"

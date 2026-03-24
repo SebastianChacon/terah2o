@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { BookOpen, Filter, Shield, Settings, GraduationCap } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
+import { NavbarUser } from "@/components/auth/NavbarUser";
 
 const modules = [
   {
@@ -71,11 +74,7 @@ export default function AcademiaPage() {
         >
           T
         </Link>
-        <div className="text-white/30 text-[10px] font-medium uppercase tracking-[0.2em] text-right">
-          ACADEMIA
-          <br />
-          CAPACITACIÓN PROFESIONAL
-        </div>
+        <NavbarUser />
       </nav>
 
       {/* Header */}
