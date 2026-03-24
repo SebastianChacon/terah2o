@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 /**
  * GET /api/check-subscription
  * Devuelve el estado de suscripción del usuario autenticado.
@@ -13,6 +11,14 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
  */
 export async function GET(req: NextRequest) {
   try {
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_CONVEX_URL is not configured" },
+        { status: 503 }
+      );
+    }
+    const convex = new ConvexHttpClient(convexUrl);
     const token = req.cookies.get("__convexAuthJWT")?.value;
     if (!token) {
       return NextResponse.json(

@@ -3,8 +3,6 @@ import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
-
 /**
  * POST /api/admin/create-operator
  * Body: { email: string, name: string, organizationId: string }
@@ -14,6 +12,14 @@ const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
  */
 export async function POST(req: NextRequest) {
   try {
+    const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+    if (!convexUrl) {
+      return NextResponse.json(
+        { error: "NEXT_PUBLIC_CONVEX_URL is not configured" },
+        { status: 503 }
+      );
+    }
+    const convex = new ConvexHttpClient(convexUrl);
     const token = req.cookies.get("__convexAuthJWT")?.value;
     if (!token) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
