@@ -9,6 +9,10 @@ const hourlyReadingValidator = v.object({
   cloro: v.optional(v.number()),
   color: v.optional(v.number()),
   turbiedad: v.optional(v.number()),
+  rawPh: v.optional(v.number()),
+  rawCloro: v.optional(v.number()),
+  rawColor: v.optional(v.number()),
+  rawTurbiedad: v.optional(v.number()),
   status: v.optional(v.string()),
 });
 

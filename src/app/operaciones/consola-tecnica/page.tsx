@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -257,14 +257,14 @@ export default function ConsolaTecnicaPage() {
     setExtraParams((prev) => prev.map((p) => (p.key === key ? { ...p, value: val } : p)));
   };
 
-  const ejecutarSimulacion = useCallback(() => {
+  const ejecutarSimulacion = () => {
     if (flow <= 0) {
       showToast("Ingrese el caudal de operación", "error");
       return;
     }
     setShowSimResults(true);
     showToast("Simulación calculada", "info");
-  }, [flow, showToast]);
+  };
 
   const consultarIA = async () => {
     let paramsText = `Turbiedad: ${turb} NTU, pH: ${ph}, Color: ${col} UC, Fe: ${fe} mg/L. `;
@@ -368,6 +368,8 @@ export default function ConsolaTecnicaPage() {
       return;
     }
 
+    const exportId = new Date().getTime();
+    const exportDate = new Date().toLocaleString();
     win.document.write(`<html><head><title>Memoria Tecnica - Tera Engineering</title>
       <style>
         body{font-family:sans-serif;padding:35px;color:#0a192f;line-height:1.4;font-size:10px}
@@ -381,7 +383,7 @@ export default function ConsolaTecnicaPage() {
         .ai-box{background:#f5f3ff;padding:12px;border-radius:6px;border:1px solid #8b5cf6;font-style:italic;margin-top:10px;color:#4c1d95}
         .footer{margin-top:40px;text-align:center;border-top:1px solid #eee;padding-top:15px}
       </style></head><body>
-      <div class="header"><div><h1 style="margin:0;font-size:20px">${title}</h1><p style="margin:3px 0;font-weight:bold">TeraH2O - Ingenieria de Potabilizacion</p></div><div style="text-align:right"><b>EXP:</b> ${Date.now()}<br><b>Fecha:</b> ${new Date().toLocaleString()}</div></div>
+      <div class="header"><div><h1 style="margin:0;font-size:20px">${title}</h1><p style="margin:3px 0;font-weight:bold">TeraH2O - Ingenieria de Potabilizacion</p></div><div style="text-align:right"><b>EXP:</b> ${exportId}<br><b>Fecha:</b> ${exportDate}</div></div>
       <div class="section-title">1. Resumen Operativo de Planta</div>
       <table><tr><td><b>Entidad:</b></td><td>${repoOrg}</td><td><b>Horas Operacion:</b></td><td>${hours} h/dia</td></tr><tr><td><b>Caudal:</b></td><td>${flow} L/s</td><td><b>Volumen/Dia:</b></td><td>${dailyVolume.toFixed(1)} m3</td></tr><tr><td><b>Ubicacion:</b></td><td colspan="3">${repoSample || "S/N"}</td></tr></table>
       <div class="section-title">2. Caracterizacion Integral del Agua Cruda</div>
@@ -424,46 +426,23 @@ export default function ConsolaTecnicaPage() {
       const today = new Date().toISOString().split("T")[0];
       await createJarTest({
         date: today,
-        institution: repoOrg,
+        organizationName: repoOrg,
+        samplePoint: repoSample || "N/A",
         plantFlow: flow,
-        operationHours: hours,
-        rawWaterParams: {
-          turbidity: turb,
-          ph,
-          color: col,
-          iron: fe,
-          extra: extraParams.map((p) => ({ label: p.label, value: n(p.value) })),
-        },
+        opHours: hours,
+        rawWaterParams: [
+          { label: "Turbiedad (NTU)", value: turb },
+          { label: "pH Crudo", value: ph },
+          { label: "Color (UC)", value: col },
+          { label: "Hierro (mg/L)", value: fe },
+          ...extraParams.map((p) => ({ label: p.label, value: n(p.value) })),
+        ],
         chemicals: chemicals.map((c) => ({
           name: c.name,
           func: c.func,
           concentration: c.conc,
           pricePerKg: c.price,
         })),
-        jars: jars.map((j) => ({
-          id: j.id,
-          doses: Object.fromEntries(
-            Object.entries(j.doses).map(([k, v]) => [k, n(v)])
-          ),
-          turbidityFinal: n(j.turbF),
-          colorFinal: n(j.colorF),
-          phFinal: n(j.phF),
-        })),
-        bestJarId: bestJarId ?? undefined,
-        validatedDoses: validatedDoses
-          ? {
-              coag: validatedDoses.coag,
-              ph: validatedDoses.ph,
-              helper: validatedDoses.helper,
-              oxid: validatedDoses.oxid,
-            }
-          : undefined,
-        financialSummary: {
-          totalOptCost,
-          totalBaseCost: hasBaseline ? totalBaseCost : undefined,
-          savings: hasBaseline ? savings : undefined,
-          costPerM3,
-        },
         observations: repoObs || undefined,
         aiDiagnosis: aiDiagnosis && aiDiagnosis !== "IA analizando parámetros..." ? aiDiagnosis : undefined,
       });
@@ -473,8 +452,9 @@ export default function ConsolaTecnicaPage() {
         category: "Jar-Test",
         summary: `Jar-Test — ${repoOrg} — Costo/m³: $${costPerM3.toFixed(4)} — Ganadora: Vaso ${bestJarId ?? "N/A"}`,
       });
-    } catch {
-      /* Convex not initialized yet */
+    } catch (err) {
+      console.error("Error al guardar jar-test:", err);
+      showToast("Error al guardar en base de datos", "error");
     }
 
     showToast("Memoria generada", "success");

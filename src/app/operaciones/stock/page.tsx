@@ -91,7 +91,7 @@ export default function StockPage() {
             lastUpdated: new Date().toISOString(),
           });
         } catch {
-          /* Convex not initialized yet, local only */
+          showToast("Error al sincronizar con base de datos", "error");
         }
       }
 
@@ -103,7 +103,7 @@ export default function StockPage() {
           summary: `Carga de ${val} ${item?.unit || "kg"} de ${item?.itemName || entryForm.productId}`,
         });
       } catch {
-        /* Convex not initialized */
+        /* bitácora es secundaria, no interrumpir el flujo */
       }
 
       setEntryForm({ ...entryForm, newAmount: "" });

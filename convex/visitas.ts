@@ -159,6 +159,8 @@ export const update = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...fields } = args;
+    const existing = await ctx.db.get(id);
+    if (!existing) throw new Error("Visita no encontrada");
     const updates: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(fields)) {
       if (value !== undefined) updates[key] = value;

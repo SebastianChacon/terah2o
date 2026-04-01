@@ -22,7 +22,7 @@ const PUBLIC_PREFIXES = [
   "/public",
 ];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Siempre permitir assets y APIs públicas

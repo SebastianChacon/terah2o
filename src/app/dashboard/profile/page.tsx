@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
@@ -14,6 +15,11 @@ export default function ProfilePage() {
   const { subscription } = useSubscription();
   const myOrg = useQuery(api.organizations.getMyOrganization);
 
+  const trialDaysLeft = useMemo(() => {
+    if (!subscription?.trialEndsAt) return null;
+    return Math.max(0, Math.ceil((subscription.trialEndsAt - new Date().getTime()) / (1000 * 60 * 60 * 24)));
+  }, [subscription?.trialEndsAt]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
@@ -24,10 +30,6 @@ export default function ProfilePage() {
 
   const statusColor = getStatusColor(subscription?.status);
   const planLabel = getPlanLabel(subscription?.plan, subscription?.status);
-
-  const trialDaysLeft = subscription?.trialEndsAt
-    ? Math.max(0, Math.ceil((subscription.trialEndsAt - Date.now()) / (1000 * 60 * 60 * 24)))
-    : null;
 
   return (
     <div className="min-h-screen bg-[#05051a] text-white">

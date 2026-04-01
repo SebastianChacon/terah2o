@@ -6,18 +6,3 @@ export interface WeatherData {
   rain24h: number;
   cityName: string;
 }
-
-export interface ForecastEntry {
-  dt: number;
-  main: {
-    temp: number;
-    humidity: number;
-  };
-  weather: {
-    description: string;
-  }[];
-  pop: number;
-  rain?: {
-    "3h"?: number;
-  };
-}

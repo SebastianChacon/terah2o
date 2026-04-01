@@ -3,9 +3,10 @@
   "configurations": [
     {
       "name": "terah2o-dev",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeExecutable": "/usr/bin/env",
+      "runtimeArgs": ["PATH=/Users/mateosebastianchacontrelles/.nvm/versions/node/v24.14.1/bin:/usr/bin:/bin", "node", "/Users/mateosebastianchacontrelles/Desktop/dev/terah2o/node_modules/.bin/next", "dev"],
+      "port": 3000,
+      "autoPort": false
     }
   ]
 }

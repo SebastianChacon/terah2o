@@ -23,10 +23,16 @@ export const getAll = query({
 export const getByItemId = query({
   args: { itemId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    const item = await ctx.db
       .query("inventoryItems")
       .withIndex("by_itemId", (q) => q.eq("itemId", args.itemId))
       .first();
+    if (!item) return null;
+    if (user?.organizationId && item.organizationId !== user.organizationId) return null;
+    return item;
   },
 });
 

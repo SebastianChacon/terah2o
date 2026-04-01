@@ -83,6 +83,13 @@ export const createOperator = mutation({
       );
     }
 
+    // Verificar que no exista otro usuario con ese email
+    const existingByEmail = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .first();
+    if (existingByEmail) throw new Error("Ya existe un usuario con ese correo electrónico");
+
     // Crear el perfil del operador (tokenIdentifier pending hasta primer login)
     const pendingToken = `pending_${args.email}`;
     const operatorId = await ctx.db.insert("users", {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 import { Toast } from "@/components/ui/Toast";
@@ -87,15 +87,10 @@ export default function MotorInteligenciaPage() {
   const recommendations = getRecommendations();
 
   const handleSync = async () => {
-    await fetchWeather(location);
+    const data = await fetchWeather(location);
+    if (data) setRainIntensity(data.rain24h);
     showToast("Configuración y Clima Actualizados", "success");
   };
-
-  useEffect(() => {
-    if (weather) {
-      setRainIntensity(weather.rain24h);
-    }
-  }, [weather]);
 
   const handleSpeak = async () => {
     const recText = recommendations.map((r) => r.content).join(". ");

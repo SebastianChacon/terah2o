@@ -303,11 +303,11 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
         category: "Asistencia",
         summary: `Visita ${tipoCliente} — ${org} — Cumplimiento: ${compliance}%`,
       });
-    } catch {
-      /* Convex not initialized yet */
+      showToast("Gestión finalizada con éxito.", "success");
+    } catch (err) {
+      console.error("Error al guardar visita:", err);
+      showToast("Error al guardar en base de datos", "error");
     }
-
-    showToast("Gestión finalizada con éxito.", "success");
   };
 
   const tabs: { key: TabKey; label: string }[] = [
