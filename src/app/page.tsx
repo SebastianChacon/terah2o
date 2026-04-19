@@ -60,10 +60,13 @@ export default function HomePage() {
         <footer className="relative z-[2] text-center px-4 py-6 border-t border-white/[0.06] animate-[fadeUp_0.9s_0.5s_ease_both] opacity-0">
           <p className="text-[0.7rem] text-white/45 tracking-[0.03em] mb-1">
             © 2026 Servicios Profesionales Tera · Todos los derechos reservados
-            · Ecuador, Build 1.0.3 · Acceso Restringido · Entorno Operativo
+            · Ecuador, Version 20.0 · Acceso Restringido · Entorno Operativo
           </p>
           <p className="text-[0.7rem] text-blue-500 tracking-[0.02em]">
-            <a href="mailto:teraserviciosprofesionales@outlook.com" className="hover:underline">
+            <a
+              href="mailto:teraserviciosprofesionales@outlook.com"
+              className="hover:underline"
+            >
               teraserviciosprofesionales@outlook.com
             </a>
             <span className="text-white/45 mx-1.5">·</span>

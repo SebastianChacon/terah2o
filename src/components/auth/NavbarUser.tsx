@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -19,7 +18,6 @@ export function NavbarUser() {
   const { user, isLoading } = useCurrentUser();
   const { subscription } = useSubscription();
   const { signOut } = useAuthActions();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -127,10 +125,19 @@ export function NavbarUser() {
             <button
               onClick={async () => {
                 setOpen(false);
-                // Limpiar cookie de suscripción
-                document.cookie = "__convexSubStatus=none;path=/;max-age=0";
-                await signOut();
-                router.push("/");
+                // Clear all auth cookies explicitly before calling signOut.
+                // If signOut's server call fails we still destroy the session client-side.
+                document.cookie = "__convexAuthJWT=; path=/; max-age=0; SameSite=Lax";
+                document.cookie = "__convexAuthRefreshToken=; path=/; max-age=0; SameSite=Lax";
+                document.cookie = "__convexSubStatus=; path=/; max-age=0; SameSite=Lax";
+                try {
+                  await signOut();
+                } catch {
+                  // Cookies already cleared above — safe to proceed
+                }
+                // Hard redirect resets the Convex client's in-memory auth state,
+                // preventing the stale isAuthenticated:true race on the login page.
+                window.location.href = "/login";
               }}
               className="flex items-center gap-2.5 px-4 py-2 w-full text-[0.72rem] text-red-400/50 hover:text-red-400 hover:bg-white/[0.04] transition-colors text-left"
             >

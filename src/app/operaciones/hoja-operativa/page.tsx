@@ -20,19 +20,14 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 import { CHEMICAL_PRODUCTS } from "@/types/chemical";
-import { MOCK_INVENTORY } from "@/lib/constants";
 import {
   calculateDose,
   calculateDailyConsumption,
   calculateAutonomy,
 } from "@/lib/calculations/dosification";
-import type {
-  HourlyReading,
-  ShiftRecord,
-  ShiftStats,
-} from "@/types/shift";
+import type { HourlyReading, ShiftStats } from "@/types/shift";
 import { TIME_SLOTS } from "@/types/shift";
-import { useSafeMutation } from "@/hooks/useConvex";
+import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -42,6 +37,8 @@ interface DosRow {
   mlMin: string;
   concentration: string;
 }
+
+type InvItem = { _id: string; itemId: string; itemName: string; amount: number };
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function HojaOperativaPage() {
@@ -54,24 +51,37 @@ export default function HojaOperativaPage() {
   const [operatorName, setOperatorName] = useState("");
   const today = new Date().toISOString().split("T")[0];
 
+  /* Convex */
+  const createShift = useSafeMutation(api.shiftRecords.create);
+  const updateInventoryAmount = useSafeMutation(api.inventoryItems.updateAmount);
+  const inventoryItems = useSafeQuery(api.inventoryItems.getAll) as InvItem[] | undefined;
+
   /* S02 — Dosificación */
   const [plantFlow, setPlantFlow] = useState("");
   const [opHours, setOpHours] = useState("8");
   const [dosRows, setDosRows] = useState<DosRow[]>([
-    { id: 1, product: CHEMICAL_PRODUCTS[0].value, mlMin: "", concentration: "10" },
+    { id: 1, product: "PAC", mlMin: "", concentration: "10" },
   ]);
+
+  /* Product options — dynamic from inventory, fallback to static list */
+  const productOptions = useMemo(() => {
+    if (inventoryItems && inventoryItems.length > 0) {
+      return inventoryItems.map((i) => ({ value: i.itemId, label: i.itemName }));
+    }
+    return CHEMICAL_PRODUCTS;
+  }, [inventoryItems]);
 
   const addDosRow = () =>
     setDosRows((r) => [
       ...r,
-      { id: Date.now(), product: CHEMICAL_PRODUCTS[0].value, mlMin: "", concentration: "10" },
+      { id: Date.now(), product: productOptions[0]?.value ?? "PAC", mlMin: "", concentration: "10" },
     ]);
   const removeDosRow = (id: number) =>
     setDosRows((r) => r.filter((x) => x.id !== id));
   const updateDosRow = (id: number, field: keyof DosRow, val: string) =>
     setDosRows((r) => r.map((x) => (x.id === id ? { ...x, [field]: val } : x)));
 
-  /* Computed dose results */
+  /* Computed dose results — uses real inventory for autonomy (no mock data) */
   const doseResults = useMemo(() => {
     const flow = parseFloat(plantFlow) || 0;
     const hours = parseFloat(opHours) || 0;
@@ -80,43 +90,27 @@ export default function HojaOperativaPage() {
       const conc = parseFloat(row.concentration) || 0;
       const dose = calculateDose(ml, conc, flow);
       const dailyCons = calculateDailyConsumption(dose, flow, hours);
-      const stock = MOCK_INVENTORY[row.product] || 0;
-      const autonomy = calculateAutonomy(stock, dailyCons);
+      const invItem = inventoryItems?.find((i) => i.itemId === row.product);
+      const stock = invItem?.amount ?? 0;
+      const autonomy = stock > 0 && dailyCons > 0 ? calculateAutonomy(stock, dailyCons) : null;
       return {
         id: row.id,
         dose: Math.round(dose * 100) / 100,
-        autonomy: Math.round(autonomy * 10) / 10,
+        autonomy: autonomy !== null ? Math.round(autonomy * 10) / 10 : null,
       };
     });
-  }, [dosRows, plantFlow, opHours]);
+  }, [dosRows, plantFlow, opHours, inventoryItems]);
 
   /* S03 — Tabla Horaria */
   const [readings, setReadings] = useState<HourlyReading[]>(
-    TIME_SLOTS.map((h) => ({
-      hora: h,
-      caudal: undefined,
-      ph: undefined,
-      cloro: undefined,
-      color: undefined,
-      turbiedad: undefined,
-      rawPh: undefined,
-      rawCloro: undefined,
-      rawColor: undefined,
-      rawTurbiedad: undefined,
-      status: undefined,
-    }))
+    TIME_SLOTS.map((h): HourlyReading => ({ hora: h }))
   );
 
-  const updateReading = (
-    idx: number,
-    field: keyof HourlyReading,
-    val: string
-  ) => {
+  const updateReading = (idx: number, field: keyof HourlyReading, val: string) => {
     setReadings((prev) => {
       const next = [...prev];
       const num = val === "" ? undefined : parseFloat(val);
       next[idx] = { ...next[idx], [field]: num };
-      // Auto-evaluate status (INEN 1108: pH 6.5-8.5, Cloro ≥0.3, Color ≤15, Turbiedad ≤5)
       const r = next[idx];
       if (r.ph !== undefined || r.cloro !== undefined || r.color !== undefined || r.turbiedad !== undefined) {
         const phOk = r.ph === undefined || (r.ph >= 6.5 && r.ph <= 8.5);
@@ -148,7 +142,7 @@ export default function HojaOperativaPage() {
     };
   }, [readings, opHours]);
 
-  /* S01 — Gauge data */
+  /* Gauge data */
   const gaugeData = useMemo(() => {
     const evaluated = readings.filter((r) => r.status !== undefined);
     const okCount = evaluated.filter((r) => r.status === "CUMPLE").length;
@@ -173,40 +167,73 @@ export default function HojaOperativaPage() {
   }, [aiQuery, generateAi, showToast]);
 
   /* S06 — Finalizar Turno */
-  const createShift = useSafeMutation(api.shiftRecords.create);
-  const createBitacora = useSafeMutation(api.bitacoraEntries.create);
-
   const handleFinalize = useCallback(async () => {
     if (!operatorName.trim()) return showToast("Nombre del operador requerido", "error");
 
     const flow = parseFloat(plantFlow) || 0;
+    const hours = parseFloat(opHours) || 8;
 
-    const record: Omit<ShiftRecord, "_id"> = {
-      operatorName,
-      date: today,
-      operationHours: parseFloat(opHours) || 8,
-      plantFlowRef: flow > 0 ? flow : undefined,
-      hourlyReadings: readings,
-      dosificationEntries: dosRows.map((row, i) => ({
+    // Strip explicit undefined values — Convex does not accept undefined in args
+    const cleanReadings = readings.map((r): HourlyReading => {
+      const obj: HourlyReading = { hora: r.hora };
+      if (r.caudal !== undefined) obj.caudal = r.caudal;
+      if (r.ph !== undefined) obj.ph = r.ph;
+      if (r.cloro !== undefined) obj.cloro = r.cloro;
+      if (r.color !== undefined) obj.color = r.color;
+      if (r.turbiedad !== undefined) obj.turbiedad = r.turbiedad;
+      if (r.rawPh !== undefined) obj.rawPh = r.rawPh;
+      if (r.rawColor !== undefined) obj.rawColor = r.rawColor;
+      if (r.rawTurbiedad !== undefined) obj.rawTurbiedad = r.rawTurbiedad;
+      if (r.status !== undefined) obj.status = r.status;
+      return obj;
+    });
+
+    const dosEntries = dosRows.map((row, i) => {
+      const autonomy = doseResults[i]?.autonomy;
+      return {
         product: row.product,
         mlMin: parseFloat(row.mlMin) || 0,
         concentration: parseFloat(row.concentration) || 0,
         doseResult: doseResults[i]?.dose || 0,
-        autonomyDays: doseResults[i]?.autonomy || 0,
-      })),
+        ...(autonomy && autonomy > 0 ? { autonomyDays: autonomy } : {}),
+      };
+    });
+
+    const shiftArgs = {
+      operatorName,
+      date: today,
+      operationHours: hours,
+      ...(flow > 0 ? { plantFlowRef: flow } : {}),
+      hourlyReadings: cleanReadings,
+      dosificationEntries: dosEntries,
       stats,
-      notes: notes || undefined,
-      aiConsultation: aiResponse || undefined,
+      ...(notes ? { notes } : {}),
+      ...(aiResponse ? { aiConsultation: aiResponse } : {}),
     };
 
     try {
-      await createShift(record);
-      await createBitacora({
-        date: today,
-        source: "Hoja Operativa",
-        category: "Turno",
-        summary: `Turno de ${operatorName} — Caudal prom: ${stats.avgFlow} L/s — Cumplimiento: ${stats.compliancePercent}%`,
-      });
+      await createShift(shiftArgs);
+
+      // Auto-deduct daily consumption from inventory stock
+      if (inventoryItems && inventoryItems.length > 0 && flow > 0) {
+        for (const entry of dosEntries) {
+          if (entry.doseResult <= 0) continue;
+          const invItem = inventoryItems.find((i) => i.itemId === entry.product);
+          if (!invItem) continue;
+          const dailyCons = calculateDailyConsumption(entry.doseResult, flow, hours);
+          if (dailyCons <= 0) continue;
+          const newAmount = Math.max(0, invItem.amount - dailyCons);
+          try {
+            await updateInventoryAmount({
+              id: invItem._id as never,
+              amount: Math.round(newAmount * 100) / 100,
+              lastUpdated: new Date().toISOString(),
+            });
+          } catch (err) {
+            console.error(`Stock deduction failed for ${entry.product}:`, err);
+          }
+        }
+      }
 
       showToast("Turno archivado correctamente", "success");
 
@@ -235,12 +262,12 @@ export default function HojaOperativaPage() {
           <div class="stat"><div class="stat-val">${stats.projection24h} m³</div><div class="stat-label">Proyección 24h</div></div>
           <div class="stat"><div class="stat-val">${stats.compliancePercent}%</div><div class="stat-label">Cumplimiento</div></div>
           <h2>Monitoreo Horario — Barreras Sanitarias</h2>
-          <table><thead><tr><th rowspan="2">Hora</th><th rowspan="2">Caudal</th><th colspan="4" style="background:#92400e;color:#fff">Agua Cruda</th><th colspan="4" style="background:#065f46;color:#fff">Agua Tratada</th><th rowspan="2">Estado</th></tr><tr><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th></tr></thead><tbody>
-          ${readings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.rawPh ?? "-"}</td><td>${r.rawCloro ?? "-"}</td><td>${r.rawColor ?? "-"}</td><td>${r.rawTurbiedad ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
+          <table><thead><tr><th rowspan="2">Hora</th><th rowspan="2">Caudal</th><th colspan="3" style="background:#92400e;color:#fff">Agua Cruda</th><th colspan="4" style="background:#065f46;color:#fff">Agua Tratada</th><th rowspan="2">Estado</th></tr><tr><th>pH</th><th>Color</th><th>Turb.</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th></tr></thead><tbody>
+          ${readings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.rawPh ?? "-"}</td><td>${r.rawColor ?? "-"}</td><td>${r.rawTurbiedad ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
           </tbody></table>
           <h2>Dosificación</h2>
           <table><thead><tr><th>Producto</th><th>ml/min</th><th>Conc %</th><th>Dosis mg/L</th><th>Autonomía</th></tr></thead><tbody>
-          ${dosRows.map((row, i) => `<tr><td>${row.product}</td><td>${row.mlMin}</td><td>${row.concentration}</td><td>${doseResults[i]?.dose}</td><td>${doseResults[i]?.autonomy} días</td></tr>`).join("")}
+          ${dosRows.map((row, i) => `<tr><td>${row.product}</td><td>${row.mlMin}</td><td>${row.concentration}</td><td>${doseResults[i]?.dose}</td><td>${doseResults[i]?.autonomy !== null ? doseResults[i]?.autonomy + " días" : "--"}</td></tr>`).join("")}
           </tbody></table>
           ${notes ? `<h2>Novedades</h2><p>${notes}</p>` : ""}
           ${aiResponse ? `<h2>Consulta IA</h2><p>${aiResponse.replace(/\n/g, "<br>")}</p>` : ""}
@@ -249,10 +276,11 @@ export default function HojaOperativaPage() {
         w.document.close();
         w.print();
       }
-    } catch {
+    } catch (err) {
+      console.error("Shift save error:", err);
       showToast("Error al guardar turno", "error");
     }
-  }, [operatorName, today, opHours, plantFlow, readings, dosRows, doseResults, stats, notes, aiResponse, createShift, createBitacora, showToast]);
+  }, [operatorName, today, opHours, plantFlow, readings, dosRows, doseResults, stats, notes, aiResponse, createShift, updateInventoryAmount, inventoryItems, showToast]);
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -374,7 +402,7 @@ export default function HojaOperativaPage() {
                         onChange={(e) => updateDosRow(row.id, "product", e.target.value)}
                         className="font-black text-navy-deep bg-transparent border-none p-0 focus:ring-0 focus:outline-none cursor-pointer text-sm"
                       >
-                        {CHEMICAL_PRODUCTS.map((p) => (
+                        {productOptions.map((p) => (
                           <option key={p.value} value={p.value}>
                             {p.label}
                           </option>
@@ -426,7 +454,7 @@ export default function HojaOperativaPage() {
                         Autonomía
                       </span>
                       <span className="font-black text-sm text-sky-200">
-                        {res?.autonomy ? `${res.autonomy} días` : "-- días"}
+                        {res?.autonomy !== null && res?.autonomy ? `${res.autonomy} días` : "-- días"}
                       </span>
                     </div>
                   </div>
@@ -474,7 +502,7 @@ export default function HojaOperativaPage() {
           </div>
 
           <div className="w-full overflow-x-auto rounded-xl border border-slate-200">
-            <table className="min-w-[1100px] w-full text-[13px] border-collapse">
+            <table className="min-w-[1000px] w-full text-[13px] border-collapse">
               <thead>
                 <tr>
                   <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
@@ -484,7 +512,7 @@ export default function HojaOperativaPage() {
                     Caudal (L/s)
                   </th>
                   <th
-                    colSpan={4}
+                    colSpan={3}
                     className="bg-amber-700 text-white p-2 font-black text-[10px] uppercase text-center border-b border-white/10"
                   >
                     Agua Cruda
@@ -501,7 +529,6 @@ export default function HojaOperativaPage() {
                 </tr>
                 <tr className="text-[9px] text-white">
                   <th className="bg-amber-800/80 p-2 font-bold">pH</th>
-                  <th className="bg-amber-800/80 p-2 font-bold">Cloro</th>
                   <th className="bg-amber-800/80 p-2 font-bold">Color</th>
                   <th className="bg-amber-800/80 p-2 font-bold">Turb.</th>
                   <th className="bg-emerald-800/80 p-2 font-bold">pH (6.5-8.5)</th>
@@ -526,12 +553,9 @@ export default function HojaOperativaPage() {
                         onChange={(e) => updateReading(idx, "caudal", e.target.value)}
                       />
                     </td>
-                    {/* Agua Cruda */}
+                    {/* Agua Cruda — sin columna Cloro (no aplicable en etapa de captación) */}
                     <td className="p-1 bg-amber-50/50">
                       <input type="number" step="0.1" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawPh ?? ""} onChange={(e) => updateReading(idx, "rawPh", e.target.value)} />
-                    </td>
-                    <td className="p-1 bg-amber-50/50">
-                      <input type="number" step="0.1" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawCloro ?? ""} onChange={(e) => updateReading(idx, "rawCloro", e.target.value)} />
                     </td>
                     <td className="p-1 bg-amber-50/50">
                       <input type="number" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawColor ?? ""} onChange={(e) => updateReading(idx, "rawColor", e.target.value)} />

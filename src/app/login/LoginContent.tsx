@@ -16,7 +16,7 @@ export default function LoginContent() {
   const nextPath = searchParams.get("next") ?? "/operaciones";
 
   const { signIn } = useAuthActions();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
   const upsertUser = useMutation(api.users.upsertCurrentUser);
   const createOrganization = useMutation(api.organizations.createOrganization);
 
@@ -95,6 +95,12 @@ export default function LoginContent() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // While Convex resolves auth state from cookies, render nothing.
+  // Without this, authenticated users see a flash of the login form before being redirected.
+  if (authLoading) {
+    return <div className="min-h-screen bg-[#05051a]" />;
   }
 
   return (
