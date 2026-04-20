@@ -149,7 +149,8 @@ export default function FinanzasPage() {
     if (!historicalData || historicalData.length === 0) return current;
 
     const relevant = historicalData
-      .filter((r) => r.institutionName === instName)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((r: any) => r.institutionName === instName)
       .slice(0, 5)
       .map((r) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
