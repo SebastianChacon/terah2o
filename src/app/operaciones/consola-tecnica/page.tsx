@@ -19,6 +19,7 @@ import { useGemini } from "@/hooks/useGemini";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 import { useSafeMutation } from "@/hooks/useConvex";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -68,14 +69,6 @@ const FUNC_TEXT_COLORS: Record<ChemFunc, string> = {
   oxid: "text-emerald-400",
 };
 
-const EXTRA_PARAM_OPTIONS = [
-  { value: "mn", label: "Manganeso (mg/L)" },
-  { value: "no2", label: "Nitritos (mg/L)" },
-  { value: "no3", label: "Nitratos (mg/L)" },
-  { value: "alk", label: "Alcalinidad (mg/L)" },
-  { value: "hardness", label: "Dureza (mg/L)" },
-];
-
 const DEFAULT_CHEMICALS: Chemical[] = [
   { id: 1, name: "SULFATO DE ALUMINIO 10%", func: "coag", conc: 10, price: 0.85 },
   { id: 2, name: "CAL HIDRATADA 5%", func: "ph", conc: 5, price: 0.32 },
@@ -103,6 +96,7 @@ export default function ConsolaTecnicaPage() {
   });
   const createJarTest = useSafeMutation(api.jarTestSessions.create);
   const createBitacora = useSafeMutation(api.bitacoraEntries.create);
+  const { user } = useCurrentUser();
 
   // Plant config
   const [plantFlow, setPlantFlow] = useState("");
@@ -123,7 +117,7 @@ export default function ConsolaTecnicaPage() {
   const [simColor, setSimColor] = useState("0");
   const [simFe, setSimFe] = useState("0.00");
   const [extraParams, setExtraParams] = useState<ExtraParam[]>([]);
-  const [selectedExtra, setSelectedExtra] = useState("mn");
+  const [newParamName, setNewParamName] = useState("");
 
   // AI diagnosis
   const [aiDiagnosis, setAiDiagnosis] = useState("");
@@ -243,10 +237,11 @@ export default function ConsolaTecnicaPage() {
   };
 
   const addExtraParam = () => {
-    if (extraParams.some((p) => p.key === selectedExtra)) return;
-    const opt = EXTRA_PARAM_OPTIONS.find((o) => o.value === selectedExtra);
-    if (!opt) return;
-    setExtraParams((prev) => [...prev, { key: opt.value, label: opt.label, value: "0" }]);
+    const label = newParamName.trim();
+    if (!label) return;
+    const key = `custom_${Date.now()}`;
+    setExtraParams((prev) => [...prev, { key, label, value: "0" }]);
+    setNewParamName("");
   };
 
   const removeExtraParam = (key: string) => {
@@ -336,6 +331,40 @@ export default function ConsolaTecnicaPage() {
     );
   };
 
+  const resetForm = () => {
+    setPlantFlow("");
+    setOpHours("24");
+    setChemicals(DEFAULT_CHEMICALS);
+    setNewChemName("");
+    setNewChemFunc("coag");
+    setNewChemConc("10");
+    setBaselineAforos({});
+    setSimTurb("0");
+    setSimPh("7.0");
+    setSimColor("0");
+    setSimFe("0.00");
+    setExtraParams([]);
+    setNewParamName("");
+    setAiDiagnosis("");
+    setShowAiPanel(false);
+    setShowSimResults(false);
+    setJars([
+      { id: 1, doses: {}, turbF: "", colorF: "", phF: "" },
+      { id: 2, doses: {}, turbF: "", colorF: "", phF: "" },
+      { id: 3, doses: {}, turbF: "", colorF: "", phF: "" },
+      { id: 4, doses: {}, turbF: "", colorF: "", phF: "" },
+    ]);
+    setNextJarId(5);
+    setValidatedDoses(null);
+    setBestJarId(null);
+    setClApplied("0");
+    setClMeasured("0");
+    setClTarget("1.0");
+    setRepoOrg("");
+    setRepoSample("");
+    setRepoObs("");
+  };
+
   // PDF report
   const emitirMemoria = async () => {
     if (!repoOrg.trim()) {
@@ -370,6 +399,7 @@ export default function ConsolaTecnicaPage() {
 
     const exportId = new Date().getTime();
     const exportDate = new Date().toLocaleString();
+    const clientInfo = user?.name || user?.email || "TeraH2O";
     win.document.write(`<html><head><title>Memoria Tecnica - Tera Engineering</title>
       <style>
         body{font-family:sans-serif;padding:35px;color:#0a192f;line-height:1.4;font-size:10px}
@@ -383,7 +413,7 @@ export default function ConsolaTecnicaPage() {
         .ai-box{background:#f5f3ff;padding:12px;border-radius:6px;border:1px solid #8b5cf6;font-style:italic;margin-top:10px;color:#4c1d95}
         .footer{margin-top:40px;text-align:center;border-top:1px solid #eee;padding-top:15px}
       </style></head><body>
-      <div class="header"><div><h1 style="margin:0;font-size:20px">${title}</h1><p style="margin:3px 0;font-weight:bold">TeraH2O - Ingenieria de Potabilizacion</p></div><div style="text-align:right"><b>EXP:</b> ${exportId}<br><b>Fecha:</b> ${exportDate}</div></div>
+      <div class="header"><div><h1 style="margin:0;font-size:20px">${title}</h1><p style="margin:3px 0;font-weight:bold">TeraH2O - Ingenieria de Potabilizacion</p><p style="margin:2px 0;color:#64748b">Generado por: <b>${clientInfo}</b></p></div><div style="text-align:right"><b>EXP:</b> ${exportId}<br><b>Fecha:</b> ${exportDate}</div></div>
       <div class="section-title">1. Resumen Operativo de Planta</div>
       <table><tr><td><b>Entidad:</b></td><td>${repoOrg}</td><td><b>Horas Operacion:</b></td><td>${hours} h/dia</td></tr><tr><td><b>Caudal:</b></td><td>${flow} L/s</td><td><b>Volumen/Dia:</b></td><td>${dailyVolume.toFixed(1)} m3</td></tr><tr><td><b>Ubicacion:</b></td><td colspan="3">${repoSample || "S/N"}</td></tr></table>
       <div class="section-title">2. Caracterizacion Integral del Agua Cruda</div>
@@ -452,12 +482,12 @@ export default function ConsolaTecnicaPage() {
         category: "Jar-Test",
         summary: `Jar-Test — ${repoOrg} — Costo/m³: $${costPerM3.toFixed(4)} — Ganadora: Vaso ${bestJarId ?? "N/A"}`,
       });
+      showToast("Memoria generada", "success");
+      resetForm();
     } catch (err) {
       console.error("Error al guardar jar-test:", err);
       showToast("Error al guardar en base de datos", "error");
     }
-
-    showToast("Memoria generada", "success");
   };
 
   /* ── Render ────────────────────────────────────────────── */
@@ -675,22 +705,19 @@ export default function ConsolaTecnicaPage() {
                 02. Caracterizacion Agua Cruda
               </h2>
               <div className="flex gap-2">
-                <select
-                  value={selectedExtra}
-                  onChange={(e) => setSelectedExtra(e.target.value)}
-                  className="py-1.5 px-2 text-[10px] rounded-lg border border-slate-200 focus:outline-none w-40"
-                >
-                  {EXTRA_PARAM_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <input
+                  type="text"
+                  value={newParamName}
+                  onChange={(e) => setNewParamName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addExtraParam()}
+                  placeholder="Nombre del parámetro"
+                  className="py-1.5 px-2 text-[10px] rounded-lg border border-slate-200 focus:outline-none focus:border-sky-400 w-44"
+                />
                 <button
                   onClick={addExtraParam}
                   className="bg-navy-deep/80 text-white font-bold px-3 py-1.5 rounded-lg text-[10px] uppercase hover:bg-navy-deep transition-colors"
                 >
-                  + Parametro
+                  + Agregar
                 </button>
               </div>
             </div>

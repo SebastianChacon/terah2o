@@ -34,7 +34,7 @@ import type {
   ChemicalCost,
   FinancialProjection,
 } from "@/types/finance";
-import { useSafeMutation } from "@/hooks/useConvex";
+import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -137,14 +137,34 @@ export default function FinanzasPage() {
   );
 
   /* S07 — IA */
+  const historicalData = useSafeQuery(api.financialProjections.getAll);
   const { generate: genOpt, loading: loadOpt } = useGemini({ context: "financial-optimization" });
   const { generate: genStrat, loading: loadStrat } = useGemini({ context: "financial-strategy" });
   const { generate: genSum, loading: loadSum } = useGemini({ context: "financial-summary" });
   const [aiResponse, setAiResponse] = useState("");
 
   const buildAiPrompt = useCallback(() => {
-    return `Datos PTAP (${mode}): Institución: ${instName}, Volumen/Mes: ${volumeMonth.toFixed(0)} m³, Gasto Total: $${totals.grandTotal.toFixed(2)}, Costo/m³: $${totals.costPerM3.toFixed(4)}, RRHH: $${totals.totalLabor}, Químicos: $${totals.totalChemicals}, Margen: $${profit.toFixed(2)}, Tarifa: $${userRate || 0}/m³, Equilibrio: $${breakEvenRate.toFixed(4)}/m³`;
-  }, [mode, instName, volumeMonth, totals, profit, userRate, breakEvenRate]);
+    const current = `Datos PTAP (${mode}): Institución: ${instName}, Volumen/Mes: ${volumeMonth.toFixed(0)} m³, Gasto Total: $${totals.grandTotal.toFixed(2)}, Costo/m³: $${totals.costPerM3.toFixed(4)}, RRHH: $${totals.totalLabor}, Químicos: $${totals.totalChemicals}, Margen: $${profit.toFixed(2)}, Tarifa: $${userRate || 0}/m³, Equilibrio: $${breakEvenRate.toFixed(4)}/m³`;
+
+    if (!historicalData || historicalData.length === 0) return current;
+
+    const relevant = historicalData
+      .filter((r) => r.institutionName === instName)
+      .slice(0, 5)
+      .map((r) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ra = r as any;
+        const linked = ra.análisisReal !== undefined
+          ? ` | Real: $${ra.análisisReal?.toFixed(2)} | Cumpl.: ${ra.cumplimiento?.toFixed(1)}%`
+          : "";
+        return `  - [${r.period ?? r.mode}] Total: $${r.totals.grandTotal.toFixed(2)} | Costo/m³: $${r.totals.costPerM3.toFixed(4)}${linked}`;
+      })
+      .join("\n");
+
+    if (!relevant) return current;
+
+    return `${current}\n\nHistorial previo de ${instName}:\n${relevant}\n\nUsa el historial para identificar tendencias, variaciones y oportunidades de optimización.`;
+  }, [mode, instName, volumeMonth, totals, profit, userRate, breakEvenRate, historicalData]);
 
   const handleAi = useCallback(
     async (type: "opt" | "strat" | "sum") => {
@@ -158,10 +178,30 @@ export default function FinanzasPage() {
 
   /* Save + PDF */
   const createProjection = useSafeMutation(api.financialProjections.create);
+  const linkRealAnalysis = useSafeMutation(api.financialProjections.linkRealAnalysis);
   const createBitacora = useSafeMutation(api.bitacoraEntries.create);
+
+  const resetForm = useCallback(() => {
+    setInstName("");
+    setPlantFlow("");
+    setOpHours("");
+    setRealM3("");
+    setHrRows(
+      HR_ROLES.map((r) => ({ role: r.role, quantity: r.defaultQty, salary: r.defaultSalary, subtotal: r.defaultQty * r.defaultSalary }))
+    );
+    setExpenses({ energy: 0, internet: 0, pettyCash: 0, maintenance: 0 });
+    setChemRows([
+      { id: 1, name: "Coagulante (PAC)", dose: "", totalKg: "", pricePerKg: "" },
+      { id: 2, name: "Cloro (Hipoclorito)", dose: "", totalKg: "", pricePerKg: "" },
+    ]);
+    setLossPercent("");
+    setUserRate("");
+    setAiResponse("");
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (!instName.trim()) return showToast("Nombre de institución requerido", "error");
+    const period = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const projection: Omit<FinancialProjection, "_id"> = {
       institutionName: instName,
       mode,
@@ -186,16 +226,24 @@ export default function FinanzasPage() {
     };
 
     try {
-      await createProjection(projection);
+      await createProjection({ ...projection, period });
+      if (mode === "analysis") {
+        await linkRealAnalysis({
+          institutionName: instName,
+          period,
+          analysisGrandTotal: totals.grandTotal,
+        });
+      }
       await createBitacora({
         date: new Date().toISOString().split("T")[0],
         source: "Finanzas PTAP",
         category: "Finanzas",
-        summary: `Proyección ${mode} — ${instName} — Total: $${totals.grandTotal.toFixed(2)} — Costo/m³: $${totals.costPerM3.toFixed(4)}`,
+        summary: `${mode === "projection" ? "Proyección" : "Análisis Real"} — ${instName} — Total: $${totals.grandTotal.toFixed(2)} — Costo/m³: $${totals.costPerM3.toFixed(4)}`,
       });
-      showToast("Proyección guardada", "success");
+      showToast("Informe guardado", "success");
+      resetForm();
     } catch {
-      showToast("Error al guardar proyección", "error");
+      showToast("Error al guardar informe", "error");
     }
 
     /* PDF */
@@ -241,7 +289,7 @@ export default function FinanzasPage() {
         <script>window.onload=function(){window.print()}<\/script></body></html>`);
       w.document.close();
     }
-  }, [instName, mode, plantFlow, opHours, realM3, volumeMonth, hrRows, expenses, chemicals, lossPercent, billableVolume, userRate, breakEvenRate, revenue, profit, totals, aiResponse, createProjection, createBitacora, showToast]);
+  }, [instName, mode, plantFlow, opHours, realM3, volumeMonth, hrRows, expenses, chemicals, lossPercent, billableVolume, userRate, breakEvenRate, revenue, profit, totals, aiResponse, createProjection, linkRealAnalysis, createBitacora, showToast, resetForm]);
 
   /* Format currency */
   const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

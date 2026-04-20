@@ -52,6 +52,7 @@ export const create = mutation({
   args: {
     institutionName: v.string(),
     mode: v.union(v.literal("projection"), v.literal("analysis")),
+    period: v.optional(v.string()),
     production: productionValidator,
     humanResources: v.array(hrCostValidator),
     operationalExpenses: expensesValidator,
@@ -66,6 +67,51 @@ export const create = mutation({
       ...args,
       organizationId: user?.organizationId,
     });
+  },
+});
+
+export const linkRealAnalysis = mutation({
+  args: {
+    institutionName: v.string(),
+    period: v.string(),
+    analysisGrandTotal: v.number(),
+  },
+  handler: async (ctx, { institutionName, period, analysisGrandTotal }) => {
+    const userId = await getAuthUserId(ctx);
+    const user = userId ? await ctx.db.get(userId) : null;
+
+    const all = user?.organizationId
+      ? await ctx.db
+          .query("financialProjections")
+          .withIndex("by_organizationId", (q) =>
+            q.eq("organizationId", user.organizationId)
+          )
+          .collect()
+      : await ctx.db.query("financialProjections").collect();
+
+    const projection = all.find(
+      (p) =>
+        p.mode === "projection" &&
+        p.institutionName === institutionName &&
+        p.period === period
+    );
+
+    if (!projection) return null;
+
+    const análisisProyectado = projection.totals.grandTotal;
+    const análisisReal = analysisGrandTotal;
+    const cumplimiento =
+      análisisProyectado > 0
+        ? ((análisisReal - análisisProyectado) / análisisProyectado) * 100
+        : 0;
+
+    await ctx.db.patch(projection._id, {
+      análisisProyectado,
+      análisisReal,
+      cumplimiento,
+    });
+
+    return projection._id;
   },
 });
 
