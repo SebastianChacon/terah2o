@@ -152,9 +152,9 @@ export default function FinanzasPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .filter((r: any) => r.institutionName === instName)
       .slice(0, 5)
-      .map((r) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const ra = r as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => {
+        const ra = r;
         const linked = ra.análisisReal !== undefined
           ? ` | Real: $${ra.análisisReal?.toFixed(2)} | Cumpl.: ${ra.cumplimiento?.toFixed(1)}%`
           : "";
