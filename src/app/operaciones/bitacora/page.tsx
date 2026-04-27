@@ -116,6 +116,30 @@ function getMonthKeyLong(dateStr: string): string {
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+/* ── Chart helpers ──────────────────────────────────────── */
+function SkeletonChart({ height = 180 }: { height?: number }) {
+  return (
+    <div
+      className="w-full rounded-xl animate-pulse"
+      style={{ height, background: "rgba(255,255,255,0.04)" }}
+    />
+  );
+}
+
+function EmptyChart({ message, height = 180 }: { message: string; height?: number }) {
+  return (
+    <div
+      className="w-full flex flex-col items-center justify-center gap-2 text-slate-600"
+      style={{ height }}
+    >
+      <BarChart3 className="w-8 h-8 opacity-30" />
+      <p className="text-[11px] font-bold uppercase tracking-widest text-center max-w-[220px]">
+        {message}
+      </p>
+    </div>
+  );
+}
+
 /* ── Page ─────────────────────────────────────────────────── */
 export default function BitacoraIntegralPage() {
   const { toast, showToast } = useToast();
@@ -134,6 +158,13 @@ export default function BitacoraIntegralPage() {
   const inventoryItems = useSafeQuery(api.inventoryItems.getAll);
   const financialProjs = useSafeQuery(api.financialProjections.getAll);
   const jarSessions = useSafeQuery(api.jarTestSessions.getAll);
+
+  // undefined = Convex still loading; [] = loaded but empty
+  const isLoading =
+    shiftRecords === undefined ||
+    inventoryItems === undefined ||
+    financialProjs === undefined ||
+    jarSessions === undefined;
 
   /* ── Transform data ────────────────────────────────────── */
   const designHistory: DesignRecord[] = useMemo(() => {
@@ -659,17 +690,23 @@ export default function BitacoraIntegralPage() {
               <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <h4 className="text-[10px] font-black uppercase text-sky-400 mb-4 tracking-widest">Producción Real Mensual (m³/Mes)</h4>
                 <div className="h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={monthlyProductionData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                      <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
-                      <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                      <Tooltip
-                        contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
-                      />
-                      <Bar dataKey="vol" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  {isLoading ? (
+                    <SkeletonChart height={180} />
+                  ) : monthlyProductionData.length === 0 ? (
+                    <EmptyChart height={180} message="Sin registros de producción. Crea turnos en la Hoja Operativa." />
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={monthlyProductionData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                        <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                        <Tooltip
+                          contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                        />
+                        <Bar dataKey="vol" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
               <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
@@ -810,21 +847,27 @@ export default function BitacoraIntegralPage() {
             <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
               <h4 className="text-[10px] font-black uppercase text-amber-500 mb-4 tracking-widest">Consumo Global de Productos (kg/mes estimado)</h4>
               <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={inventoryChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                    <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <Tooltip
-                      contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
-                    />
-                    <Bar dataKey="consumo" radius={[4, 4, 0, 0]}>
-                      {inventoryChartData.map((_: (typeof inventoryChartData)[number], i: number) => (
-                        <Cell key={i} fill={["#0ea5e9", "#ec4899", "#f59e0b", "#10b981"][i % 4]} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <SkeletonChart height={250} />
+                ) : inventoryChartData.length === 0 ? (
+                  <EmptyChart height={250} message="Sin insumos registrados. Añade productos en el módulo de Stock." />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={inventoryChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                      <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <Tooltip
+                        contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                      />
+                      <Bar dataKey="consumo" radius={[4, 4, 0, 0]}>
+                        {inventoryChartData.map((_: (typeof inventoryChartData)[number], i: number) => (
+                          <Cell key={i} fill={["#0ea5e9", "#ec4899", "#f59e0b", "#10b981"][i % 4]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
@@ -901,19 +944,25 @@ export default function BitacoraIntegralPage() {
             <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
               <h4 className="text-[10px] font-black uppercase text-pink-400 mb-4 tracking-widest">Comparativa Financiera: Proyectado vs Real (USD)</h4>
               <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={financeChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                    <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
-                    <Tooltip
-                      contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
-                    />
-                    <Legend formatter={(value: string) => <span style={{ color: "#94a3b8", fontSize: 10 }}>{value}</span>} />
-                    <Bar dataKey="Proyectado" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="Real" fill="#10b981" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <SkeletonChart height={250} />
+                ) : financeChartData.length === 0 ? (
+                  <EmptyChart height={250} message="Sin proyecciones guardadas. Genera informes en el módulo de Finanzas." />
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={financeChartData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                      <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <Tooltip
+                        contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                      />
+                      <Legend formatter={(value: string) => <span style={{ color: "#94a3b8", fontSize: 10 }}>{value}</span>} />
+                      <Bar dataKey="Proyectado" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Real" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </div>
 
