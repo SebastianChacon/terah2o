@@ -202,44 +202,68 @@ export default function FinanzasPage() {
 
   const handleSave = useCallback(async () => {
     if (!instName.trim()) return showToast("Nombre de institución requerido", "error");
+
+    // Snapshot all display-critical values synchronously before any async operation.
+    // After awaits, React 18 may flush batched state updates (e.g., from resetForm()),
+    // which could cause the PDF to read post-reset defaults instead of the user's data.
+    const snap = {
+      instName,
+      mode,
+      plantFlow,
+      opHours,
+      realM3,
+      volumeMonth,
+      hrRows: hrRows.map((h) => ({ ...h })),
+      expenses: { ...expenses },
+      chemicals: chemicals.map((c) => ({ ...c })),
+      lossPercent,
+      billableVolume,
+      userRate,
+      breakEvenRate,
+      revenue,
+      profit,
+      totals: { ...totals },
+      aiResponse,
+    };
+
     const period = new Date().toISOString().slice(0, 7); // "YYYY-MM"
     const projection: Omit<FinancialProjection, "_id"> = {
-      institutionName: instName,
-      mode,
+      institutionName: snap.instName,
+      mode: snap.mode,
       production: {
-        plantFlow: parseFloat(plantFlow) || undefined,
-        opHours: parseFloat(opHours) || undefined,
-        realM3: parseFloat(realM3) || undefined,
-        volumeMonth,
+        plantFlow: parseFloat(snap.plantFlow) || undefined,
+        opHours: parseFloat(snap.opHours) || undefined,
+        realM3: parseFloat(snap.realM3) || undefined,
+        volumeMonth: snap.volumeMonth,
       },
-      humanResources: hrRows,
-      operationalExpenses: expenses,
-      chemicals,
+      humanResources: snap.hrRows,
+      operationalExpenses: snap.expenses,
+      chemicals: snap.chemicals,
       sustainability: {
-        lossPercent: parseFloat(lossPercent) || 0,
-        billableVolume,
-        userRate: parseFloat(userRate) || 0,
-        breakEvenRate,
-        revenue,
-        profit,
+        lossPercent: parseFloat(snap.lossPercent) || 0,
+        billableVolume: snap.billableVolume,
+        userRate: parseFloat(snap.userRate) || 0,
+        breakEvenRate: snap.breakEvenRate,
+        revenue: snap.revenue,
+        profit: snap.profit,
       },
-      totals,
+      totals: snap.totals,
     };
 
     try {
       await createProjection({ ...projection, period });
-      if (mode === "analysis") {
+      if (snap.mode === "analysis") {
         await linkRealAnalysis({
-          institutionName: instName,
+          institutionName: snap.instName,
           period,
-          analysisGrandTotal: totals.grandTotal,
+          analysisGrandTotal: snap.totals.grandTotal,
         });
       }
       await createBitacora({
         date: new Date().toISOString().split("T")[0],
         source: "Finanzas PTAP",
         category: "Finanzas",
-        summary: `${mode === "projection" ? "Proyección" : "Análisis Real"} — ${instName} — Total: $${totals.grandTotal.toFixed(2)} — Costo/m³: $${totals.costPerM3.toFixed(4)}`,
+        summary: `${snap.mode === "projection" ? "Proyección" : "Análisis Real"} — ${snap.instName} — Total: $${snap.totals.grandTotal.toFixed(2)} — Costo/m³: $${snap.totals.costPerM3.toFixed(4)}`,
       });
       showToast("Informe guardado", "success");
       resetForm();
@@ -247,16 +271,16 @@ export default function FinanzasPage() {
       showToast("Error al guardar informe", "error");
     }
 
-    /* PDF */
+    /* PDF — uses snap to guarantee values match what was on screen at click time */
     const w = window.open("", "_blank");
     if (w) {
-      const chemRows2 = chemicals
+      const chemRows2 = snap.chemicals
         .map(
           (c) =>
-            `<tr><td>${c.name}</td><td>${mode === "projection" ? (c.dose ?? 0) + " mg/L" : (c.totalKg ?? 0) + " kg"}</td><td>$${c.pricePerKg.toFixed(2)}</td><td>$${c.monthlyCost.toFixed(2)}</td></tr>`
+            `<tr><td>${c.name}</td><td>${snap.mode === "projection" ? (c.dose ?? 0) + " mg/L" : (c.totalKg ?? 0) + " kg"}</td><td>$${c.pricePerKg.toFixed(2)}</td><td>$${c.monthlyCost.toFixed(2)}</td></tr>`
         )
         .join("");
-      w.document.write(`<html><head><title>Reporte PTAP - ${instName}</title>
+      w.document.write(`<html><head><title>Reporte PTAP - ${snap.instName}</title>
         <style>body{font-family:sans-serif;color:#0a192f;padding:40px;font-size:11px}
         .header{border-bottom:5px solid #f59e0b;padding-bottom:10px;margin-bottom:25px;display:flex;justify-content:space-between}
         h1{font-size:22px;margin:0;font-style:italic;text-transform:uppercase}
@@ -269,24 +293,24 @@ export default function FinanzasPage() {
         td{border:1px solid #e2e8f0;padding:8px;text-align:center}
         .footer{background:#0a192f;color:white;padding:30px;border-radius:15px;text-align:center;margin-top:40px}</style></head><body>
         <div class="header"><div><h1>Memoria de Gestión Financiera</h1>
-        <p><b>Institución:</b> ${instName}</p><p><b>Fecha:</b> ${new Date().toLocaleDateString()}</p></div>
-        <div style="background:#0a192f;color:white;padding:6px 12px;border-radius:6px;font-size:10px;text-transform:uppercase;font-weight:900;height:fit-content">MODO: ${mode.toUpperCase()}</div></div>
+        <p><b>Institución:</b> ${snap.instName}</p><p><b>Fecha:</b> ${new Date().toLocaleDateString()}</p></div>
+        <div style="background:#0a192f;color:white;padding:6px 12px;border-radius:6px;font-size:10px;text-transform:uppercase;font-weight:900;height:fit-content">MODO: ${snap.mode.toUpperCase()}</div></div>
         <div class="grid">
-          <div class="card"><b>Volumen Mes</b><span style="font-size:16px;font-weight:900">${volumeMonth.toFixed(0)} m³</span></div>
-          <div class="card"><b>Vol. Facturable</b><span style="font-size:16px;font-weight:900">${billableVolume.toFixed(0)} m³</span></div>
-          <div class="card"><b>Costo/m³</b><span style="font-size:16px;font-weight:900">$${totals.costPerM3.toFixed(4)}</span></div>
+          <div class="card"><b>Volumen Mes</b><span style="font-size:16px;font-weight:900">${snap.volumeMonth.toFixed(0)} m³</span></div>
+          <div class="card"><b>Vol. Facturable</b><span style="font-size:16px;font-weight:900">${snap.billableVolume.toFixed(0)} m³</span></div>
+          <div class="card"><b>Costo/m³</b><span style="font-size:16px;font-weight:900">$${snap.totals.costPerM3.toFixed(4)}</span></div>
         </div>
         <h3>Recurso Humano</h3>
         <table><thead><tr><th>Cargo</th><th>N°</th><th>Unitario</th><th>Total</th></tr></thead><tbody>
-        ${hrRows.map((h) => `<tr><td>${h.role}</td><td>${h.quantity}</td><td>$${h.salary}</td><td>$${h.subtotal.toFixed(2)}</td></tr>`).join("")}
+        ${snap.hrRows.map((h) => `<tr><td>${h.role}</td><td>${h.quantity}</td><td>$${h.salary}</td><td>$${h.subtotal.toFixed(2)}</td></tr>`).join("")}
         </tbody></table>
         <h3>Matriz Química</h3>
         <table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Gasto</th></tr></thead><tbody>${chemRows2}</tbody></table>
-        ${aiResponse ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANÁLISIS IA</h4><div>${aiResponse.replace(/\n/g, "<br>")}</div></div>` : ""}
+        ${snap.aiResponse ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANÁLISIS IA</h4><div>${snap.aiResponse.replace(/\n/g, "<br>")}</div></div>` : ""}
         <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversión Mensual Total</p>
-        <h2 style="font-size:42px;margin:10px 0">$${totals.grandTotal.toFixed(2)}</h2>
-        <div style="display:inline-block;padding:8px 20px;border-radius:50px;background:${profit >= 0 ? "#10b981" : "#f43f5e"};font-weight:900;font-size:14px">
-        MARGEN NETO: $${profit.toFixed(2)}</div></div>
+        <h2 style="font-size:42px;margin:10px 0">$${snap.totals.grandTotal.toFixed(2)}</h2>
+        <div style="display:inline-block;padding:8px 20px;border-radius:50px;background:${snap.profit >= 0 ? "#10b981" : "#f43f5e"};font-weight:900;font-size:14px">
+        MARGEN NETO: $${snap.profit.toFixed(2)}</div></div>
         <script>window.onload=function(){window.print()}<\/script></body></html>`);
       w.document.close();
     }

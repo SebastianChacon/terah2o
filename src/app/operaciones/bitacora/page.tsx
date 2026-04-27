@@ -419,8 +419,9 @@ export default function BitacoraIntegralPage() {
 
   function openFinanceRowPDF(r: FinanceRecord) {
     const dateStr = new Date().toLocaleDateString("es-EC");
-    const html = `<html><head><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
+    const html = `<html><head><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.notice{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;font-size:11px;color:#854d0e;margin-bottom:20px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>Reporte Financiero — ${r.mes}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
+      <div class="notice">Registro guardado — Los valores reflejan el estado de la proyección al momento de su guardado. Para ver los datos actuales, consulte la sección Finanzas.</div>
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Período</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
