@@ -399,13 +399,13 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
             <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
               <SectionHeader number="02" title="Protocolo Analítico INEN 1108" />
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
+                <table className="w-full text-sm min-w-[720px]">
+                  <thead className="sticky top-14 z-10">
                     <tr className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
-                      <th className="p-6 text-left">Parámetro Técnico</th>
-                      <th className="p-6 text-center">Agua Cruda</th>
-                      <th className="p-6 text-center">Agua Tratada</th>
-                      <th className="p-6 text-left">Validación Norma</th>
+                      <th className="p-6 text-left min-w-[200px]">Parámetro Técnico</th>
+                      <th className="p-6 text-center min-w-[150px]">Agua Cruda</th>
+                      <th className="p-6 text-center min-w-[150px]">Agua Tratada</th>
+                      <th className="p-6 text-left min-w-[180px]">Validación Norma</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
