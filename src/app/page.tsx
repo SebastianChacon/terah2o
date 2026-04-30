@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { WhatsAppFab } from "@/components/fab/WhatsAppFab";
-import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 
 export default function HomePage() {

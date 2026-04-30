@@ -712,27 +712,33 @@ export default function BitacoraIntegralPage() {
               <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
                 <h4 className="text-[10px] font-black uppercase text-emerald-400 mb-4 tracking-widest">Cumplimiento de Calidad INEN</h4>
                 <div className="h-[180px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={complianceData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={50}
-                        outerRadius={70}
-                        dataKey="value"
-                        strokeWidth={0}
-                      >
-                        {complianceData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Legend
-                        verticalAlign="bottom"
-                        formatter={(value: string) => <span style={{ color: "#64748b", fontSize: 10 }}>{value}</span>}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  {isLoading ? (
+                    <SkeletonChart height={180} />
+                  ) : complianceData.every(d => d.value === 0) ? (
+                    <EmptyChart height={180} message="Sin parámetros registrados. Crea turnos en la Hoja Operativa." />
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={complianceData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={70}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {complianceData.map((entry, i) => (
+                            <Cell key={i} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Legend
+                          verticalAlign="bottom"
+                          formatter={(value: string) => <span style={{ color: "#64748b", fontSize: 10 }}>{value}</span>}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
             </div>

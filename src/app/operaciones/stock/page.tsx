@@ -56,6 +56,7 @@ export default function StockPage() {
   /* Sync Convex inventory to local state */
   useEffect(() => {
     if (inventoryItems && (inventoryItems as unknown[]).length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStock(
         (inventoryItems as Array<{
           _id: string;

@@ -20,10 +20,7 @@ import { NavbarUser } from "@/components/auth/NavbarUser";
 import { HR_ROLES } from "@/lib/constants";
 import { calculateMonthlyVolume, calculateBillableVolume } from "@/lib/calculations/hydraulic";
 import {
-  calculateTotalHR,
-  calculateTotalExpenses,
   calculateChemicalMonthlyCost,
-  calculateTotalChemicals,
   calculateFinancialTotals,
   calculateBreakEvenRate,
   calculateRevenue,
