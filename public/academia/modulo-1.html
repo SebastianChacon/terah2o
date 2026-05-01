@@ -449,26 +449,17 @@
     </footer>
 
     <script>
-        const _k_encoded = "QUl6YVN5QmtzTXlJbmFEUS1xd3pTU0dHdHM5UGN2dkNkbTY1U0VJ";
-        const apiKey = atob(_k_encoded);
-        const GEMINI_MODEL = "gemini-2.5-flash";
-
         // Non-streaming call — used by the AI diagnostic panel
-        async function callGemini(prompt, systemInstruction = "") {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] }
-            };
+        async function callGemini(prompt, context) {
             for (let i = 0; i < 5; i++) {
                 try {
-                    const response = await fetch(url, {
+                    const response = await fetch('/api/gemini', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
+                        body: JSON.stringify({ prompt, context })
                     });
                     const data = await response.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "Sin respuesta.";
+                    return data.text ?? "Sin respuesta.";
                 } catch (e) {
                     await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
@@ -477,16 +468,11 @@
         }
 
         // Streaming call — tokens arrive and are appended incrementally via onToken callback
-        async function streamGemini(prompt, systemInstruction, onToken) {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-            const payload = {
-                contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: systemInstruction }] }
-            };
-            const response = await fetch(url, {
+        async function streamGemini(prompt, context, onToken) {
+            const response = await fetch('/api/gemini-stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ prompt, context })
             });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const reader = response.body.getReader();
@@ -524,8 +510,7 @@
             }
             loading.classList.remove('hidden');
             const prompt = `Analiza estos parámetros de agua cruda: Turbiedad=${turb} NTU, pH=${ph}, Alcalinidad=${alk} mg/L. Sugiere el coagulante más adecuado entre (Sulfato de Al, PAC, Cloruro Férrico) y si se requiere agente alcalinizante (Cal/Soda) para ajustar el punto isoeléctrico. Sé breve y técnico.`;
-            const system = "Eres un Ingeniero Sanitario experto en plantas de potabilización. Tu respuesta debe ser técnica y orientada a la operación.";
-            const result = await callGemini(prompt, system);
+            const result = await callGemini(prompt, 'academia-coagulacion');
             output.innerText = result;
             loading.classList.add('hidden');
         }
@@ -556,9 +541,8 @@
             container.appendChild(aiDiv);
             container.scrollTop = container.scrollHeight;
 
-            const system = "Eres un consultor experto de Servicios Profesionales Tera para la capacitación en ingeniería de potabilización. Responde preguntas técnicas basadas en la Norma INEN 1108 y procesos sanitarios.";
             try {
-                await streamGemini(msg, system, (token, isFirst) => {
+                await streamGemini(msg, 'academia-tutor', (token, isFirst) => {
                     if (isFirst) aiDiv.innerText = '';
                     aiDiv.innerText += token;
                     container.scrollTop = container.scrollHeight;
