@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  GEMINI_SYSTEM_PROMPTS,
+  GEMINI_GENERATION_CONFIGS,
+  DEFAULT_GENERATION_CONFIG,
+} from "@/lib/gemini-prompts";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const MODEL = "gemini-2.5-flash";
@@ -6,6 +11,7 @@ const MODEL = "gemini-2.5-flash";
 async function callGemini(
   prompt: string,
   systemInstruction: string,
+  generationConfig: { maxOutputTokens: number; temperature: number },
   retryCount = 0
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -16,6 +22,7 @@ async function callGemini(
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       systemInstruction: { parts: [{ text: systemInstruction }] },
+      generationConfig,
     }),
   });
 
@@ -23,7 +30,7 @@ async function callGemini(
     if (response.status === 429 && retryCount < 5) {
       const delay = Math.pow(2, retryCount) * 1000;
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return callGemini(prompt, systemInstruction, retryCount + 1);
+      return callGemini(prompt, systemInstruction, generationConfig, retryCount + 1);
     }
     throw new Error(`Gemini API error: ${response.status}`);
   }
@@ -44,16 +51,29 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { prompt, systemPrompt } = await request.json();
+    const { prompt, systemPrompt, context } = await request.json();
 
-    if (!prompt || !systemPrompt) {
+    if (!prompt) {
+      return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
+    }
+
+    const resolvedSystemPrompt = context
+      ? GEMINI_SYSTEM_PROMPTS[context]
+      : systemPrompt;
+
+    if (!resolvedSystemPrompt) {
       return NextResponse.json(
-        { error: "Missing prompt or systemPrompt" },
+        { error: context ? `Unknown context: ${context}` : "Missing systemPrompt" },
         { status: 400 }
       );
     }
 
-    const text = await callGemini(prompt, systemPrompt);
+    const generationConfig =
+      context
+        ? (GEMINI_GENERATION_CONFIGS[context] ?? DEFAULT_GENERATION_CONFIG)
+        : DEFAULT_GENERATION_CONFIG;
+
+    const text = await callGemini(prompt, resolvedSystemPrompt, generationConfig);
     return NextResponse.json({ text });
   } catch (error) {
     const message =
