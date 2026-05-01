@@ -17,15 +17,14 @@ export function useGemini({ context }: UseGeminiOptions) {
       setError(null);
 
       try {
-        const systemPrompt = GEMINI_SYSTEM_PROMPTS[context];
-        if (!systemPrompt) {
+        if (!GEMINI_SYSTEM_PROMPTS[context]) {
           throw new Error(`Unknown context: ${context}`);
         }
 
         const response = await fetch("/api/gemini", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, systemPrompt }),
+          body: JSON.stringify({ prompt, context }),
         });
 
         if (!response.ok) {
