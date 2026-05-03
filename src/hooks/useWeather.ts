@@ -11,16 +11,11 @@ export function useWeather() {
   const fetchWeather = useCallback(async (location: string) => {
     setLoading(true);
     setError(null);
-
     try {
       const response = await fetch(
         `/api/weather?location=${encodeURIComponent(location)}`
       );
-
-      if (!response.ok) {
-        throw new Error("Error de conexión climática");
-      }
-
+      if (!response.ok) throw new Error("Error de conexión climática");
       const data: WeatherData = await response.json();
       setWeather(data);
       return data;
@@ -34,5 +29,27 @@ export function useWeather() {
     }
   }, []);
 
-  return { weather, fetchWeather, loading, error };
+  const fetchWeatherByCoords = useCallback(
+    async (lat: number, lon: number) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+        if (!response.ok) throw new Error("Error de conexión climática");
+        const data: WeatherData = await response.json();
+        setWeather(data);
+        return data;
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : "Error desconocido";
+        setError(message);
+        return null;
+      } finally {
+        setLoading(false);
+      }
+    },
+    []
+  );
+
+  return { weather, fetchWeather, fetchWeatherByCoords, loading, error };
 }
