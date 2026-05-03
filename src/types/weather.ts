@@ -5,4 +5,9 @@ export interface WeatherData {
   pop: number;
   rain24h: number;
   cityName: string;
+  feelsLike?: number;
+  pressure?: number;
+  cloudCover?: number;
+  visibility?: number;
+  windSpeed?: number;
 }
