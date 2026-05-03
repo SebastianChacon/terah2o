@@ -83,3 +83,33 @@ export function calculateMeteoDailyConsumption(
 ): number {
   return Math.round((lps * 3.6 * 24 * dose) / 1000);
 }
+
+/**
+ * Calcula autonomía química en días según stock y consumo diario.
+ */
+export function calculateAutonomy(
+  stockKg: number,
+  dailyCons: number
+): number {
+  if (dailyCons <= 0) return 99;
+  return Math.floor(stockKg / dailyCons);
+}
+
+/**
+ * Proyecta lluvia diaria (mm) para los mismos 8 puntos que predictTurbidity.
+ * Punto 0 = Hoy, puntos 1-7 = D+1 .. D+7.
+ */
+export function projectRainfall(
+  rainIntensity: number,
+  durationDays: number
+): number[] {
+  const result: number[] = [rainIntensity];
+  for (let i = 1; i <= 7; i++) {
+    const rDay =
+      i <= durationDays
+        ? rainIntensity
+        : Math.max(0, rainIntensity * (1 - (i - durationDays) * 0.45));
+    result.push(parseFloat(rDay.toFixed(1)));
+  }
+  return result;
+}
