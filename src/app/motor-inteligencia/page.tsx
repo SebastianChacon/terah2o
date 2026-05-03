@@ -235,7 +235,7 @@ export default function MotorInteligenciaPage() {
 
   /* ── stock bars ── */
   const stockBars = prediction.labels.map((label, i) => {
-    const remaining = Math.max(0, stockKg - dailyCons * (i + 1));
+    const remaining = Math.max(0, stockKg - dailyCons * i);
     const pct = stockKg > 0 ? Math.min(100, (remaining / stockKg) * 100) : 0;
     return { label, remaining: Math.round(remaining), pct };
   });

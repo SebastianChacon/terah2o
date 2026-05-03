@@ -91,7 +91,7 @@ export function calculateAutonomy(
   stockKg: number,
   dailyCons: number
 ): number {
-  if (dailyCons <= 0) return 99;
+  if (dailyCons <= 0) return 100;
   return Math.floor(stockKg / dailyCons);
 }
 
