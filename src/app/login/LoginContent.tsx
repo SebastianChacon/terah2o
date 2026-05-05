@@ -10,6 +10,38 @@ import Link from "next/link";
 
 type FlowMode = "signIn" | "signUp";
 
+// @convex-dev/auth Password provider throws PascalCase codes like "InvalidSecret",
+// "InvalidAccountId", "AccountAlreadyExists" — not the plain-English strings the
+// original catch was checking. This function maps the real codes to Spanish.
+function parseAuthError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+
+  if (
+    msg.includes("InvalidSecret") ||
+    msg.includes("Invalid password") ||
+    msg.includes("wrong password") ||
+    msg.includes("incorrect password")
+  ) {
+    return "Contraseña incorrecta. Verifica tus credenciales.";
+  }
+  if (
+    msg.includes("AccountAlreadyExists") ||
+    msg.includes("already exists") ||
+    msg.includes("already registered")
+  ) {
+    return "Ya existe una cuenta con ese correo. Inicia sesión.";
+  }
+  if (
+    msg.includes("InvalidAccountId") ||
+    msg.includes("not found") ||
+    msg.includes("no account") ||
+    msg.includes("Could not find")
+  ) {
+    return "No existe cuenta con ese correo. Regístrate primero.";
+  }
+  return "Error de autenticación. Verifica tus datos e intenta de nuevo.";
+}
+
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -82,16 +114,7 @@ export default function LoginContent() {
       // isAuthenticated → true desencadena el useEffect que llama upsertUser + redirect
     } catch (err: unknown) {
       pendingUpsertRef.current = null;
-      const msg = err instanceof Error ? err.message : "Error de autenticación";
-      if (msg.includes("Invalid password") || msg.includes("wrong password")) {
-        setError("Contraseña incorrecta. Verifica tus credenciales.");
-      } else if (msg.includes("already exists")) {
-        setError("Ya existe una cuenta con ese email. Inicia sesión.");
-      } else if (msg.includes("not found")) {
-        setError("No existe cuenta con ese email. Regístrate primero.");
-      } else {
-        setError(msg);
-      }
+      setError(parseAuthError(err));
     } finally {
       setLoading(false);
     }
