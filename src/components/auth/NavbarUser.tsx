@@ -127,9 +127,10 @@ export function NavbarUser() {
                 setOpen(false);
                 // Clear all auth cookies explicitly before calling signOut.
                 // If signOut's server call fails we still destroy the session client-side.
-                document.cookie = "__convexAuthJWT=; path=/; max-age=0; SameSite=Lax";
-                document.cookie = "__convexAuthRefreshToken=; path=/; max-age=0; SameSite=Lax";
-                document.cookie = "__convexSubStatus=; path=/; max-age=0; SameSite=Lax";
+                const secure = location.protocol === "https:" ? "; Secure" : "";
+                document.cookie = `__convexAuthJWT=; path=/; max-age=0; SameSite=Lax${secure}`;
+                document.cookie = `__convexAuthRefreshToken=; path=/; max-age=0; SameSite=Lax${secure}`;
+                document.cookie = `__convexSubStatus=; path=/; max-age=0; SameSite=Lax${secure}`;
                 try {
                   await signOut();
                 } catch {
