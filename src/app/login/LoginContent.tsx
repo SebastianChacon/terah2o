@@ -186,6 +186,8 @@ export default function LoginContent() {
                 </label>
                 <input
                   type="text"
+                  name="name"
+                  autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -202,6 +204,8 @@ export default function LoginContent() {
               </label>
               <input
                 type="email"
+                name="email"
+                autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -217,6 +221,8 @@ export default function LoginContent() {
               </label>
               <input
                 type="password"
+                name="password"
+                autoComplete={mode === "signIn" ? "current-password" : "new-password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -234,6 +240,8 @@ export default function LoginContent() {
                 </label>
                 <input
                   type="text"
+                  name="organization"
+                  autoComplete="organization"
                   value={orgName}
                   onChange={(e) => setOrgName(e.target.value)}
                   required
