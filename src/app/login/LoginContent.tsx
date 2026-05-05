@@ -58,6 +58,7 @@ export default function LoginContent() {
   const [name, setName] = useState("");
   const [orgName, setOrgName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Guardamos los datos del form en un ref para que el efecto pueda accederlos
@@ -74,6 +75,7 @@ export default function LoginContent() {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    setRedirecting(true);
     const pending = pendingUpsertRef.current;
     if (pending) {
       pendingUpsertRef.current = null;
@@ -120,10 +122,17 @@ export default function LoginContent() {
     }
   }
 
-  // While Convex resolves auth state from cookies, render nothing.
-  // Without this, authenticated users see a flash of the login form before being redirected.
-  if (authLoading) {
-    return <div className="min-h-screen bg-[#05051a]" />;
+  if (authLoading || redirecting) {
+    return (
+      <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+          <p className="text-white/30 text-xs font-mono tracking-widest uppercase">
+            {redirecting ? "Iniciando sesión..." : "Cargando..."}
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
