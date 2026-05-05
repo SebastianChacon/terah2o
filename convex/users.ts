@@ -37,14 +37,38 @@ export const upsertCurrentUser = mutation({
       return userId;
     }
 
-    // Primera vez: inicializar perfil de negocio
-    // tokenIdentifier = userId para que los índices by_tokenIdentifier funcionen
+    // Primera vez: inicializar perfil de negocio.
+    // Si el admin pre-creó un doc de operador con este email, heredar su rol y org;
+    // de lo contrario el primer registro siempre será admin.
+    const preCreated = await ctx.db
+      .query("users")
+      .filter((q) => q.eq(q.field("email"), args.email))
+      .filter((q) => q.eq(q.field("role"), "operator"))
+      .first();
+
+    const roleToAssign = preCreated ? "operator" : "admin";
+    const orgId = preCreated?.organizationId;
+
     await ctx.db.patch(userId, {
       tokenIdentifier: userId,
-      role: "admin",
+      role: roleToAssign,
       createdAt: Date.now(),
+      ...(orgId ? { organizationId: orgId } : {}),
       ...(args.name ? { name: args.name } : {}),
     });
+
+    // Eliminar el doc huérfano y migrar sus permisos al userId real
+    if (preCreated) {
+      const perms = await ctx.db
+        .query("operatorPermissions")
+        .filter((q) => q.eq(q.field("operatorId"), preCreated._id))
+        .first();
+      if (perms) {
+        await ctx.db.patch(perms._id, { operatorId: userId });
+      }
+      await ctx.db.delete(preCreated._id);
+    }
+
     return userId;
   },
 });
