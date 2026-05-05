@@ -135,6 +135,10 @@ export default function LoginContent() {
     );
   }
 
+  // iOS Safari auto-zooms any input with font-size < 16px and never zooms back.
+  const inputClass =
+    "w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-base placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all";
+
   return (
     <div className="min-h-screen bg-[#05051a] flex items-center justify-center px-4">
       {/* Background */}
@@ -186,7 +190,7 @@ export default function LoginContent() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   placeholder="Ing. Juan Pérez"
-                  className="w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all"
+                  className={inputClass}
                 />
               </div>
             )}
@@ -202,7 +206,7 @@ export default function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 placeholder="admin@ptap.ec"
-                className="w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all"
+                className={inputClass}
               />
             </div>
 
@@ -218,7 +222,7 @@ export default function LoginContent() {
                 required
                 minLength={8}
                 placeholder="••••••••"
-                className="w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all"
+                className={inputClass}
               />
             </div>
 
@@ -234,7 +238,7 @@ export default function LoginContent() {
                   onChange={(e) => setOrgName(e.target.value)}
                   required
                   placeholder="PTAP Municipio de Loja"
-                  className="w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all"
+                  className={inputClass}
                 />
               </div>
             )}
