@@ -32,7 +32,8 @@ export function useSubscription(): UseSubscriptionResult {
     const status = subscription?.status ?? "none";
     // Cookie de sesión corta (sin httpOnly para que JS pueda escribirla)
     const maxAge = 60 * 60; // 1 hora
-    document.cookie = `__convexSubStatus=${status};path=/;max-age=${maxAge};SameSite=Lax`;
+    const secure = location.protocol === "https:" ? "; Secure" : "";
+    document.cookie = `__convexSubStatus=${status};path=/;max-age=${maxAge};SameSite=Lax${secure}`;
   }, [subscription]);
 
   const isActive =
