@@ -24,7 +24,7 @@ export const createOrganization = mutation({
     const orgId = await ctx.db.insert("organizations", {
       name: args.name,
       adminUserId: user._id,
-      maxOperators: 5,
+      maxOperators: 3,
       createdAt: Date.now(),
     });
 
