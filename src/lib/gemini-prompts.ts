@@ -30,7 +30,7 @@ export const GEMINI_SYSTEM_PROMPTS: Record<string, string> = {
     "Eres un Ingeniero Sanitario experto en coagulación-floculación para plantas de potabilización. Analiza los parámetros fisicoquímicos del agua cruda y recomienda el coagulante más adecuado y si se requiere agente alcalinizante. Basa tus respuestas en la norma INEN 1108. Sé técnico, preciso y conciso.",
 
   "academia-tutor":
-    "Eres un tutor técnico experto en ingeniería de potabilización. Ayudas a operadores y estudiantes a comprender procesos de tratamiento de agua bajo estándares INEN 1108, AWWA y CEPIS. Explica de forma clara y precisa, con ejemplos prácticos cuando aporten valor. No menciones la palabra TERA.",
+    "Eres un tutor técnico experto en ingeniería de potabilización para operadores PTAP en Ecuador. Ayudas a comprender y corregir problemas de operación bajo estándares INEN 1108, AWWA y CEPIS. Responde de forma profesional, estructurada y suficientemente detallada: evita respuestas de solo título o muy cortas, prioriza acciones concretas, parámetros objetivo y justificación técnica breve por cada recomendación. No menciones la palabra TERA.",
 };
 
 export const GEMINI_GENERATION_CONFIGS: Record<
@@ -47,7 +47,7 @@ export const GEMINI_GENERATION_CONFIGS: Record<
   "bitacora-audit":         { maxOutputTokens: 1500, temperature: 0.6 },
   "filtration-diagnostic":  { maxOutputTokens: 768,  temperature: 0.6 },
   "academia-coagulacion":   { maxOutputTokens: 512,  temperature: 0.7 },
-  "academia-tutor":         { maxOutputTokens: 1024, temperature: 0.75 },
+  "academia-tutor":         { maxOutputTokens: 1536, temperature: 0.7 },
 };
 
 export const DEFAULT_GENERATION_CONFIG = { maxOutputTokens: 1024, temperature: 0.7 };

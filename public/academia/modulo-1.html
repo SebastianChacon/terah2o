@@ -468,6 +468,24 @@
         }
 
         // Streaming call — tokens arrive and are appended incrementally via onToken callback
+        function parseGeminiSseChunk(chunk, onToken, state) {
+            const lines = chunk.split('\n');
+            for (const rawLine of lines) {
+                const line = rawLine.trim();
+                if (!line.startsWith('data:')) continue;
+                const json = line.slice(5).trim();
+                if (!json || json === '[DONE]') continue;
+                try {
+                    const data = JSON.parse(json);
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        onToken(text, state.firstToken);
+                        state.firstToken = false;
+                    }
+                } catch {}
+            }
+        }
+
         async function streamGemini(prompt, context, onToken) {
             const response = await fetch('/api/gemini-stream', {
                 method: 'POST',
@@ -478,24 +496,17 @@
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
-            let firstToken = true;
+            const state = { firstToken: true };
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
                 buffer = lines.pop() ?? '';
-                for (const line of lines) {
-                    if (!line.startsWith('data: ')) continue;
-                    const json = line.slice(6).trim();
-                    if (!json || json === '[DONE]') continue;
-                    try {
-                        const data = JSON.parse(json);
-                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        if (text) { onToken(text, firstToken); firstToken = false; }
-                    } catch {}
-                }
+                parseGeminiSseChunk(lines.join('\n'), onToken, state);
             }
+            const tail = (buffer + decoder.decode()).trim();
+            if (tail) parseGeminiSseChunk(tail, onToken, state);
         }
 
         async function getAIDiagnostic() {
@@ -542,7 +553,18 @@
             container.scrollTop = container.scrollHeight;
 
             try {
-                await streamGemini(msg, 'academia-tutor', (token, isFirst) => {
+                const guidedPrompt = `Consulta del usuario: ${msg}
+
+Responde con este formato profesional y completo (sin introducir texto adicional fuera de secciones):
+1) Diagnóstico técnico (2-4 líneas)
+2) Causas probables (3 viñetas máximas)
+3) Recomendaciones operativas inmediatas (3-5 pasos accionables)
+4) Parámetros a controlar y rangos objetivo (tabla breve o lista)
+5) Riesgo si no se corrige (1-2 líneas)
+
+Mantén precisión técnica y claridad para operador PTAP.`;
+
+                await streamGemini(guidedPrompt, 'academia-tutor', (token, isFirst) => {
                     if (isFirst) aiDiv.innerText = '';
                     aiDiv.innerText += token;
                     container.scrollTop = container.scrollHeight;
