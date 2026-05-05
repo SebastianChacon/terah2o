@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   title: "TERAH2O | Inteligencia Operativa",
   description:
     "Plataforma de optimización y control para plantas de tratamiento de agua potable.",
+};
+
+// Without this, mobile browsers render at ~980px desktop width and zoom out,
+// making the entire app unusable on phones. maximumScale is intentionally
+// omitted — iOS auto-zoom on inputs is prevented by font-size ≥ 16px (text-base),
+// and blocking zoom site-wide violates WCAG 1.4.4.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({
