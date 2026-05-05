@@ -33,13 +33,16 @@ function getCookie(name: string): string | null {
 function setCookie(name: string, value: string): void {
   if (typeof document === "undefined") return;
   // 30 días · path raíz · SameSite=Lax (no HttpOnly — necesitamos leerlo en JS)
+  // Secure is added on HTTPS so the JWT is never transmitted over plain HTTP.
   const maxAge = 60 * 60 * 24 * 30;
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAge}; SameSite=Lax${secure}`;
 }
 
 function deleteCookie(name: string): void {
   if (typeof document === "undefined") return;
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+  const secure = location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax${secure}`;
 }
 
 const convexCookieStorage = {
