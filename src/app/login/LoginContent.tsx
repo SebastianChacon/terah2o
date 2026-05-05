@@ -45,7 +45,10 @@ function parseAuthError(err: unknown): string {
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") ?? "/operaciones";
+  // Validate the ?next= param: reject absolute URLs to prevent open-redirect phishing.
+  // An attacker could craft /login?next=https://evil.com to redirect users off-site.
+  const rawNext = searchParams.get("next") ?? "/operaciones";
+  const nextPath = rawNext.startsWith("/") ? rawNext : "/operaciones";
 
   const { signIn } = useAuthActions();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
