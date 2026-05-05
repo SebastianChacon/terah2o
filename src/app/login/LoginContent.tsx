@@ -48,7 +48,10 @@ export default function LoginContent() {
   // Validate the ?next= param: reject absolute URLs to prevent open-redirect phishing.
   // An attacker could craft /login?next=https://evil.com to redirect users off-site.
   const rawNext = searchParams.get("next") ?? "/operaciones";
-  const nextPath = rawNext.startsWith("/") ? rawNext : "/operaciones";
+  const nextPath =
+    rawNext.startsWith("/") && !rawNext.startsWith("//")
+      ? rawNext
+      : "/operaciones";
 
   const { signIn } = useAuthActions();
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
