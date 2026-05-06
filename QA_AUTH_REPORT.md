@@ -1,9 +1,25 @@
 # QA Auth Report — TeraH2O
 > Revisión completa del área de login/auth. Fecha: 2026-05-05
+> **Actualización: 2026-05-06 — todos los bugs resueltos. Test E2E aprobado.**
 
 ---
 
-## Bugs a corregir (4 abiertos)
+## ✅ Estado final: CERRADO — todos los bugs corregidos y verificados
+
+Test end-to-end realizado en `http://localhost:3000` con usuario `carlos.test.777@ptap.ec`:
+
+| Caso | Resultado |
+|------|-----------|
+| Login con credenciales válidas | ✅ Redirige a `/operaciones` |
+| Usuario visible en navbar con rol y plan | ✅ "Ing. Carlos… · TRIAL · ADMINISTRADOR" |
+| Logout → cookie JWT destruida, redirect a `/login` | ✅ |
+| Acceder a `/operaciones` sin sesión | ✅ Redirige a `/login?next=%2Foperaciones` |
+| Acceder a `/dashboard/admin` sin sesión | ✅ Redirige a `/login?next=%2Fdashboard%2Fadmin` |
+| Login con `?next=` → vuelve a la página solicitada | ✅ Aterrizó en `/dashboard/admin` |
+
+---
+
+## Bugs — historial (4 resueltos)
 
 ### 🔴 [CRÍTICO] `convex/users.ts` — Todos los usuarios nuevos reciben `role: "admin"`
 
