@@ -253,8 +253,17 @@ try {
 
 ## Notas de Next.js 16
 
-- `src/middleware.ts` fue **eliminado** — Next.js 16 lo deprecó
-- Reemplazado por `src/proxy.ts` con función exportada como `export function proxy(...)`
+- **`src/middleware.ts` NO debe existir** — Next.js 16 deprecó esta convención y lanza error si ambos archivos coexisten:
+  ```
+  Error: Both middleware file "./src/middleware.ts" and proxy file "./src/proxy.ts" are detected.
+  Please use "./src/proxy.ts" only.
+  ```
+- El guard de autenticación y suscripción vive en **`src/proxy.ts`** y es levantado automáticamente por Next.js 16. La función debe exportarse con el nombre `proxy` (coincide con el nombre del archivo):
+  ```typescript
+  export function proxy(request: NextRequest) { ... }  // ← nombre obligatorio
+  export const config = { matcher: [...] }
+  ```
+- Si alguien restaura `middleware.ts` por error, el servidor entra en estado de error y deja de aplicar el guard. **Borrar siempre `src/middleware.ts` si aparece.**
 - Turbopack es el bundler por defecto en Next.js 16
 - Para correr el preview server con Claude: usar `/opt/homebrew/bin/node` en launch.json con `env PATH=...` ya que Turbopack necesita `node` en PATH del sistema para PostCSS
 
