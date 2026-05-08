@@ -116,17 +116,30 @@ export default function StockPage() {
         )
       );
 
-      if (item?._id) {
-        try {
+      try {
+        if (item?._id) {
+          // Item already exists in Convex → patch amount
           await updateAmountMut({
             id: item._id as never,
             amount: newAmount,
             lastUpdated: new Date().toISOString(),
           });
-        } catch {
-          showToast("Error al sincronizar con base de datos", "error");
-          return;
+        } else {
+          // Item only exists as a local default — create it in Convex (upsert)
+          await createItemMut({
+            itemId: item?.itemId ?? entryForm.productId,
+            itemName: item?.itemName ?? entryForm.productId,
+            amount: newAmount,
+            unit: item?.unit ?? "kg",
+            minimumLevel: item?.minimumLevel ?? 50,
+            dailyConsumption: item?.dailyConsumption ?? 0,
+            isCorrelated: entryForm.isCorrelated,
+            lastUpdated: new Date().toISOString(),
+          });
         }
+      } catch {
+        showToast("Error al sincronizar con base de datos", "error");
+        return;
       }
 
       try {
@@ -145,7 +158,7 @@ export default function StockPage() {
       setLastSync(new Date().toLocaleString("es-ES"));
       showToast("Carga de inventario registrada", "success");
     },
-    [entryForm, stock, updateAmountMut, createBitacora, showToast]
+    [entryForm, stock, updateAmountMut, createItemMut, createBitacora, showToast]
   );
 
   /* Create new inventory item */

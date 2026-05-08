@@ -339,6 +339,7 @@ export default function HojaOperativaPage() {
                     startAngle={90}
                     endAngle={-270}
                     stroke="none"
+                    isAnimationActive={false}
                   >
                     <Cell fill="#0ea5e9" />
                     <Cell fill="#f1f5f9" />
