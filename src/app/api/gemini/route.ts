@@ -22,7 +22,10 @@ async function callGemini(
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
       systemInstruction: { parts: [{ text: systemInstruction }] },
-      generationConfig,
+      generationConfig: {
+        ...generationConfig,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     }),
   });
 
@@ -36,10 +39,14 @@ async function callGemini(
   }
 
   const result = await response.json();
-  return (
-    result.candidates?.[0]?.content?.parts?.[0]?.text ??
-    "Respuesta no generada."
-  );
+  // gemini-2.5 may return multiple parts (thought + response). Collect all non-thought text.
+  const parts: Array<{ text?: string; thought?: boolean }> =
+    result.candidates?.[0]?.content?.parts ?? [];
+  const text = parts
+    .filter((p) => !p.thought && p.text)
+    .map((p) => p.text)
+    .join("");
+  return text || "Respuesta no generada.";
 }
 
 export async function POST(request: NextRequest) {
