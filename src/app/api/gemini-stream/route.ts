@@ -47,7 +47,10 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
         systemInstruction: { parts: [{ text: resolvedSystemPrompt }] },
-        generationConfig,
+        generationConfig: {
+          ...generationConfig,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
       }),
     });
 
