@@ -449,6 +449,34 @@
     </footer>
 
     <script>
+        // Lightweight Markdown → HTML converter (bold, italic, headings, lists, line-breaks)
+        function mdToHtml(text) {
+            if (!text) return '';
+            return text
+                // Escape HTML entities first to prevent XSS
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                // Headings (### ## #)
+                .replace(/^### (.+)$/gm, '<h4 class="font-bold text-slate-800 mt-3 mb-1 text-sm">$1</h4>')
+                .replace(/^## (.+)$/gm,  '<h3 class="font-bold text-slate-800 mt-4 mb-1">$1</h3>')
+                .replace(/^# (.+)$/gm,   '<h2 class="font-black text-slate-900 mt-4 mb-2 text-lg">$1</h2>')
+                // Bold **text** and __text__
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/__(.+?)__/g,     '<strong>$1</strong>')
+                // Italic *text* and _text_
+                .replace(/\*([^*\n]+?)\*/g, '<em>$1</em>')
+                .replace(/_([^_\n]+?)_/g,   '<em>$1</em>')
+                // Unordered lists (- item or * item)
+                .replace(/^[\-\*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
+                // Ordered lists (1. item)
+                .replace(/^\d+\. (.+)$/gm,  '<li class="ml-4 list-decimal">$1</li>')
+                // Wrap consecutive <li> in a <ul>
+                .replace(/(<li[\s\S]+?<\/li>)(?!\s*<li)/g, '<ul class="my-2 space-y-1">$1</ul>')
+                // Double line-break → paragraph break
+                .replace(/\n\n/g, '<br><br>')
+                // Single line-break
+                .replace(/\n/g, '<br>');
+        }
+
         // Non-streaming call — used by the AI diagnostic panel
         async function callGemini(prompt, context) {
             for (let i = 0; i < 5; i++) {
@@ -458,8 +486,23 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ prompt, context })
                     });
-                    const data = await response.json();
-                    return data.text ?? "Sin respuesta.";
+                    let data = null;
+                    try {
+                        data = await response.json();
+                    } catch {
+                        // Non-JSON response (e.g., proxy redirect / HTML error page)
+                        const raw = await response.text().catch(() => '');
+                        throw new Error(`Respuesta inválida del servidor. ${raw ? `Detalle: ${raw.slice(0, 200)}` : ''}`.trim());
+                    }
+
+                    if (!response.ok) {
+                        const msg = (data && (data.error || data.message)) ? (data.error || data.message) : `HTTP ${response.status}`;
+                        throw new Error(msg);
+                    }
+
+                    if (data && typeof data.text === 'string' && data.text.trim()) return data.text;
+                    if (data && (data.error || data.message)) return `Error: ${data.error || data.message}`;
+                    return "Error: respuesta vacía del asistente.";
                 } catch (e) {
                     await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
                 }
@@ -477,7 +520,13 @@
                 if (!json || json === '[DONE]') continue;
                 try {
                     const data = JSON.parse(json);
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const parts = data.candidates?.[0]?.content?.parts;
+                    const text = Array.isArray(parts)
+                        ? parts
+                            .filter(p => !p.thought && p.text)
+                            .map(p => p.text)
+                            .join('')
+                        : '';
                     if (text) {
                         onToken(text, state.firstToken);
                         state.firstToken = false;
@@ -522,7 +571,7 @@
             loading.classList.remove('hidden');
             const prompt = `Analiza estos parámetros de agua cruda: Turbiedad=${turb} NTU, pH=${ph}, Alcalinidad=${alk} mg/L. Sugiere el coagulante más adecuado entre (Sulfato de Al, PAC, Cloruro Férrico) y si se requiere agente alcalinizante (Cal/Soda) para ajustar el punto isoeléctrico. Sé breve y técnico.`;
             const result = await callGemini(prompt, 'academia-coagulacion');
-            output.innerText = result;
+            output.innerHTML = mdToHtml(result);
             loading.classList.add('hidden');
         }
 
@@ -564,13 +613,15 @@ Responde con este formato profesional y completo (sin introducir texto adicional
 
 Mantén precisión técnica y claridad para operador PTAP.`;
 
+                let accumulated = '';
                 await streamGemini(guidedPrompt, 'academia-tutor', (token, isFirst) => {
-                    if (isFirst) aiDiv.innerText = '';
-                    aiDiv.innerText += token;
+                    if (isFirst) accumulated = '';
+                    accumulated += token;
+                    aiDiv.innerHTML = mdToHtml(accumulated);
                     container.scrollTop = container.scrollHeight;
                 });
             } catch {
-                aiDiv.innerText = "Error al conectar con el asistente. Intente nuevamente.";
+                aiDiv.innerHTML = mdToHtml("Error al conectar con el asistente. Intente nuevamente.");
             }
             container.scrollTop = container.scrollHeight;
         }
