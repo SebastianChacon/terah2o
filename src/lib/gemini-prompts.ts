@@ -37,17 +37,17 @@ export const GEMINI_GENERATION_CONFIGS: Record<
   string,
   { maxOutputTokens: number; temperature: number }
 > = {
-  "financial-summary":      { maxOutputTokens: 350,  temperature: 0.5 },
-  "raw-water-analysis":     { maxOutputTokens: 512,  temperature: 0.6 },
-  "shift-expert":           { maxOutputTokens: 700,  temperature: 0.6 },
-  "technical-diagnosis":    { maxOutputTokens: 450,  temperature: 0.7 },
-  "commercial-strategy":    { maxOutputTokens: 400,  temperature: 0.8 },
-  "financial-optimization": { maxOutputTokens: 1024, temperature: 0.7 },
-  "financial-strategy":     { maxOutputTokens: 1024, temperature: 0.7 },
-  "bitacora-audit":         { maxOutputTokens: 1500, temperature: 0.6 },
-  "filtration-diagnostic":  { maxOutputTokens: 768,  temperature: 0.6 },
-  "academia-coagulacion":   { maxOutputTokens: 512,  temperature: 0.7 },
-  "academia-tutor":         { maxOutputTokens: 1536, temperature: 0.7 },
+  "financial-summary":      { maxOutputTokens: 600,  temperature: 0.5 },
+  "raw-water-analysis":     { maxOutputTokens: 1024, temperature: 0.6 },
+  "shift-expert":           { maxOutputTokens: 1200, temperature: 0.6 },
+  "technical-diagnosis":    { maxOutputTokens: 900,  temperature: 0.7 },
+  "commercial-strategy":    { maxOutputTokens: 800,  temperature: 0.8 },
+  "financial-optimization": { maxOutputTokens: 2048, temperature: 0.7 },
+  "financial-strategy":     { maxOutputTokens: 2048, temperature: 0.7 },
+  "bitacora-audit":         { maxOutputTokens: 2500, temperature: 0.6 },
+  "filtration-diagnostic":  { maxOutputTokens: 1400, temperature: 0.6 },
+  "academia-coagulacion":   { maxOutputTokens: 1024, temperature: 0.7 },
+  "academia-tutor":         { maxOutputTokens: 2500, temperature: 0.7 },
 };
 
-export const DEFAULT_GENERATION_CONFIG = { maxOutputTokens: 1024, temperature: 0.7 };
+export const DEFAULT_GENERATION_CONFIG = { maxOutputTokens: 2048, temperature: 0.7 };
