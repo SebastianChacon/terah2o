@@ -83,21 +83,18 @@ export default function LoginContent() {
 
     setRedirecting(true);
     const pending = pendingUpsertRef.current;
+    pendingUpsertRef.current = null;
+
     if (pending) {
-      pendingUpsertRef.current = null;
+      // fire-and-forget: don't gate redirect on upsert
       upsertUser({ email: pending.email, name: pending.name })
         .then(() => {
-          // Si es registro nuevo con nombre de organización, crear la org + suscripción trial
-          if (pending.orgName) {
-            return createOrganization({ name: pending.orgName });
-          }
+          if (pending.orgName) return createOrganization({ name: pending.orgName });
         })
-        .catch(console.error)
-        .finally(() => router.replace(nextPath));
-    } else {
-      // Sesión ya existía (recarga de página) — redirigir directamente
-      router.replace(nextPath);
+        .catch(console.error);
     }
+
+    router.replace(nextPath);
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
