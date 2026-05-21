@@ -116,7 +116,9 @@ export default function LoginContent() {
         flow: mode,
         ...(mode === "signUp" ? { name } : {}),
       });
-      // isAuthenticated → true desencadena el useEffect que llama upsertUser + redirect
+      // Redirect immediately — don't wait for isAuthenticated to update in React state,
+      // since the WebSocket reconnection loop can delay or prevent that transition.
+      router.replace(nextPath);
     } catch (err: unknown) {
       pendingUpsertRef.current = null;
       setError(parseAuthError(err));
