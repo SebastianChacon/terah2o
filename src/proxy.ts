@@ -32,13 +32,6 @@ export function proxy(request: NextRequest) {
 
   // Rutas exactamente públicas
   if (PUBLIC_ROUTES.includes(pathname)) {
-    // Si el usuario ya tiene sesión y visita /login, redirigir al app.
-    if (pathname === "/login") {
-      const token =
-        request.cookies.get("__convexAuthJWT")?.value ??
-        request.cookies.get("__Host-ConvexAuthJWT")?.value;
-      if (token) return NextResponse.redirect(new URL("/operaciones", request.url));
-    }
     return NextResponse.next();
   }
 

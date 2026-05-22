@@ -1,4 +1,0 @@
-[     232ms] [INFO] %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
-[     279ms] [LOG] [HMR] connected @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
-[   98456ms] [LOG] WebSocket reconnected at t=98.4s @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297
-[   98768ms] [LOG] WebSocket reconnected at t=98.8s @ http://localhost:3000/_next/static/chunks/node_modules_next_dist_f3530cac._.js:2297

@@ -83,18 +83,21 @@ export default function LoginContent() {
 
     setRedirecting(true);
     const pending = pendingUpsertRef.current;
-    pendingUpsertRef.current = null;
-
     if (pending) {
-      // fire-and-forget: don't gate redirect on upsert
+      pendingUpsertRef.current = null;
       upsertUser({ email: pending.email, name: pending.name })
         .then(() => {
-          if (pending.orgName) return createOrganization({ name: pending.orgName });
+          // Si es registro nuevo con nombre de organización, crear la org + suscripción trial
+          if (pending.orgName) {
+            return createOrganization({ name: pending.orgName });
+          }
         })
-        .catch(console.error);
+        .catch(console.error)
+        .finally(() => router.replace(nextPath));
+    } else {
+      // Sesión ya existía (recarga de página) — redirigir directamente
+      router.replace(nextPath);
     }
-
-    router.replace(nextPath);
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
@@ -116,9 +119,7 @@ export default function LoginContent() {
         flow: mode,
         ...(mode === "signUp" ? { name } : {}),
       });
-      // Redirect immediately — don't wait for isAuthenticated to update in React state,
-      // since the WebSocket reconnection loop can delay or prevent that transition.
-      router.replace(nextPath);
+      // isAuthenticated → true desencadena el useEffect que llama upsertUser + redirect
     } catch (err: unknown) {
       pendingUpsertRef.current = null;
       setError(parseAuthError(err));
