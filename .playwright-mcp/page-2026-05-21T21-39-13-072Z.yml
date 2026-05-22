@@ -1,0 +1,22 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e16]:
+    - link "TERAH2O INTELIGENCIA OPERATIVA" [ref=e18] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e19]: TERAH2O
+      - paragraph [ref=e20]: INTELIGENCIA OPERATIVA
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - button "Ingresar" [ref=e23]
+        - button "Registrarse" [ref=e24]
+      - generic [ref=e25]:
+        - generic [ref=e26]:
+          - generic [ref=e27]: Correo electrónico
+          - textbox "admin@ptap.ec" [ref=e28]: carlos.test.777@ptap.ec
+        - generic [ref=e29]:
+          - generic [ref=e30]: Contraseña
+          - textbox "••••••••" [ref=e31]: segura1234
+        - button "Ingresar" [ref=e32]
+    - paragraph [ref=e33]: TeraH2O · Acceso Seguro · Ecuador
+  - button "Open Next.js Dev Tools" [ref=e11] [cursor=pointer]:
+    - img [ref=e12]
+  - alert [ref=e15]
