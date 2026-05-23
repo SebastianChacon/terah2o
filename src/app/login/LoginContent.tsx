@@ -1,43 +1,28 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+// Usar la API legacy de Clerk (v6-compatible) que expone { isLoaded, signIn, setActive }
+// La API "future" de Clerk v7 usa signals (useSignIn → SignInSignalValue) — diferente contrato.
+import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
+import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Link from "next/link";
 
 type FlowMode = "signIn" | "signUp";
 
-// @convex-dev/auth Password provider throws PascalCase codes like "InvalidSecret",
-// "InvalidAccountId", "AccountAlreadyExists" — not the plain-English strings the
-// original catch was checking. This function maps the real codes to Spanish.
-function parseAuthError(err: unknown): string {
-  const msg = err instanceof Error ? err.message : String(err);
-
-  if (
-    msg.includes("InvalidSecret") ||
-    msg.includes("Invalid password") ||
-    msg.includes("wrong password") ||
-    msg.includes("incorrect password")
-  ) {
-    return "Contraseña incorrecta. Verifica tus credenciales.";
-  }
-  if (
-    msg.includes("AccountAlreadyExists") ||
-    msg.includes("already exists") ||
-    msg.includes("already registered")
-  ) {
-    return "Ya existe una cuenta con ese correo. Inicia sesión.";
-  }
-  if (
-    msg.includes("InvalidAccountId") ||
-    msg.includes("not found") ||
-    msg.includes("no account") ||
-    msg.includes("Could not find")
-  ) {
-    return "No existe cuenta con ese correo. Regístrate primero.";
+function parseClerkError(err: unknown): string {
+  if (err && typeof err === "object" && "errors" in err) {
+    const errors = (err as { errors: Array<{ code: string; message: string }> }).errors;
+    if (errors?.length > 0) {
+      const code = errors[0].code;
+      if (code === "form_password_incorrect") return "Contraseña incorrecta. Verifica tus credenciales.";
+      if (code === "form_identifier_not_found") return "No existe cuenta con ese correo. Regístrate primero.";
+      if (code === "form_identifier_exists") return "Ya existe una cuenta con ese correo. Inicia sesión.";
+      if (code === "session_exists") return "Ya tienes sesión activa.";
+      return errors[0].message ?? "Error de autenticación.";
+    }
   }
   return "Error de autenticación. Verifica tus datos e intenta de nuevo.";
 }
@@ -45,16 +30,12 @@ function parseAuthError(err: unknown): string {
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // Validate the ?next= param: reject absolute URLs to prevent open-redirect phishing.
-  // An attacker could craft /login?next=https://evil.com to redirect users off-site.
   const rawNext = searchParams.get("next") ?? "/operaciones";
-  const nextPath =
-    rawNext.startsWith("/") && !rawNext.startsWith("//")
-      ? rawNext
-      : "/operaciones";
+  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/operaciones";
 
-  const { signIn } = useAuthActions();
-  const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
+  const { isLoaded: signInLoaded, signIn, setActive: setSignInActive } = useSignIn();
+  const { isLoaded: signUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
+  const { isSignedIn } = useAuth();
   const upsertUser = useMutation(api.users.upsertCurrentUser);
   const createOrganization = useMutation(api.organizations.createOrganization);
 
@@ -67,87 +48,77 @@ export default function LoginContent() {
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Guardamos los datos del form en un ref para que el efecto pueda accederlos
-  // después de que la sesión Convex esté completamente establecida.
-  const pendingUpsertRef = useRef<{
-    email: string;
-    name?: string;
-    orgName?: string;
-  } | null>(null);
-
-  // Cuando la autenticación es confirmada por Convex, sincronizamos el perfil
-  // y redirigimos. Esto evita la condición de carrera donde upsertCurrentUser
-  // era llamado antes de que el token JWT estuviera disponible.
+  // Redirigir si ya hay sesión activa (ej: usuario recarga /login)
   useEffect(() => {
-    console.log("[AUTH] useEffect fired — isAuthenticated:", isAuthenticated, "authLoading:", authLoading);
-    if (!isAuthenticated) return;
-
-    console.log("[AUTH] isAuthenticated=true → starting redirect to", nextPath);
-    setRedirecting(true);
-    const pending = pendingUpsertRef.current;
-    if (pending) {
-      console.log("[AUTH] pendingUpsertRef present — running upsertUser for", pending.email);
-      pendingUpsertRef.current = null;
-      upsertUser({ email: pending.email, name: pending.name })
-        .then(() => {
-          // Si es registro nuevo con nombre de organización, crear la org + suscripción trial
-          if (pending.orgName) {
-            console.log("[AUTH] creating organization:", pending.orgName);
-            return createOrganization({ name: pending.orgName });
-          }
-        })
-        .catch(console.error)
-        .finally(() => {
-          console.log("[AUTH] upsert done → router.replace(", nextPath, ")");
-          router.replace(nextPath);
-        });
-    } else {
-      // Sesión ya existía (recarga de página) — redirigir directamente
-      console.log("[AUTH] no pending upsert (existing session) → router.replace(", nextPath, ")");
+    if (isSignedIn && !redirecting) {
+      setRedirecting(true);
       router.replace(nextPath);
     }
-  }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!signInLoaded || !signUpLoaded) return;
     setError(null);
     setLoading(true);
-    console.log("[AUTH] handleSubmit fired — mode:", mode, "email:", email);
 
     try {
-      // Guardar datos ANTES de signIn para que el efecto los recoja
-      pendingUpsertRef.current = {
-        email,
-        name: name || undefined,
-        orgName: mode === "signUp" ? (orgName || undefined) : undefined,
-      };
+      if (mode === "signIn") {
+        // ── Sign In ────────────────────────────────────────────────────────
+        const result = await signIn!.create({
+          identifier: email,
+          password,
+        });
 
-      console.log("[AUTH] calling signIn...");
-      await signIn("password", {
-        email,
-        password,
-        flow: mode,
-        ...(mode === "signUp" ? { name } : {}),
-      });
-      console.log("[AUTH] signIn resolved — cookie:", document.cookie.includes("__convexAuthJWT") ? "JWT present" : "JWT MISSING");
-      // Mostrar spinner de inmediato. La navegación real la hace el useEffect
-      // cuando isAuthenticated flipea (siguiente ciclo de render de React).
-      //
-      // ⚠️  NO llamar router.replace aquí: dispararía DOS navegaciones en
-      // paralelo con la del useEffect, generando una race condition que en
-      // Vercel (latencia de red real) deja el componente montado con
-      // redirecting=true y el spinner nunca desaparece.
-      setRedirecting(true);
+        if (result.status === "complete") {
+          await setSignInActive!({ session: result.createdSessionId });
+          setRedirecting(true);
+          // Pequeña pausa para que Clerk establezca la cookie __session
+          await new Promise((r) => setTimeout(r, 300));
+          try {
+            // clerkId lo obtiene el servidor de identity.subject (JWT de Clerk)
+            await upsertUser({});
+          } catch {
+            // non-fatal: se sincronizará en la próxima carga
+          }
+          router.replace(nextPath);
+        } else {
+          setError("Requiere verificación adicional. Contacta al administrador.");
+        }
+      } else {
+        // ── Sign Up ────────────────────────────────────────────────────────
+        const result = await signUp!.create({
+          emailAddress: email,
+          password,
+          firstName: name.split(" ")[0] || name,
+          lastName: name.split(" ").slice(1).join(" ") || undefined,
+        });
+
+        if (result.status === "complete") {
+          await setSignUpActive!({ session: result.createdSessionId });
+          setRedirecting(true);
+          await new Promise((r) => setTimeout(r, 300));
+          try {
+            await upsertUser({ name });
+            if (orgName) await createOrganization({ name: orgName });
+          } catch {
+            // non-fatal
+          }
+          router.replace(nextPath);
+        } else if (result.status === "missing_requirements") {
+          setError("Verifica tu correo electrónico para completar el registro.");
+        } else {
+          setError("Registro incompleto. Intenta de nuevo.");
+        }
+      }
     } catch (err: unknown) {
-      console.log("[AUTH] signIn threw:", err);
-      pendingUpsertRef.current = null;
-      setError(parseAuthError(err));
+      setError(parseClerkError(err));
     } finally {
       setLoading(false);
     }
   }
 
-  if (authLoading || redirecting) {
+  if (!signInLoaded || !signUpLoaded || redirecting) {
     return (
       <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -160,17 +131,14 @@ export default function LoginContent() {
     );
   }
 
-  // iOS Safari auto-zooms any input with font-size < 16px and never zooms back.
   const inputClass =
     "w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-base placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all";
 
   return (
     <div className="min-h-screen bg-[#05051a] flex items-center justify-center px-4">
-      {/* Background */}
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
 
       <div className="relative z-10 w-full max-w-sm">
-        {/* Logo */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-block">
             <div className="text-[1.8rem] font-bold tracking-[0.04em]">
@@ -183,9 +151,7 @@ export default function LoginContent() {
           </Link>
         </div>
 
-        {/* Card */}
         <div className="bg-[#0a1120] border border-white/[0.08] rounded-2xl p-8 shadow-2xl shadow-black/40">
-          {/* Tabs */}
           <div className="flex gap-1 mb-6 p-1 bg-white/[0.03] rounded-lg border border-white/[0.06]">
             {(["signIn", "signUp"] as FlowMode[]).map((m) => (
               <button
@@ -203,102 +169,60 @@ export default function LoginContent() {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Nombre (solo registro) */}
             {mode === "signUp" && (
               <div>
                 <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
                   Nombre completo
                 </label>
-                <input
-                  type="text"
-                  name="name"
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  placeholder="Ing. Juan Pérez"
-                  className={inputClass}
-                />
+                <input type="text" name="name" autoComplete="name" value={name}
+                  onChange={(e) => setName(e.target.value)} required
+                  placeholder="Ing. Juan Pérez" className={inputClass} />
               </div>
             )}
 
-            {/* Email */}
             <div>
               <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
                 Correo electrónico
               </label>
-              <input
-                type="email"
-                name="email"
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                placeholder="admin@ptap.ec"
-                className={inputClass}
-              />
+              <input type="email" name="email" autoComplete="email" value={email}
+                onChange={(e) => setEmail(e.target.value)} required
+                placeholder="admin@ptap.ec" className={inputClass} />
             </div>
 
-            {/* Contraseña */}
             <div>
               <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
                 Contraseña
               </label>
-              <input
-                type="password"
-                name="password"
+              <input type="password" name="password"
                 autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                placeholder="••••••••"
-                className={inputClass}
-              />
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                required minLength={8} placeholder="••••••••" className={inputClass} />
             </div>
 
-            {/* Nombre de organización (solo registro) */}
             {mode === "signUp" && (
               <div>
                 <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
                   Nombre de tu PTAP / Organización
                 </label>
-                <input
-                  type="text"
-                  name="organization"
-                  autoComplete="organization"
-                  value={orgName}
-                  onChange={(e) => setOrgName(e.target.value)}
-                  required
-                  placeholder="PTAP Municipio de Loja"
-                  className={inputClass}
-                />
+                <input type="text" name="organization" autoComplete="organization"
+                  value={orgName} onChange={(e) => setOrgName(e.target.value)} required
+                  placeholder="PTAP Municipio de Loja" className={inputClass} />
               </div>
             )}
 
-            {/* Error */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
                 <p className="text-red-400 text-xs">{error}</p>
               </div>
             )}
 
-            {/* Submit */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-[0.15em] rounded-lg transition-all shadow-lg shadow-blue-500/20 mt-2"
-            >
-              {loading
-                ? "Procesando..."
-                : mode === "signIn"
-                ? "Ingresar"
-                : "Crear cuenta"}
+            <button type="submit" disabled={loading}
+              className="w-full py-3 bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-[0.15em] rounded-lg transition-all shadow-lg shadow-blue-500/20 mt-2">
+              {loading ? "Procesando..." : mode === "signIn" ? "Ingresar" : "Crear cuenta"}
             </button>
           </form>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-white/20 text-[0.62rem] font-mono mt-6 tracking-wide">
           TeraH2O · Acceso Seguro · Ecuador
         </p>

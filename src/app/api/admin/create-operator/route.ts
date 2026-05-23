@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -7,8 +8,8 @@ import type { Id } from "../../../../../convex/_generated/dataModel";
  * POST /api/admin/create-operator
  * Body: { email: string, name: string, organizationId: string }
  *
- * Requiere la cookie __convexAuthJWT (seteada por @convex-dev/auth).
- * Valida en Convex que el caller es Admin de esa organización.
+ * Usa el token de Clerk (template "convex") para autenticarse contra Convex.
+ * La autorización real se valida en la mutación createOperator de Convex.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -19,11 +20,16 @@ export async function POST(req: NextRequest) {
         { status: 503 }
       );
     }
-    const convex = new ConvexHttpClient(convexUrl);
-    const token = req.cookies.get("__convexAuthJWT")?.value;
+
+    // Obtener token de Clerk para el template "convex"
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
     if (!token) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
+
+    const convex = new ConvexHttpClient(convexUrl);
+    convex.setAuth(token);
 
     const body = await req.json();
     const { email, name, organizationId } = body as {
@@ -39,8 +45,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Llamar la mutación de Convex con el token del usuario
-    convex.setAuth(token);
     const operatorId = await convex.mutation(api.users.createOperator, {
       email,
       name,

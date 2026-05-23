@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useAuthActions } from "@convex-dev/auth/react";
+import { useClerk } from "@clerk/nextjs";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSubscription } from "@/hooks/useSubscription";
 import { getStatusColor, getPlanLabel } from "@/types/auth";
@@ -17,7 +17,7 @@ import { useState, useRef, useEffect } from "react";
 export function NavbarUser() {
   const { user, isLoading } = useCurrentUser();
   const { subscription } = useSubscription();
-  const { signOut } = useAuthActions();
+  const { signOut } = useClerk();
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -125,20 +125,14 @@ export function NavbarUser() {
             <button
               onClick={async () => {
                 setOpen(false);
-                // Clear all auth cookies explicitly before calling signOut.
-                // If signOut's server call fails we still destroy the session client-side.
+                // Limpiar cookie de suscripción antes de salir
                 const secure = location.protocol === "https:" ? "; Secure" : "";
-                document.cookie = `__convexAuthJWT=; path=/; max-age=0; SameSite=Lax${secure}`;
-                document.cookie = `__Host-ConvexAuthJWT=; path=/; max-age=0; SameSite=Lax${secure}`;
-                document.cookie = `__convexAuthRefreshToken=; path=/; max-age=0; SameSite=Lax${secure}`;
                 document.cookie = `__convexSubStatus=; path=/; max-age=0; SameSite=Lax${secure}`;
                 try {
                   await signOut();
                 } catch {
-                  // Cookies already cleared above — safe to proceed
+                  // Clerk limpia su cookie automáticamente; proceder igual
                 }
-                // Hard redirect resets the Convex client's in-memory auth state,
-                // preventing the stale isAuthenticated:true race on the login page.
                 window.location.href = "/login";
               }}
               className="flex items-center gap-2.5 px-4 py-2 w-full text-[0.72rem] text-red-400/50 hover:text-red-400 hover:bg-white/[0.04] transition-colors text-left"
