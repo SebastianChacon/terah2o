@@ -1,11 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 export const get = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return await ctx.db.query("plantSettings").first();
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {
@@ -30,7 +30,7 @@ export const upsert = mutation({
     lastFetch: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
 
     const orgId = user?.organizationId;

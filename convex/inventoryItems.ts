@@ -1,11 +1,11 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {
@@ -23,7 +23,7 @@ export const getAll = query({
 export const getByItemId = query({
   args: { itemId: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     const item = await ctx.db
@@ -48,7 +48,7 @@ export const create = mutation({
     lastUpdated: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
     return await ctx.db.insert("inventoryItems", {
       ...args,

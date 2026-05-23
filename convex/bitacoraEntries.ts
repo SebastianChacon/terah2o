@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 export const create = mutation({
   args: {
@@ -10,7 +10,7 @@ export const create = mutation({
     summary: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
     return await ctx.db.insert("bitacoraEntries", {
       ...args,
@@ -22,7 +22,7 @@ export const create = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {
@@ -41,7 +41,7 @@ export const getAll = query({
 export const getByDate = query({
   args: { date: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     const all = await ctx.db
@@ -56,7 +56,7 @@ export const getByDate = query({
 export const getByCategory = query({
   args: { category: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     const all = await ctx.db
@@ -71,7 +71,7 @@ export const getByCategory = query({
 export const getByDateRange = query({
   args: { startDate: v.string(), endDate: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     const all = await ctx.db

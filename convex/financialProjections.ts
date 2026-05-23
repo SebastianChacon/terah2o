@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 const hrCostValidator = v.object({
   role: v.string(),
@@ -61,7 +61,7 @@ export const create = mutation({
     totals: totalsValidator,
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
     return await ctx.db.insert("financialProjections", {
       ...args,
@@ -77,7 +77,7 @@ export const linkRealAnalysis = mutation({
     analysisGrandTotal: v.number(),
   },
   handler: async (ctx, { institutionName, period, analysisGrandTotal }) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
 
     const all = user?.organizationId
@@ -118,7 +118,7 @@ export const linkRealAnalysis = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {
@@ -137,7 +137,7 @@ export const getAll = query({
 export const getLatest = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {

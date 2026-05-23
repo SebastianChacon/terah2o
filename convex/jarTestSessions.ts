@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 export const create = mutation({
   args: {
@@ -27,7 +27,7 @@ export const create = mutation({
     aiDiagnosis: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
     return await ctx.db.insert("jarTestSessions", {
       ...args,
@@ -39,7 +39,7 @@ export const create = mutation({
 export const getAll = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {
@@ -58,7 +58,7 @@ export const getAll = query({
 export const getLatest = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) {

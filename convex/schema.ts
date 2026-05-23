@@ -1,11 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
-import { authTables } from "@convex-dev/auth/server";
 
 export default defineSchema({
-  // ── Auth tables (generadas por @convex-dev/auth) ──────────────────────────
-  ...authTables,
-
   // ── Tablas existentes (sin cambios excepto organizationId opcional) ────────
 
   visitas: defineTable({
@@ -220,24 +216,19 @@ export default defineSchema({
 
   // ── Nuevas tablas de negocio ───────────────────────────────────────────────
 
-  // users extiende la tabla de authTables — todos los campos opcionales para
-  // que @convex-dev/auth pueda insertar {email:"..."} sin error de validación.
-  // upsertCurrentUser() completa role, tokenIdentifier, createdAt tras el login.
+  // users — tabla de negocio propia (Clerk maneja la identidad externamente).
+  // clerkId = identity.subject del JWT emitido por Clerk.
   users: defineTable({
-    // Campos base de @convex-dev/auth (opcionales — gestionados por el auth)
-    name: v.optional(v.string()),
-    image: v.optional(v.string()),
+    clerkId: v.optional(v.string()),          // Clerk user ID ("user_2abc...")
     email: v.optional(v.string()),
-    emailVerificationTime: v.optional(v.number()),
-    phone: v.optional(v.string()),
-    phoneVerificationTime: v.optional(v.number()),
-    isAnonymous: v.optional(v.boolean()),
-    // Campos de negocio (opcionales — completados por upsertCurrentUser)
-    tokenIdentifier: v.optional(v.string()),
+    name: v.optional(v.string()),
+    tokenIdentifier: v.optional(v.string()),  // mantenido para operadores pre-creados
     role: v.optional(v.union(v.literal("admin"), v.literal("operator"))),
     organizationId: v.optional(v.id("organizations")),
     createdAt: v.optional(v.number()),
   })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_email", ["email"])
     .index("by_tokenIdentifier", ["tokenIdentifier"])
     .index("by_organizationId", ["organizationId"]),
 

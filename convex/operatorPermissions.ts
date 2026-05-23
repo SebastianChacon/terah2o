@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 // ── Obtener permisos del operador actual ──────────────────────────────────
 export const getMyPermissions = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
@@ -67,7 +67,7 @@ export const upsertPermissions = mutation({
     canAccessBitacora: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const callerId = await getAuthUserId(ctx);
+    const callerId = await getAuthenticatedUserId(ctx);
     if (!callerId) throw new Error("Unauthenticated");
 
     const caller = await ctx.db.get(callerId);
@@ -105,7 +105,7 @@ export const upsertPermissions = mutation({
 export const getPermissionsByOrg = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return [];
 
     const user = await ctx.db.get(userId);

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 // ── Crear organización (llamado tras el primer registro del Admin) ─────────
 export const createOrganization = mutation({
@@ -8,7 +8,7 @@ export const createOrganization = mutation({
     name: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
     const user = await ctx.db.get(userId);
@@ -48,7 +48,7 @@ export const createOrganization = mutation({
 export const getMyOrganization = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
@@ -62,7 +62,7 @@ export const getMyOrganization = query({
 export const updateOrganizationName = mutation({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
     const user = await ctx.db.get(userId);

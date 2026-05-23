@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import { getAuthenticatedUserId } from "./lib/auth";
 
 // ── Obtener suscripción de la organización del usuario actual ──────────────
 export const getSubscription = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) return null;
 
     const user = await ctx.db.get(userId);
@@ -29,7 +29,7 @@ export const createTrialSubscription = mutation({
     plan: v.union(v.literal("starter"), v.literal("pro")),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
     // Verificar que no existe ya una suscripción activa
@@ -71,7 +71,7 @@ export const activateSubscription = mutation({
     expiresAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
+    const userId = await getAuthenticatedUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
     const sub = await ctx.db

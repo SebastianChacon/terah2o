@@ -1,79 +1,79 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
+import {
+  getAuthenticatedUser,
+  getAuthenticatedUserId,
+  requireAuthUser,
+} from "./lib/auth";
 
 // ── Obtener el usuario autenticado actual ──────────────────────────────────
-// getAuthUserId devuelve el _id del documento en la tabla users.
-// Usamos ctx.db.get() directamente en lugar del índice by_tokenIdentifier.
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
-    return await ctx.db.get(userId);
+    return await getAuthenticatedUser(ctx);
   },
 });
 
-// ── Registrar/sincronizar usuario en la tabla users tras el primer login ───
-// @convex-dev/auth inserta {email:"..."} — upsertCurrentUser completa los
-// campos de negocio (role, tokenIdentifier, createdAt) haciendo un patch.
+// ── Upsert: crear o actualizar perfil tras el primer login con Clerk ────────
+// identity.subject del JWT de Clerk ES el clerkId — no se pasa desde el cliente.
 export const upsertCurrentUser = mutation({
   args: {
-    email: v.string(),
     name: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthenticated");
 
-    const existing = await ctx.db.get(userId);
-    if (!existing) throw new Error("Usuario no encontrado en auth");
+    // El subject del JWT de Clerk es el userId ("user_2abc...")
+    const clerkId = identity.subject;
+    const email = identity.email ?? "";
 
-    if (existing.role) {
-      // Ya tiene perfil de negocio — solo actualizar nombre si cambió
-      if (args.name && args.name !== existing.name) {
-        await ctx.db.patch(userId, { name: args.name });
+    // 1. Buscar por clerkId (ruta principal)
+    const byClerk = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", clerkId))
+      .first();
+
+    if (byClerk) {
+      // Ya registrado — actualizar nombre si cambió
+      if (args.name && args.name !== byClerk.name) {
+        await ctx.db.patch(byClerk._id, { name: args.name });
       }
-      return userId;
+      return byClerk._id;
     }
 
-    // Primera vez: inicializar perfil de negocio.
-    // Si el admin pre-creó un doc de operador con este email, heredar su rol y org;
-    // de lo contrario el primer registro siempre será admin.
+    // 2. ¿Hay un operador pre-creado con este email?
     const preCreated = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .filter((q) => q.eq(q.field("role"), "operator"))
       .first();
 
-    const roleToAssign = preCreated ? "operator" : "admin";
-    const orgId = preCreated?.organizationId;
-
-    await ctx.db.patch(userId, {
-      tokenIdentifier: userId,
-      role: roleToAssign,
-      createdAt: Date.now(),
-      ...(orgId ? { organizationId: orgId } : {}),
-      ...(args.name ? { name: args.name } : {}),
-    });
-
-    // Eliminar el doc huérfano y migrar sus permisos al userId real
     if (preCreated) {
-      const perms = await ctx.db
-        .query("operatorPermissions")
-        .filter((q) => q.eq(q.field("operatorId"), preCreated._id))
-        .first();
-      if (perms) {
-        await ctx.db.patch(perms._id, { operatorId: userId });
-      }
-      await ctx.db.delete(preCreated._id);
+      // Vincular el clerkId al operador pre-creado
+      await ctx.db.patch(preCreated._id, {
+        clerkId,
+        tokenIdentifier: clerkId,
+        ...(args.name ? { name: args.name } : {}),
+      });
+      return preCreated._id;
     }
+
+    // 3. Primera vez — crear como admin
+    const userId = await ctx.db.insert("users", {
+      clerkId,
+      tokenIdentifier: clerkId,
+      email,
+      name: args.name,
+      role: "admin",
+      createdAt: Date.now(),
+    });
 
     return userId;
   },
 });
 
-// ── Crear un operador (llamado por el Admin) ───────────────────────────────
+// ── Crear operador (llamado por el Admin desde dashboard) ──────────────────
 export const createOperator = mutation({
   args: {
     email: v.string(),
@@ -81,16 +81,11 @@ export const createOperator = mutation({
     organizationId: v.id("organizations"),
   },
   handler: async (ctx, args) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error("Unauthenticated");
-
-    // Verificar que quien llama es admin de esa organización
-    const caller = await ctx.db.get(callerId);
-    if (!caller || caller.role !== "admin") throw new Error("Solo un Admin puede crear operadores");
+    const caller = await requireAuthUser(ctx);
+    if (caller.role !== "admin") throw new Error("Solo un Admin puede crear operadores");
     if (caller.organizationId !== args.organizationId)
       throw new Error("No perteneces a esta organización");
 
-    // Contar operadores actuales
     const operators = await ctx.db
       .query("users")
       .withIndex("by_organizationId", (q) =>
@@ -103,21 +98,19 @@ export const createOperator = mutation({
     if (!org) throw new Error("Organización no encontrada");
     if (operators.length >= org.maxOperators) {
       throw new Error(
-        `Límite de operadores alcanzado (${org.maxOperators}). Actualiza tu plan para agregar más.`
+        `Límite de operadores alcanzado (${org.maxOperators}). Actualiza tu plan.`
       );
     }
 
-    // Verificar que no exista otro usuario con ese email
     const existingByEmail = await ctx.db
       .query("users")
-      .filter((q) => q.eq(q.field("email"), args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
-    if (existingByEmail) throw new Error("Ya existe un usuario con ese correo electrónico");
+    if (existingByEmail)
+      throw new Error("Ya existe un usuario con ese correo electrónico");
 
-    // Crear el perfil del operador (tokenIdentifier pending hasta primer login)
-    const pendingToken = `pending_${args.email}`;
+    // clerkId se llenará cuando el operador haga su primer login
     const operatorId = await ctx.db.insert("users", {
-      tokenIdentifier: pendingToken,
       email: args.email,
       name: args.name,
       role: "operator",
@@ -125,7 +118,6 @@ export const createOperator = mutation({
       createdAt: Date.now(),
     });
 
-    // Crear permisos por defecto (todos en false, el admin los activa)
     await ctx.db.insert("operatorPermissions", {
       operatorId,
       organizationId: args.organizationId,
@@ -139,14 +131,11 @@ export const createOperator = mutation({
   },
 });
 
-// ── Listar operadores de la organización del admin ─────────────────────────
+// ── Listar operadores de la organización ───────────────────────────────────
 export const getOperatorsByOrg = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-
-    const caller = await ctx.db.get(userId);
+    const caller = await getAuthenticatedUser(ctx);
     if (!caller?.organizationId) return [];
 
     return await ctx.db
