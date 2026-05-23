@@ -130,9 +130,14 @@ export default function LoginContent() {
         ...(mode === "signUp" ? { name } : {}),
       });
       console.log("[AUTH] signIn resolved — cookie:", document.cookie.includes("__convexAuthJWT") ? "JWT present" : "JWT MISSING");
-      // Belt-and-suspenders: redirect directly in case WebSocket delay prevents
-      // isAuthenticated from flipping in time for the useEffect to pick it up.
-      router.replace(nextPath);
+      // Mostrar spinner de inmediato. La navegación real la hace el useEffect
+      // cuando isAuthenticated flipea (siguiente ciclo de render de React).
+      //
+      // ⚠️  NO llamar router.replace aquí: dispararía DOS navegaciones en
+      // paralelo con la del useEffect, generando una race condition que en
+      // Vercel (latencia de red real) deja el componente montado con
+      // redirecting=true y el spinner nunca desaparece.
+      setRedirecting(true);
     } catch (err: unknown) {
       console.log("[AUTH] signIn threw:", err);
       pendingUpsertRef.current = null;

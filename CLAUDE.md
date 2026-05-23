@@ -102,10 +102,19 @@ CONVEX_SITE_URL=http://localhost:3000   # producción: https://tudominio.com
 GEMINI_API_KEY=AIzaSy...               # aistudio.google.com
 ```
 
-**IMPORTANTE — Variables también requeridas en Convex Dashboard → Environment Variables:**
-- `SITE_URL` = `http://localhost:3000`
-- `JWKS` = mismo valor que en .env.local
-- `JWT_PRIVATE_KEY` = mismo valor que en .env.local
+**IMPORTANTE — Variables requeridas en Convex Dashboard → Environment Variables:**
+
+| Variable | Dev (localhost) | Producción (Vercel) |
+|---|---|---|
+| `CONVEX_SITE_URL` | `http://localhost:3000` | `https://terah2o.vercel.app` |
+| `SITE_URL` | `http://localhost:3000` | `https://terah2o.vercel.app` |
+| `JWKS` | mismo valor que .env.local | mismo valor que .env.local |
+| `JWT_PRIVATE_KEY` | mismo valor que .env.local | mismo valor que .env.local |
+
+⚠️  Nombres exactos: la librería `@convex-dev/auth` llama `requireEnv("CONVEX_SITE_URL")` en
+`tokens.js` (al emitir JWT) y `requireEnv("SITE_URL")` en `redirects.js` (OAuth redirects).
+Si se usa `SITE_URL` en lugar de `CONVEX_SITE_URL`, el sign-in lanza
+`Error: Missing environment variable \`CONVEX_SITE_URL\`` en el servidor Convex.
 
 ---
 
@@ -291,6 +300,22 @@ El `showToast("éxito")` estaba fuera del try → ahora está dentro, y el catch
 - Agregado `NEXT_PUBLIC_CONVEX_URL` que faltaba
 - Agregado `CONVEX_DEPLOY_KEY`
 
+### CRÍTICO (PRODUCCIÓN) — `src/app/login/LoginContent.tsx` — Login trabado en Vercel
+**Síntoma:** en `https://terah2o.vercel.app` el login se quedaba trabado con spinner eterno
+tras ingresar credenciales correctas.
+
+**Causa raíz:** doble `router.replace` generaba race condition en App Router.
+
+Flujo con bug:
+1. `signIn` resuelve → `router.replace(nextPath)` inmediato (navegación A)
+2. React re-renderiza → `isAuthenticated=true` → `useEffect` → `setRedirecting(true)` → `router.replace(nextPath)` (navegación B)
+3. En localhost (red local ~0ms): A termina antes de que B dispare → OK
+4. En Vercel (latencia real ~200-500ms): A y B vuelan en paralelo → App Router cancela ambas → componente queda montado con `redirecting=true` → **spinner eterno**
+
+**Fix aplicado:** eliminar el `router.replace` de `handleSubmit`. En su lugar se llama
+`setRedirecting(true)` para mostrar el spinner inmediatamente. El `useEffect` es el único
+responsable de hacer la navegación cuando `isAuthenticated` flipea (siguiente render cycle).
+
 ---
 
 ## Comandos de Desarrollo
@@ -309,7 +334,7 @@ npm run lint       # Verificar linting
 ## Primer Setup (usuario nuevo)
 
 1. Correr `npx convex dev` → genera `convex/_generated/`
-2. Ir a Convex Dashboard → **Environment Variables** → agregar `SITE_URL`, `JWKS`, `JWT_PRIVATE_KEY`
+2. Ir a Convex Dashboard → **Environment Variables** → agregar `CONVEX_SITE_URL`, `SITE_URL`, `JWKS`, `JWT_PRIVATE_KEY` (ver tabla arriba)
 3. Ir a `http://localhost:3000/login` → crear cuenta con Sign Up
 4. En Convex Dashboard → tabla `users` → cambiar `role` a `"admin"` para tu usuario
 5. En tabla `organizations` → crear registro con tu `userId` como `adminUserId`
