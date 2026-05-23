@@ -210,14 +210,14 @@ export default function BitacoraIntegralPage() {
     if (!financialProjs) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return financialProjs.map((f: any) => {
-      const hasLinked = f.análisisProyectado !== undefined && f.análisisReal !== undefined;
+      const hasLinked = f.analisisProyectado !== undefined && f.analisisReal !== undefined;
       const proy = hasLinked
-        ? (f.análisisProyectado as number)
+        ? (f.analisisProyectado as number)
         : f.mode === "projection"
         ? f.totals.grandTotal
         : 0;
       const real = hasLinked
-        ? (f.análisisReal as number)
+        ? (f.analisisReal as number)
         : f.mode === "analysis"
         ? f.totals.grandTotal
         : 0;

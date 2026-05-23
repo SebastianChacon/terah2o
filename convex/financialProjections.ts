@@ -106,8 +106,8 @@ export const linkRealAnalysis = mutation({
         : 0;
 
     await ctx.db.patch(projection._id, {
-      análisisProyectado,
-      análisisReal,
+      analisisProyectado: análisisProyectado,
+      analisisReal: análisisReal,
       cumplimiento,
     });
 

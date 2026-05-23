@@ -152,8 +152,8 @@ export default function FinanzasPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .map((r: any) => {
         const ra = r;
-        const linked = ra.análisisReal !== undefined
-          ? ` | Real: $${ra.análisisReal?.toFixed(2)} | Cumpl.: ${ra.cumplimiento?.toFixed(1)}%`
+        const linked = ra.analisisReal !== undefined
+          ? ` | Real: $${ra.analisisReal?.toFixed(2)} | Cumpl.: ${ra.cumplimiento?.toFixed(1)}%`
           : "";
         return `  - [${r.period ?? r.mode}] Total: $${r.totals.grandTotal.toFixed(2)} | Costo/m³: $${r.totals.costPerM3.toFixed(4)}${linked}`;
       })

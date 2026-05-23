@@ -132,8 +132,8 @@ export default defineSchema({
     institutionName: v.string(),
     mode: v.union(v.literal("projection"), v.literal("analysis")),
     period: v.optional(v.string()),             // "YYYY-MM"
-    análisisProyectado: v.optional(v.number()), // grandTotal from linked projection
-    análisisReal: v.optional(v.number()),        // grandTotal from linked real analysis
+    analisisProyectado: v.optional(v.number()), // grandTotal from linked projection
+    analisisReal: v.optional(v.number()),        // grandTotal from linked real analysis
     cumplimiento: v.optional(v.number()),        // ((real-proy)/proy)*100
     production: v.object({
       plantFlow: v.optional(v.number()),
