@@ -79,23 +79,31 @@ export default function LoginContent() {
   // y redirigimos. Esto evita la condición de carrera donde upsertCurrentUser
   // era llamado antes de que el token JWT estuviera disponible.
   useEffect(() => {
+    console.log("[AUTH] useEffect fired — isAuthenticated:", isAuthenticated, "authLoading:", authLoading);
     if (!isAuthenticated) return;
 
+    console.log("[AUTH] isAuthenticated=true → starting redirect to", nextPath);
     setRedirecting(true);
     const pending = pendingUpsertRef.current;
     if (pending) {
+      console.log("[AUTH] pendingUpsertRef present — running upsertUser for", pending.email);
       pendingUpsertRef.current = null;
       upsertUser({ email: pending.email, name: pending.name })
         .then(() => {
           // Si es registro nuevo con nombre de organización, crear la org + suscripción trial
           if (pending.orgName) {
+            console.log("[AUTH] creating organization:", pending.orgName);
             return createOrganization({ name: pending.orgName });
           }
         })
         .catch(console.error)
-        .finally(() => router.replace(nextPath));
+        .finally(() => {
+          console.log("[AUTH] upsert done → router.replace(", nextPath, ")");
+          router.replace(nextPath);
+        });
     } else {
       // Sesión ya existía (recarga de página) — redirigir directamente
+      console.log("[AUTH] no pending upsert (existing session) → router.replace(", nextPath, ")");
       router.replace(nextPath);
     }
   }, [isAuthenticated]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -104,6 +112,7 @@ export default function LoginContent() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    console.log("[AUTH] handleSubmit fired — mode:", mode, "email:", email);
 
     try {
       // Guardar datos ANTES de signIn para que el efecto los recoja
@@ -113,14 +122,19 @@ export default function LoginContent() {
         orgName: mode === "signUp" ? (orgName || undefined) : undefined,
       };
 
+      console.log("[AUTH] calling signIn...");
       await signIn("password", {
         email,
         password,
         flow: mode,
         ...(mode === "signUp" ? { name } : {}),
       });
-      // isAuthenticated → true desencadena el useEffect que llama upsertUser + redirect
+      console.log("[AUTH] signIn resolved — cookie:", document.cookie.includes("__convexAuthJWT") ? "JWT present" : "JWT MISSING");
+      // Belt-and-suspenders: redirect directly in case WebSocket delay prevents
+      // isAuthenticated from flipping in time for the useEffect to pick it up.
+      router.replace(nextPath);
     } catch (err: unknown) {
+      console.log("[AUTH] signIn threw:", err);
       pendingUpsertRef.current = null;
       setError(parseAuthError(err));
     } finally {
