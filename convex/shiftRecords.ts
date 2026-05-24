@@ -34,6 +34,7 @@ const statsValidator = v.object({
 export const create = mutation({
   args: {
     operatorName: v.string(),
+    operatorId: v.optional(v.id("users")),
     date: v.string(),
     operationHours: v.number(),
     plantFlowRef: v.optional(v.number()),
