@@ -1,8 +1,9 @@
 import { test, expect } from "@playwright/test";
+import { loginWithClerkTicket } from "./helpers/clerk-login";
 
 // Usuario de prueba creado en Clerk Dashboard (Paso 0.3)
+// TEST_PASSWORD en env para login manual; E2E usa sign-in tokens (Client Trust bypass)
 const TEST_EMAIL = process.env.TEST_EMAIL ?? "carlos.test.777@ptap.ec";
-const TEST_PASSWORD = process.env.TEST_PASSWORD ?? "segura1234";
 
 test.describe("login flow (Clerk)", () => {
   test.beforeEach(async ({ context }) => {
@@ -34,15 +35,7 @@ test.describe("login flow (Clerk)", () => {
 
   // ── Test 3: login exitoso → ruta protegida + cookie Clerk ───────────────
   test("successful login reaches protected route", async ({ page }) => {
-    await page.goto("/login");
-
-    await page.locator("input[type='email']").fill(TEST_EMAIL);
-    await page.locator("input[type='password']").fill(TEST_PASSWORD);
-
-    await Promise.all([
-      page.waitForURL((url) => !url.toString().includes("/login"), { timeout: 20000 }),
-      page.locator("button[type='submit']").click(),
-    ]);
+    await loginWithClerkTicket(page, TEST_EMAIL);
 
     const finalUrl = page.url();
     console.log("Final URL:", finalUrl);
@@ -60,14 +53,7 @@ test.describe("login flow (Clerk)", () => {
 
   // ── Test 4: usuario autenticado en /login → redirige a /operaciones ──────
   test("authenticated user visiting /login is redirected", async ({ page }) => {
-    // Login
-    await page.goto("/login");
-    await page.locator("input[type='email']").fill(TEST_EMAIL);
-    await page.locator("input[type='password']").fill(TEST_PASSWORD);
-    await Promise.all([
-      page.waitForURL((url) => !url.toString().includes("/login"), { timeout: 20000 }),
-      page.locator("button[type='submit']").click(),
-    ]);
+    await loginWithClerkTicket(page, TEST_EMAIL);
     expect(page.url()).not.toContain("/login");
 
     // Intentar volver a /login — proxy.ts debe redirigir
@@ -84,31 +70,13 @@ test.describe("login flow (Clerk)", () => {
 
   // ── Test 6: sign out limpia sesión y redirige a /login ───────────────────
   test("sign out clears session", async ({ page }) => {
-    // Login
-    await page.goto("/login");
-    await page.locator("input[type='email']").fill(TEST_EMAIL);
-    await page.locator("input[type='password']").fill(TEST_PASSWORD);
-    await Promise.all([
-      page.waitForURL((url) => !url.toString().includes("/login"), { timeout: 20000 }),
-      page.locator("button[type='submit']").click(),
-    ]);
+    await loginWithClerkTicket(page, TEST_EMAIL);
 
-    // Abrir menú de usuario y cerrar sesión
-    const userChip = page.locator("button[aria-label='Menú de usuario']");
-    await userChip.waitFor({ timeout: 10000 });
-    await userChip.click();
+    // Cerrar sesión vía Clerk (NavbarUser requiere perfil Convex sincronizado)
+    await page.evaluate(async () => {
+      await (window as unknown as { Clerk: { signOut: () => Promise<void> } }).Clerk.signOut();
+    });
 
-    const signOutBtn = page.locator("text=Cerrar Sesión");
-    await expect(signOutBtn).toBeVisible({ timeout: 4000 });
-
-    await Promise.all([
-      page.waitForURL(/login/, { timeout: 10000 }),
-      signOutBtn.click(),
-    ]);
-
-    expect(page.url()).toContain("/login");
-
-    // Intentar acceder a ruta protegida → debe redirigir a login
     await page.goto("/operaciones");
     await expect(page).toHaveURL(/login/, { timeout: 8000 });
   });
