@@ -19,15 +19,23 @@ export async function getAuthenticatedUser(ctx: AnyCtx) {
     .query("users")
     .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
     .first();
-  if (byClerk) return byClerk;
 
-  // 2. Fallback: buscar por email (operadores pre-creados por el admin)
-  const email = identity.email;
-  if (!email) return null;
-  return await ctx.db
-    .query("users")
-    .withIndex("by_email", (q) => q.eq("email", email))
-    .first();
+  // Happy path: encontrado por clerkId y tiene org → retornar directo
+  if (byClerk?.organizationId) return byClerk;
+
+  // 2. Fallback por email: maneja duplicados de migración y upserts incompletos.
+  // identity.email puede ser null si el JWT template de Clerk no incluye el claim email.
+  // byClerk.email es el valor guardado por upsertCurrentUser (con client email como fallback).
+  const email = identity.email ?? byClerk?.email;
+  if (email) {
+    const byEmail = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+    if (byEmail && byEmail._id !== byClerk?._id) return byEmail;
+  }
+
+  return byClerk ?? null;
 }
 
 /**

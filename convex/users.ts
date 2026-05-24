@@ -19,14 +19,17 @@ export const getCurrentUser = query({
 export const upsertCurrentUser = mutation({
   args: {
     name: v.optional(v.string()),
+    // Client passes email because Clerk JWT template may not include it
+    email: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthenticated");
 
-    // El subject del JWT de Clerk es el userId ("user_2abc...")
     const clerkId = identity.subject;
-    const email = identity.email ?? "";
+    // identity.email is null when Clerk JWT template doesn't include the email claim.
+    // args.email (from client useUser()) is the reliable fallback.
+    const email = identity.email ?? args.email ?? "";
 
     // 1. Buscar por clerkId (ruta principal)
     const byClerk = await ctx.db
@@ -35,28 +38,54 @@ export const upsertCurrentUser = mutation({
       .first();
 
     if (byClerk) {
-      // Ya registrado — actualizar nombre si cambió
-      if (args.name && args.name !== byClerk.name) {
-        await ctx.db.patch(byClerk._id, { name: args.name });
+      if (byClerk.organizationId) {
+        // Registro completo — actualizar campos si cambiaron
+        const patches: Record<string, string> = {};
+        if (args.name && args.name !== byClerk.name) patches.name = args.name;
+        if (email && !byClerk.email) patches.email = email;
+        if (Object.keys(patches).length > 0) await ctx.db.patch(byClerk._id, patches);
+        return byClerk._id;
       }
+
+      // Doc sin org — fusionar con doc más antiguo si se puede encontrar por email
+      const lookupEmail = email || byClerk.email || "";
+      if (lookupEmail) {
+        const olderDoc = await ctx.db
+          .query("users")
+          .withIndex("by_email", (q) => q.eq("email", lookupEmail))
+          .filter((q) => q.neq(q.field("_id"), byClerk._id))
+          .first();
+        if (olderDoc) {
+          await ctx.db.patch(olderDoc._id, { clerkId, tokenIdentifier: clerkId });
+          await ctx.db.delete(byClerk._id);
+          return olderDoc._id;
+        }
+      }
+
+      // Sin doc antiguo — guardar email y nombre en el registro actual
+      const patches: Record<string, string> = {};
+      if (email && !byClerk.email) patches.email = email;
+      if (args.name && args.name !== byClerk.name) patches.name = args.name;
+      if (Object.keys(patches).length > 0) await ctx.db.patch(byClerk._id, patches);
       return byClerk._id;
     }
 
-    // 2. ¿Hay un operador pre-creado con este email?
-    const preCreated = await ctx.db
-      .query("users")
-      .withIndex("by_email", (q) => q.eq("email", email))
-      .filter((q) => q.eq(q.field("role"), "operator"))
-      .first();
+    // 2. ¿Existe ya un usuario con este email (cualquier rol)?
+    // Cubre admins pre-existentes de la migración de auth y operadores pre-creados.
+    if (email) {
+      const existingByEmail = await ctx.db
+        .query("users")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .first();
 
-    if (preCreated) {
-      // Vincular el clerkId al operador pre-creado
-      await ctx.db.patch(preCreated._id, {
-        clerkId,
-        tokenIdentifier: clerkId,
-        ...(args.name ? { name: args.name } : {}),
-      });
-      return preCreated._id;
+      if (existingByEmail) {
+        await ctx.db.patch(existingByEmail._id, {
+          clerkId,
+          tokenIdentifier: clerkId,
+          ...(args.name ? { name: args.name } : {}),
+        });
+        return existingByEmail._id;
+      }
     }
 
     // 3. Primera vez — crear como admin

@@ -48,6 +48,8 @@ export default function LoginContent() {
   const [error, setError] = useState<string | null>(null);
 
   const clerkTicket = searchParams.get("__clerk_ticket");
+  // E2E tests pass email via URL so upsert can merge old records when JWT lacks email claim
+  const emailFromParam = searchParams.get("__email") ?? undefined;
 
   // Único punto de navegación post-login (evita doble router.replace)
   useEffect(() => {
@@ -67,7 +69,7 @@ export default function LoginContent() {
         const result = await signIn!.create({ strategy: "ticket", ticket: clerkTicket });
         if (cancelled) return;
         if (result.status === "complete") {
-          await completeSession(result.createdSessionId, setSignInActive);
+          await completeSession(result.createdSessionId, setSignInActive, undefined, emailFromParam);
         } else {
           setRedirecting(false);
           setError("No se pudo iniciar sesión con el enlace. Intenta con email y contraseña.");
@@ -88,12 +90,14 @@ export default function LoginContent() {
   async function completeSession(
     sessionId: string | null,
     setter: ((args: { session: string | null }) => Promise<void>) | undefined,
-    userName?: string
+    userName?: string,
+    userEmail?: string
   ) {
     setRedirecting(true);
     await setter!({ session: sessionId });
     try {
-      await upsertUser({ name: userName });
+      // Pass email from client — Clerk JWT template may not include the email claim.
+      await upsertUser({ name: userName, email: userEmail });
       if (userName && orgName) await createOrganization({ name: orgName });
     } catch {
       // non-fatal: se sincronizará en la próxima carga
@@ -116,7 +120,7 @@ export default function LoginContent() {
         });
 
         if (result.status === "complete") {
-          await completeSession(result.createdSessionId, setSignInActive);
+          await completeSession(result.createdSessionId, setSignInActive, undefined, email);
         } else if (result.status === "needs_new_password") {
           setError("Debes restablecer tu contraseña. Contacta al administrador.");
         } else {
@@ -132,7 +136,7 @@ export default function LoginContent() {
         });
 
         if (result.status === "complete") {
-          await completeSession(result.createdSessionId, setSignUpActive, name);
+          await completeSession(result.createdSessionId, setSignUpActive, name, email);
         } else {
           setError("Registro incompleto. Verifica que la verificación de email esté desactivada en el Dashboard de Clerk.");
         }
