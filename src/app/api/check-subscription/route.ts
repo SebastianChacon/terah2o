@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../convex/_generated/api";
 
@@ -9,7 +10,7 @@ import { api } from "../../../../convex/_generated/api";
  *
  * Response: { status: string, plan: string, isActive: boolean }
  */
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
     if (!convexUrl) {
@@ -18,8 +19,9 @@ export async function GET(req: NextRequest) {
         { status: 503 }
       );
     }
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
     const convex = new ConvexHttpClient(convexUrl);
-    const token = req.cookies.get("__convexAuthJWT")?.value;
     if (!token) {
       return NextResponse.json(
         { status: "none", plan: null, isActive: false },

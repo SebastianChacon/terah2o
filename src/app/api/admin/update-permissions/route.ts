@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
@@ -22,8 +23,9 @@ export async function PATCH(req: NextRequest) {
         { status: 503 }
       );
     }
+    const { getToken } = await auth();
+    const token = await getToken({ template: "convex" });
     const convex = new ConvexHttpClient(convexUrl);
-    const token = req.cookies.get("__convexAuthJWT")?.value;
     if (!token) {
       return NextResponse.json({ error: "No autenticado" }, { status: 401 });
     }
