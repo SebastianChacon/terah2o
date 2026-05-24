@@ -31,7 +31,7 @@ export default function StockPage() {
   /* State */
   const [lastSync, setLastSync] = useState("SIN REGISTROS");
   const [stock, setStock] = useState<StockItem[]>(
-    DEFAULT_STOCK_ITEMS.map((s) => ({ ...s }))
+    DEFAULT_STOCK_ITEMS.map((s) => ({ ...s })),
   );
   const [entryForm, setEntryForm] = useState({
     productId: "PAC",
@@ -58,17 +58,19 @@ export default function StockPage() {
     if (inventoryItems && (inventoryItems as unknown[]).length > 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStock(
-        (inventoryItems as Array<{
-          _id: string;
-          itemId: string;
-          itemName: string;
-          amount: number;
-          unit: string;
-          minimumLevel: number;
-          dailyConsumption: number;
-          isCorrelated: boolean;
-          lastUpdated?: string;
-        }>).map((item) => ({
+        (
+          inventoryItems as Array<{
+            _id: string;
+            itemId: string;
+            itemName: string;
+            amount: number;
+            unit: string;
+            minimumLevel: number;
+            dailyConsumption: number;
+            isCorrelated: boolean;
+            lastUpdated?: string;
+          }>
+        ).map((item) => ({
           _id: item._id,
           itemId: item.itemId,
           itemName: item.itemName,
@@ -78,14 +80,16 @@ export default function StockPage() {
           dailyConsumption: item.dailyConsumption,
           isCorrelated: item.isCorrelated,
           lastUpdated: item.lastUpdated,
-        }))
+        })),
       );
     }
   }, [inventoryItems]);
 
   /* Global autonomy gauge */
   const globalAutonomy = useMemo(() => {
-    const validItems = stock.filter((i) => i.amount > 0 && i.dailyConsumption > 0);
+    const validItems = stock.filter(
+      (i) => i.amount > 0 && i.dailyConsumption > 0,
+    );
     if (validItems.length === 0) return 0;
     const total = validItems.reduce((acc, curr) => {
       const days = curr.amount / curr.dailyConsumption;
@@ -103,7 +107,8 @@ export default function StockPage() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       const val = parseFloat(entryForm.newAmount);
-      if (isNaN(val) || val <= 0) return showToast("Ingrese una cantidad válida", "error");
+      if (isNaN(val) || val <= 0)
+        return showToast("Ingrese una cantidad válida", "error");
 
       const item = stock.find((s) => s.itemId === entryForm.productId);
       const newAmount = (item?.amount ?? 0) + val;
@@ -111,9 +116,14 @@ export default function StockPage() {
       setStock((prev) =>
         prev.map((i) =>
           i.itemId === entryForm.productId
-            ? { ...i, amount: newAmount, isCorrelated: entryForm.isCorrelated, lastUpdated: new Date().toISOString() }
-            : i
-        )
+            ? {
+                ...i,
+                amount: newAmount,
+                isCorrelated: entryForm.isCorrelated,
+                lastUpdated: new Date().toISOString(),
+              }
+            : i,
+        ),
       );
 
       try {
@@ -143,7 +153,9 @@ export default function StockPage() {
       }
 
       try {
-        const invoiceNote = entryForm.invoiceNumber ? ` — Factura: ${entryForm.invoiceNumber}` : "";
+        const invoiceNote = entryForm.invoiceNumber
+          ? ` — Factura: ${entryForm.invoiceNumber}`
+          : "";
         await createBitacora({
           date: new Date().toISOString().split("T")[0],
           source: "Stock & Kardex",
@@ -158,18 +170,30 @@ export default function StockPage() {
       setLastSync(new Date().toLocaleString("es-ES"));
       showToast("Carga de inventario registrada", "success");
     },
-    [entryForm, stock, updateAmountMut, createItemMut, createBitacora, showToast]
+    [
+      entryForm,
+      stock,
+      updateAmountMut,
+      createItemMut,
+      createBitacora,
+      showToast,
+    ],
   );
 
   /* Create new inventory item */
   const handleCreateItem = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!newItemForm.name.trim()) return showToast("Nombre del insumo requerido", "error");
+      if (!newItemForm.name.trim())
+        return showToast("Nombre del insumo requerido", "error");
       const val = parseFloat(newItemForm.amount);
       if (isNaN(val) || val < 0) return showToast("Cantidad inválida", "error");
 
-      const itemId = newItemForm.name.trim().toUpperCase().replace(/\s+/g, "_").slice(0, 20);
+      const itemId = newItemForm.name
+        .trim()
+        .toUpperCase()
+        .replace(/\s+/g, "_")
+        .slice(0, 20);
 
       try {
         await createItemMut({
@@ -192,36 +216,54 @@ export default function StockPage() {
           }).catch(() => {});
         }
 
-        setNewItemForm({ visible: false, name: "", amount: "", invoiceNumber: "" });
+        setNewItemForm({
+          visible: false,
+          name: "",
+          amount: "",
+          invoiceNumber: "",
+        });
         setLastSync(new Date().toLocaleString("es-ES"));
-        showToast(`${newItemForm.name.trim()} agregado al inventario`, "success");
+        showToast(
+          `${newItemForm.name.trim()} agregado al inventario`,
+          "success",
+        );
       } catch {
         showToast("Error al crear insumo", "error");
       }
     },
-    [newItemForm, createItemMut, createBitacora, showToast]
+    [newItemForm, createItemMut, createBitacora, showToast],
   );
 
   /* Enlazar Turno */
   const handleLinkShift = useCallback(() => {
     if (shiftRecords && (shiftRecords as unknown[]).length > 0) {
-      const latest = (shiftRecords as Array<{
-        plantFlowRef?: number;
-        operationHours: number;
-        dosificationEntries: Array<{ product: string; doseResult: number }>;
-      }>)[0];
+      const latest = (
+        shiftRecords as Array<{
+          plantFlowRef?: number;
+          operationHours: number;
+          dosificationEntries: Array<{ product: string; doseResult: number }>;
+        }>
+      )[0];
       setStock((prev) =>
         prev.map((item) => {
           const entry = latest.dosificationEntries.find(
-            (d) => d.product === item.itemId || d.product === item.itemName
+            (d) => d.product === item.itemId || d.product === item.itemName,
           );
           if (entry && entry.doseResult > 0) {
             const dailyCons =
-              (entry.doseResult * (latest.plantFlowRef || 0) * 3.6 * latest.operationHours) / 1000;
-            return { ...item, dailyConsumption: Math.round(dailyCons * 100) / 100, isCorrelated: true };
+              (entry.doseResult *
+                (latest.plantFlowRef || 0) *
+                3.6 *
+                latest.operationHours) /
+              1000;
+            return {
+              ...item,
+              dailyConsumption: Math.round(dailyCons * 100) / 100,
+              isCorrelated: true,
+            };
           }
           return item;
-        })
+        }),
       );
       setLastSync(new Date().toLocaleString("es-ES"));
       showToast("Sincronización con Hoja Operativa exitosa", "success");
@@ -245,7 +287,7 @@ export default function StockPage() {
         <td style="font-weight:bold;color:${item.amount <= 0 ? "#e11d48" : "#0f172a"};padding:8px;border-bottom:1px solid #e2e8f0">
           ${item.amount > 0 && item.dailyConsumption > 0 ? calculateAutonomy(item.amount, item.dailyConsumption).toFixed(1) + " Días" : "--"}
         </td>
-      </tr>`
+      </tr>`,
       )
       .join("");
     w.document.write(`<html><head><title>Reporte Stock PTAP</title>
@@ -297,14 +339,18 @@ export default function StockPage() {
               className="bg-navy-light hover:bg-slate-700 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all border border-slate-600 shadow-lg"
             >
               <Printer className="w-4 h-4 text-fuchsia-400" />
-              <span className="text-[10px] font-black uppercase">Reporte PDF</span>
+              <span className="text-[10px] font-black uppercase">
+                Reporte PDF
+              </span>
             </button>
             <button
               onClick={handleLinkShift}
               className="bg-fuchsia-600 hover:bg-fuchsia-500 px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all shadow-lg active:scale-95 border border-fuchsia-400"
             >
               <Database className="w-4 h-4 text-white" />
-              <span className="text-[10px] font-black uppercase">Enlazar Turno</span>
+              <span className="text-[10px] font-black uppercase">
+                Enlazar Turno
+              </span>
             </button>
           </div>
         </div>
@@ -321,7 +367,14 @@ export default function StockPage() {
 
             <div className="relative w-40 h-40 mx-auto mb-6 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90">
-                <circle cx="80" cy="80" r="70" fill="transparent" stroke="#f1f5f9" strokeWidth="10" />
+                <circle
+                  cx="80"
+                  cy="80"
+                  r="70"
+                  fill="transparent"
+                  stroke="#f1f5f9"
+                  strokeWidth="10"
+                />
                 <circle
                   cx="80"
                   cy="80"
@@ -351,7 +404,8 @@ export default function StockPage() {
                 Conexión de Datos
               </p>
               <p className="text-[10px] text-slate-400 leading-relaxed font-medium italic">
-                La autonomía se actualiza automáticamente al cerrar turno desde la Hoja Operativa.
+                La autonomía se actualiza automáticamente al cerrar turno desde
+                la Hoja Operativa.
               </p>
             </div>
           </div>
@@ -367,13 +421,15 @@ export default function StockPage() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stock.map((item) => {
+              {stock.map((item, index) => {
                 const hasData = item.amount > 0 && item.dailyConsumption > 0;
-                const days = hasData ? calculateAutonomy(item.amount, item.dailyConsumption) : null;
+                const days = hasData
+                  ? calculateAutonomy(item.amount, item.dailyConsumption)
+                  : null;
                 const noStock = item.amount <= 0;
                 return (
                   <div
-                    key={item.itemId}
+                    key={index}
                     className={`p-5 rounded-2xl border-2 transition-all ${
                       noStock
                         ? "bg-slate-50 border-slate-100 shadow-inner"
@@ -385,7 +441,9 @@ export default function StockPage() {
                         <p className="text-[9px] font-black text-slate-400 uppercase leading-none mb-1">
                           {item.itemId}
                         </p>
-                        <h3 className="font-bold text-slate-800 text-sm">{item.itemName}</h3>
+                        <h3 className="font-bold text-slate-800 text-sm">
+                          {item.itemName}
+                        </h3>
                       </div>
                       <div
                         className={`flex items-center gap-1 px-2 py-0.5 rounded text-[8px] font-black uppercase ${
@@ -410,7 +468,9 @@ export default function StockPage() {
                           }`}
                         >
                           {item.amount.toLocaleString("es-ES")}{" "}
-                          <span className="text-xs font-medium text-slate-400">{item.unit}</span>
+                          <span className="text-xs font-medium text-slate-400">
+                            {item.unit}
+                          </span>
                         </p>
                       </div>
                       <div className="text-right">
@@ -445,7 +505,10 @@ export default function StockPage() {
               Cargar Suministros (Ingreso de Stock)
             </h3>
 
-            <form onSubmit={handleAddStock} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+            <form
+              onSubmit={handleAddStock}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4"
+            >
               <div>
                 <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 italic">
                   Insumo
@@ -453,10 +516,12 @@ export default function StockPage() {
                 <select
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-fuchsia-500"
                   value={entryForm.productId}
-                  onChange={(e) => setEntryForm({ ...entryForm, productId: e.target.value })}
+                  onChange={(e) =>
+                    setEntryForm({ ...entryForm, productId: e.target.value })
+                  }
                 >
-                  {stock.map((item) => (
-                    <option key={item.itemId} value={item.itemId}>
+                  {stock.map((item: StockItem, index) => (
+                    <option key={index} value={item.itemId}>
                       {item.itemName}
                     </option>
                   ))}
@@ -472,7 +537,9 @@ export default function StockPage() {
                   placeholder="0.00"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-fuchsia-500 font-mono"
                   value={entryForm.newAmount}
-                  onChange={(e) => setEntryForm({ ...entryForm, newAmount: e.target.value })}
+                  onChange={(e) =>
+                    setEntryForm({ ...entryForm, newAmount: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -484,7 +551,12 @@ export default function StockPage() {
                   placeholder="001-001-000XXXXX"
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-fuchsia-500"
                   value={entryForm.invoiceNumber}
-                  onChange={(e) => setEntryForm({ ...entryForm, invoiceNumber: e.target.value })}
+                  onChange={(e) =>
+                    setEntryForm({
+                      ...entryForm,
+                      invoiceNumber: e.target.value,
+                    })
+                  }
                 />
               </div>
               <div className="flex items-end">
@@ -503,10 +575,15 @@ export default function StockPage() {
                 type="checkbox"
                 id="correlate"
                 checked={entryForm.isCorrelated}
-                onChange={(e) => setEntryForm({ ...entryForm, isCorrelated: e.target.checked })}
+                onChange={(e) =>
+                  setEntryForm({ ...entryForm, isCorrelated: e.target.checked })
+                }
                 className="w-4 h-4 text-fuchsia-600 rounded"
               />
-              <label htmlFor="correlate" className="text-[9px] font-black text-slate-500 uppercase cursor-pointer">
+              <label
+                htmlFor="correlate"
+                className="text-[9px] font-black text-slate-500 uppercase cursor-pointer"
+              >
                 Enlazar Registro
               </label>
             </div>
@@ -515,18 +592,25 @@ export default function StockPage() {
           {/* New item form */}
           <div className="bg-white p-6 rounded-3xl shadow-xl border border-slate-100">
             <button
-              onClick={() => setNewItemForm((f) => ({ ...f, visible: !f.visible }))}
+              onClick={() =>
+                setNewItemForm((f) => ({ ...f, visible: !f.visible }))
+              }
               className="w-full flex items-center justify-between text-xs font-black text-navy-deep uppercase tracking-tighter"
             >
               <span className="flex items-center gap-2">
                 <Plus className="w-4 h-4 text-fuchsia-600" />
                 Agregar Nuevo Insumo al Inventario
               </span>
-              <span className="text-slate-400 text-[10px]">{newItemForm.visible ? "▲" : "▼"}</span>
+              <span className="text-slate-400 text-[10px]">
+                {newItemForm.visible ? "▲" : "▼"}
+              </span>
             </button>
 
             {newItemForm.visible && (
-              <form onSubmit={handleCreateItem} className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+              <form
+                onSubmit={handleCreateItem}
+                className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4"
+              >
                 <div>
                   <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1 italic">
                     Nombre del Insumo
@@ -536,7 +620,9 @@ export default function StockPage() {
                     placeholder="Ej: Sulfato Ferroso"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-fuchsia-500"
                     value={newItemForm.name}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, name: e.target.value })}
+                    onChange={(e) =>
+                      setNewItemForm({ ...newItemForm, name: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -549,7 +635,9 @@ export default function StockPage() {
                     placeholder="0.00"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-center outline-none focus:ring-2 focus:ring-fuchsia-500 font-mono"
                     value={newItemForm.amount}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, amount: e.target.value })}
+                    onChange={(e) =>
+                      setNewItemForm({ ...newItemForm, amount: e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -561,7 +649,12 @@ export default function StockPage() {
                     placeholder="001-001-000XXXXX"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-fuchsia-500"
                     value={newItemForm.invoiceNumber}
-                    onChange={(e) => setNewItemForm({ ...newItemForm, invoiceNumber: e.target.value })}
+                    onChange={(e) =>
+                      setNewItemForm({
+                        ...newItemForm,
+                        invoiceNumber: e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div className="md:col-span-3 flex justify-end">

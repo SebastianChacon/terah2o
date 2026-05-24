@@ -38,7 +38,12 @@ interface DosRow {
   concentration: string;
 }
 
-type InvItem = { _id: string; itemId: string; itemName: string; amount: number };
+type InvItem = {
+  _id: string;
+  itemId: string;
+  itemName: string;
+  amount: number;
+};
 
 /* ── Page ──────────────────────────────────────────────────── */
 export default function HojaOperativaPage() {
@@ -53,8 +58,12 @@ export default function HojaOperativaPage() {
 
   /* Convex */
   const createShift = useSafeMutation(api.shiftRecords.create);
-  const updateInventoryAmount = useSafeMutation(api.inventoryItems.updateAmount);
-  const inventoryItems = useSafeQuery(api.inventoryItems.getAll) as InvItem[] | undefined;
+  const updateInventoryAmount = useSafeMutation(
+    api.inventoryItems.updateAmount,
+  );
+  const inventoryItems = useSafeQuery(api.inventoryItems.getAll) as
+    | InvItem[]
+    | undefined;
 
   /* S02 — Dosificación */
   const [plantFlow, setPlantFlow] = useState("");
@@ -66,7 +75,10 @@ export default function HojaOperativaPage() {
   /* Product options — dynamic from inventory, fallback to static list */
   const productOptions = useMemo(() => {
     if (inventoryItems && inventoryItems.length > 0) {
-      return inventoryItems.map((i) => ({ value: i.itemId, label: i.itemName }));
+      return inventoryItems.map((i) => ({
+        value: i.itemId,
+        label: i.itemName,
+      }));
     }
     return CHEMICAL_PRODUCTS;
   }, [inventoryItems]);
@@ -74,7 +86,12 @@ export default function HojaOperativaPage() {
   const addDosRow = () =>
     setDosRows((r) => [
       ...r,
-      { id: Date.now(), product: productOptions[0]?.value ?? "PAC", mlMin: "", concentration: "10" },
+      {
+        id: Date.now(),
+        product: productOptions[0]?.value ?? "PAC",
+        mlMin: "",
+        concentration: "10",
+      },
     ]);
   const removeDosRow = (id: number) =>
     setDosRows((r) => r.filter((x) => x.id !== id));
@@ -92,7 +109,8 @@ export default function HojaOperativaPage() {
       const dailyCons = calculateDailyConsumption(dose, flow, hours);
       const invItem = inventoryItems?.find((i) => i.itemId === row.product);
       const stock = invItem?.amount ?? 0;
-      const autonomy = stock > 0 && dailyCons > 0 ? calculateAutonomy(stock, dailyCons) : null;
+      const autonomy =
+        stock > 0 && dailyCons > 0 ? calculateAutonomy(stock, dailyCons) : null;
       return {
         id: row.id,
         dose: Math.round(dose * 100) / 100,
@@ -103,22 +121,39 @@ export default function HojaOperativaPage() {
 
   /* S03 — Tabla Horaria */
   const [readings, setReadings] = useState<HourlyReading[]>(
-    TIME_SLOTS.map((h): HourlyReading => ({ hora: h }))
+    TIME_SLOTS.map((h): HourlyReading => ({ hora: h })),
   );
 
-  const updateReading = (idx: number, field: keyof HourlyReading, val: string) => {
+  const updateReading = (
+    idx: number,
+    field: keyof HourlyReading,
+    val: string,
+  ) => {
     setReadings((prev) => {
       const next = [...prev];
       const num = val === "" ? undefined : parseFloat(val);
       next[idx] = { ...next[idx], [field]: num };
       const r = next[idx];
-      if (r.ph !== undefined || r.cloro !== undefined || r.color !== undefined || r.turbiedad !== undefined) {
+      if (
+        r.ph !== undefined ||
+        r.cloro !== undefined ||
+        r.color !== undefined ||
+        r.turbiedad !== undefined
+      ) {
         const phOk = r.ph === undefined || (r.ph >= 6.5 && r.ph <= 8.5);
         const cloroOk = r.cloro === undefined || r.cloro >= 0.3;
         const colorOk = r.color === undefined || r.color <= 15;
         const turbOk = r.turbiedad === undefined || r.turbiedad <= 5;
-        const hasAny = r.ph !== undefined || r.cloro !== undefined || r.color !== undefined || r.turbiedad !== undefined;
-        next[idx].status = hasAny ? (phOk && cloroOk && colorOk && turbOk ? "CUMPLE" : "CRÍTICO") : undefined;
+        const hasAny =
+          r.ph !== undefined ||
+          r.cloro !== undefined ||
+          r.color !== undefined ||
+          r.turbiedad !== undefined;
+        next[idx].status = hasAny
+          ? phOk && cloroOk && colorOk && turbOk
+            ? "CUMPLE"
+            : "CRÍTICO"
+          : undefined;
       }
       return next;
     });
@@ -126,14 +161,18 @@ export default function HojaOperativaPage() {
 
   /* Stats */
   const stats: ShiftStats = useMemo(() => {
-    const flows = readings.map((r) => r.caudal).filter((v): v is number => v !== undefined && v > 0);
-    const avgFlow = flows.length > 0 ? flows.reduce((a, b) => a + b, 0) / flows.length : 0;
+    const flows = readings
+      .map((r) => r.caudal)
+      .filter((v): v is number => v !== undefined && v > 0);
+    const avgFlow =
+      flows.length > 0 ? flows.reduce((a, b) => a + b, 0) / flows.length : 0;
     const hours = parseFloat(opHours) || 0;
     const volumeTurno = avgFlow * 3.6 * hours;
     const projection24h = avgFlow * 86.4;
     const evaluated = readings.filter((r) => r.status !== undefined);
     const okCount = evaluated.filter((r) => r.status === "CUMPLE").length;
-    const compliancePercent = evaluated.length > 0 ? Math.round((okCount / evaluated.length) * 100) : 0;
+    const compliancePercent =
+      evaluated.length > 0 ? Math.round((okCount / evaluated.length) * 100) : 0;
     return {
       avgFlow: Math.round(avgFlow * 100) / 100,
       volumeTurno: Math.round(volumeTurno * 100) / 100,
@@ -161,14 +200,16 @@ export default function HojaOperativaPage() {
   const [aiResponse, setAiResponse] = useState("");
 
   const handleAiConsult = useCallback(async () => {
-    if (!aiQuery.trim()) return showToast("Escriba la consulta técnica", "error");
+    if (!aiQuery.trim())
+      return showToast("Escriba la consulta técnica", "error");
     const result = await generateAi(aiQuery);
     if (result) setAiResponse(result);
   }, [aiQuery, generateAi, showToast]);
 
   /* S06 — Finalizar Turno */
   const handleFinalize = useCallback(async () => {
-    if (!operatorName.trim()) return showToast("Nombre del operador requerido", "error");
+    if (!operatorName.trim())
+      return showToast("Nombre del operador requerido", "error");
 
     const flow = parseFloat(plantFlow) || 0;
     const hours = parseFloat(opHours) || 8;
@@ -218,9 +259,15 @@ export default function HojaOperativaPage() {
       if (inventoryItems && inventoryItems.length > 0 && flow > 0) {
         for (const entry of dosEntries) {
           if (entry.doseResult <= 0) continue;
-          const invItem = inventoryItems.find((i) => i.itemId === entry.product);
+          const invItem = inventoryItems.find(
+            (i) => i.itemId === entry.product,
+          );
           if (!invItem) continue;
-          const dailyCons = calculateDailyConsumption(entry.doseResult, flow, hours);
+          const dailyCons = calculateDailyConsumption(
+            entry.doseResult,
+            flow,
+            hours,
+          );
           if (dailyCons <= 0) continue;
           const newAmount = Math.max(0, invItem.amount - dailyCons);
           try {
@@ -280,7 +327,22 @@ export default function HojaOperativaPage() {
       console.error("Shift save error:", err);
       showToast("Error al guardar turno", "error");
     }
-  }, [operatorName, today, opHours, plantFlow, readings, dosRows, doseResults, stats, notes, aiResponse, createShift, updateInventoryAmount, inventoryItems, showToast]);
+  }, [
+    operatorName,
+    today,
+    opHours,
+    plantFlow,
+    readings,
+    dosRows,
+    doseResults,
+    stats,
+    notes,
+    aiResponse,
+    createShift,
+    updateInventoryAmount,
+    inventoryItems,
+    showToast,
+  ]);
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -400,11 +462,13 @@ export default function HojaOperativaPage() {
                       <div className="w-2 h-2 bg-sky-500 rounded-full" />
                       <select
                         value={row.product}
-                        onChange={(e) => updateDosRow(row.id, "product", e.target.value)}
+                        onChange={(e) =>
+                          updateDosRow(row.id, "product", e.target.value)
+                        }
                         className="font-black text-navy-deep bg-transparent border-none p-0 focus:ring-0 focus:outline-none cursor-pointer text-sm"
                       >
-                        {productOptions.map((p) => (
-                          <option key={p.value} value={p.value}>
+                        {productOptions.map((p, index) => (
+                          <option key={index} value={p.value}>
                             {p.label}
                           </option>
                         ))}
@@ -424,7 +488,9 @@ export default function HojaOperativaPage() {
                       label="Aforo (ml/min)"
                       type="number"
                       value={row.mlMin}
-                      onChange={(e) => updateDosRow(row.id, "mlMin", e.target.value)}
+                      onChange={(e) =>
+                        updateDosRow(row.id, "mlMin", e.target.value)
+                      }
                       placeholder="0"
                       className="text-center"
                     />
@@ -432,7 +498,9 @@ export default function HojaOperativaPage() {
                       label="% Preparación"
                       type="number"
                       value={row.concentration}
-                      onChange={(e) => updateDosRow(row.id, "concentration", e.target.value)}
+                      onChange={(e) =>
+                        updateDosRow(row.id, "concentration", e.target.value)
+                      }
                       placeholder="10"
                       className="text-center"
                     />
@@ -447,7 +515,9 @@ export default function HojaOperativaPage() {
                         <span className="font-black text-3xl tabular-nums">
                           {res?.dose.toFixed(2) ?? "0.00"}
                         </span>
-                        <span className="text-[10px] font-bold opacity-60">mg/L</span>
+                        <span className="text-[10px] font-bold opacity-60">
+                          mg/L
+                        </span>
                       </div>
                     </div>
                     <div className="relative z-10 text-right">
@@ -455,7 +525,9 @@ export default function HojaOperativaPage() {
                         Autonomía
                       </span>
                       <span className="font-black text-sm text-sky-200">
-                        {res?.autonomy !== null && res?.autonomy ? `${res.autonomy} días` : "-- días"}
+                        {res?.autonomy !== null && res?.autonomy
+                          ? `${res.autonomy} días`
+                          : "-- días"}
                       </span>
                     </div>
                   </div>
@@ -506,10 +578,16 @@ export default function HojaOperativaPage() {
             <table className="min-w-[1000px] w-full text-[13px] border-collapse">
               <thead>
                 <tr>
-                  <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
+                  <th
+                    rowSpan={2}
+                    className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase"
+                  >
                     Hora
                   </th>
-                  <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
+                  <th
+                    rowSpan={2}
+                    className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase"
+                  >
                     Caudal (L/s)
                   </th>
                   <th
@@ -524,7 +602,10 @@ export default function HojaOperativaPage() {
                   >
                     Agua Tratada
                   </th>
-                  <th rowSpan={2} className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase">
+                  <th
+                    rowSpan={2}
+                    className="bg-navy-deep text-white p-3 font-black text-[10px] uppercase"
+                  >
                     Estado
                   </th>
                 </tr>
@@ -532,10 +613,18 @@ export default function HojaOperativaPage() {
                   <th className="bg-amber-800/80 p-2 font-bold">pH</th>
                   <th className="bg-amber-800/80 p-2 font-bold">Color</th>
                   <th className="bg-amber-800/80 p-2 font-bold">Turb.</th>
-                  <th className="bg-emerald-800/80 p-2 font-bold">pH (6.5-8.5)</th>
-                  <th className="bg-emerald-800/80 p-2 font-bold">Cloro (≥0.3)</th>
-                  <th className="bg-emerald-800/80 p-2 font-bold">Color (≤15)</th>
-                  <th className="bg-emerald-800/80 p-2 font-bold">Turb. (≤5)</th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">
+                    pH (6.5-8.5)
+                  </th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">
+                    Cloro (≥0.3)
+                  </th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">
+                    Color (≤15)
+                  </th>
+                  <th className="bg-emerald-800/80 p-2 font-bold">
+                    Turb. (≤5)
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -551,31 +640,92 @@ export default function HojaOperativaPage() {
                         className="w-16 text-center text-xs font-bold border border-slate-200 rounded-lg p-2"
                         placeholder="0.0"
                         value={r.caudal ?? ""}
-                        onChange={(e) => updateReading(idx, "caudal", e.target.value)}
+                        onChange={(e) =>
+                          updateReading(idx, "caudal", e.target.value)
+                        }
                       />
                     </td>
                     {/* Agua Cruda — sin columna Cloro (no aplicable en etapa de captación) */}
                     <td className="p-1 bg-amber-50/50">
-                      <input type="number" step="0.1" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawPh ?? ""} onChange={(e) => updateReading(idx, "rawPh", e.target.value)} />
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white"
+                        placeholder="-"
+                        value={r.rawPh ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "rawPh", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-1 bg-amber-50/50">
-                      <input type="number" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawColor ?? ""} onChange={(e) => updateReading(idx, "rawColor", e.target.value)} />
+                      <input
+                        type="number"
+                        className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white"
+                        placeholder="-"
+                        value={r.rawColor ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "rawColor", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-1 bg-amber-50/50">
-                      <input type="number" className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white" placeholder="-" value={r.rawTurbiedad ?? ""} onChange={(e) => updateReading(idx, "rawTurbiedad", e.target.value)} />
+                      <input
+                        type="number"
+                        className="w-14 text-xs font-bold rounded-lg p-1.5 border border-amber-200 text-center bg-white"
+                        placeholder="-"
+                        value={r.rawTurbiedad ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "rawTurbiedad", e.target.value)
+                        }
+                      />
                     </td>
                     {/* Agua Tratada */}
                     <td className="p-1 bg-emerald-50/50">
-                      <input type="number" step="0.1" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.ph ?? ""} onChange={(e) => updateReading(idx, "ph", e.target.value)} />
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center"
+                        placeholder="-"
+                        value={r.ph ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "ph", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-1 bg-emerald-50/50">
-                      <input type="number" step="0.1" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.cloro ?? ""} onChange={(e) => updateReading(idx, "cloro", e.target.value)} />
+                      <input
+                        type="number"
+                        step="0.1"
+                        className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center"
+                        placeholder="-"
+                        value={r.cloro ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "cloro", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-1 bg-emerald-50/50">
-                      <input type="number" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.color ?? ""} onChange={(e) => updateReading(idx, "color", e.target.value)} />
+                      <input
+                        type="number"
+                        className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center"
+                        placeholder="-"
+                        value={r.color ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "color", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-1 bg-emerald-50/50">
-                      <input type="number" className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center" placeholder="-" value={r.turbiedad ?? ""} onChange={(e) => updateReading(idx, "turbiedad", e.target.value)} />
+                      <input
+                        type="number"
+                        className="w-14 text-xs font-black rounded-lg p-1.5 bg-navy-deep text-white border border-white/20 text-center"
+                        placeholder="-"
+                        value={r.turbiedad ?? ""}
+                        onChange={(e) =>
+                          updateReading(idx, "turbiedad", e.target.value)
+                        }
+                      />
                     </td>
                     <td className="p-2 font-black text-[9px] uppercase text-center">
                       {r.status === "CUMPLE" ? (
@@ -657,7 +807,8 @@ export default function HojaOperativaPage() {
             <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl text-amber-800 text-sm font-bold flex items-center gap-3 fade-in">
               <ClipboardCheck className="w-6 h-6 flex-shrink-0" />
               <span>
-                ¡Alerta! Desviación detectada en barreras sanitarias. Revise dosificación.
+                ¡Alerta! Desviación detectada en barreras sanitarias. Revise
+                dosificación.
               </span>
             </div>
           )}
