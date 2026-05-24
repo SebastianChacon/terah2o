@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import {
 import type { HourlyReading, ShiftStats } from "@/types/shift";
 import { TIME_SLOTS } from "@/types/shift";
 import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -43,6 +44,7 @@ type InvItem = {
   itemId: string;
   itemName: string;
   amount: number;
+  unit: string;
 };
 
 /* ── Page ──────────────────────────────────────────────────── */
@@ -51,13 +53,23 @@ export default function HojaOperativaPage() {
   const { generate: generateAi, loading: aiLoading } = useGemini({
     context: "shift-expert",
   });
+  const { user } = useCurrentUser();
 
   /* S01 — Operador */
   const [operatorName, setOperatorName] = useState("");
   const today = new Date().toISOString().split("T")[0];
 
+  /* Pre-fill operator name from authenticated user (runs once when user loads) */
+  useEffect(() => {
+    if (user?.name && !operatorName) {
+      setOperatorName(user.name);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.name]);
+
   /* Convex */
   const createShift = useSafeMutation(api.shiftRecords.create);
+  const createBitacoraEntry = useSafeMutation(api.bitacoraEntries.create);
   const updateInventoryAmount = useSafeMutation(
     api.inventoryItems.updateAmount,
   );
@@ -242,6 +254,7 @@ export default function HojaOperativaPage() {
 
     const shiftArgs = {
       operatorName,
+      ...(user?._id ? { operatorId: user._id as never } : {}),
       date: today,
       operationHours: hours,
       ...(flow > 0 ? { plantFlowRef: flow } : {}),
@@ -254,6 +267,21 @@ export default function HojaOperativaPage() {
 
     try {
       await createShift(shiftArgs);
+
+      /* Audit log — turno cerrado */
+      try {
+        const dosProducts = dosEntries.map((d) => d.product).join(", ") || "N/A";
+        await createBitacoraEntry({
+          date: today,
+          source: "Hoja Operativa",
+          category: "Turno",
+          summary: `Turno cerrado por ${operatorName}. Caudal prom: ${stats.avgFlow} L/s. Vol: ${stats.volumeTurno} m³. Cumplimiento: ${stats.compliancePercent}%. Químicos: ${dosProducts}.`,
+          ...(user?._id ? { operatorId: user._id as never } : {}),
+          ...(operatorName ? { operatorName } : {}),
+        });
+      } catch {
+        // audit failure must not block main flow
+      }
 
       // Auto-deduct daily consumption from inventory stock
       if (inventoryItems && inventoryItems.length > 0 && flow > 0) {
@@ -276,6 +304,18 @@ export default function HojaOperativaPage() {
               amount: Math.round(newAmount * 100) / 100,
               lastUpdated: new Date().toISOString(),
             });
+            try {
+              await createBitacoraEntry({
+                date: today,
+                source: "Hoja Operativa",
+                category: "Inventario",
+                summary: `Descuento automático: ${entry.product} −${Math.round(dailyCons * 100) / 100} ${invItem.unit}. Saldo: ${Math.round(newAmount * 100) / 100} ${invItem.unit}.`,
+                ...(user?._id ? { operatorId: user._id as never } : {}),
+                ...(operatorName ? { operatorName } : {}),
+              });
+            } catch {
+              // audit failure must not block
+            }
           } catch (err) {
             console.error(`Stock deduction failed for ${entry.product}:`, err);
           }
@@ -329,6 +369,7 @@ export default function HojaOperativaPage() {
     }
   }, [
     operatorName,
+    user,
     today,
     opHours,
     plantFlow,
@@ -339,6 +380,7 @@ export default function HojaOperativaPage() {
     notes,
     aiResponse,
     createShift,
+    createBitacoraEntry,
     updateInventoryAmount,
     inventoryItems,
     showToast,
