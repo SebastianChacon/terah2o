@@ -13,6 +13,7 @@ import {
   X,
   Download,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 import {
   BarChart,
@@ -37,7 +38,7 @@ import { api } from "../../../../convex/_generated/api";
 import { exportToExcel } from "@/lib/export/excel";
 
 /* ── Types ────────────────────────────────────────────────── */
-type TabId = "design" | "ops" | "inventory" | "finance";
+type TabId = "design" | "ops" | "inventory" | "finance" | "audit";
 
 interface DesignRecord {
   fecha: string;
@@ -82,6 +83,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   { id: "ops", label: "Operación Turnos", icon: <BarChart3 className="w-5 h-5" /> },
   { id: "inventory", label: "Control Insumos", icon: <Package className="w-5 h-5" /> },
   { id: "finance", label: "Reporte Financiero", icon: <DollarSign className="w-5 h-5" /> },
+  { id: "audit", label: "Auditoría", icon: <ClipboardList className="w-5 h-5" /> },
 ];
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -158,13 +160,15 @@ export default function BitacoraIntegralPage() {
   const inventoryItems = useSafeQuery(api.inventoryItems.getAll);
   const financialProjs = useSafeQuery(api.financialProjections.getAll);
   const jarSessions = useSafeQuery(api.jarTestSessions.getAll);
+  const auditEntries = useSafeQuery(api.bitacoraEntries.getAll);
 
   // undefined = Convex still loading; [] = loaded but empty
   const isLoading =
     shiftRecords === undefined ||
     inventoryItems === undefined ||
     financialProjs === undefined ||
-    jarSessions === undefined;
+    jarSessions === undefined ||
+    auditEntries === undefined;
 
   /* ── Transform data ────────────────────────────────────── */
   const designHistory: DesignRecord[] = useMemo(() => {
@@ -1010,6 +1014,82 @@ export default function BitacoraIntegralPage() {
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+          </section>
+        )}
+        {/* ════════════════════════════════════════════════════
+            SECTION 05: AUDITORÍA — timeline unificado
+           ════════════════════════════════════════════════════ */}
+        {activeTab === "audit" && (
+          <section className="space-y-6 fade-in">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-4">
+                <h2 className="text-sm font-black uppercase text-white tracking-widest">Timeline de Eventos Operativos</h2>
+                <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-purple-500/15 text-purple-400">
+                  {auditEntries?.length ?? 0} eventos
+                </span>
+              </div>
+            </div>
+
+            {/* Filter chips */}
+            {auditEntries && auditEntries.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {["Turno", "Inventario", "Diseño", "Finanzas", "Stock"].map((cat) => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const count = auditEntries.filter((e: any) => e.category === cat).length;
+                  if (count === 0) return null;
+                  return (
+                    <span key={cat} className="px-3 py-1 rounded-full text-[9px] font-black uppercase border border-white/10 text-slate-400">
+                      {cat} ({count})
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+              {isLoading ? (
+                <div className="p-10 text-center text-slate-500 italic text-sm">Cargando eventos...</div>
+              ) : !auditEntries || auditEntries.length === 0 ? (
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  No hay eventos registrados. Los eventos se generan al guardar turnos, ajustar stock o registrar diseños.
+                </div>
+              ) : (
+                <div className="divide-y divide-white/[0.04]">
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {(auditEntries as any[])
+                    .filter((e: any) => !searchText || `${e.date} ${e.source} ${e.category} ${e.summary} ${e.operatorName ?? ""}`.toLowerCase().includes(searchText.toLowerCase()))
+                    .map((entry: any, i: number) => {
+                      const categoryColors: Record<string, string> = {
+                        Turno: "text-sky-400 bg-sky-500/15",
+                        Inventario: "text-amber-400 bg-amber-500/15",
+                        Diseño: "text-purple-400 bg-purple-500/15",
+                        Finanzas: "text-emerald-400 bg-emerald-500/15",
+                        Stock: "text-pink-400 bg-pink-500/15",
+                      };
+                      const colorClass = categoryColors[entry.category] ?? "text-slate-400 bg-slate-500/15";
+                      return (
+                        <div key={i} className="flex items-start gap-4 p-4 hover:bg-white/[0.02] transition-colors">
+                          <div className="flex flex-col items-center gap-1 min-w-[80px]">
+                            <span className="text-[10px] font-mono text-slate-500">{entry.date}</span>
+                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${colorClass}`}>
+                              {entry.category}
+                            </span>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">{entry.source}</span>
+                              {entry.operatorName && (
+                                <span className="text-[9px] text-slate-400">· {entry.operatorName}</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-300 leading-relaxed">{entry.summary}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
               )}
             </div>
           </section>
