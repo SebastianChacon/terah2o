@@ -53,10 +53,13 @@ export async function createClerkSignInToken(userId: string): Promise<string> {
 
 /**
  * Login E2E vía ticket de Clerk (evita Client Trust / CAPTCHA en dispositivos nuevos).
+ * Passes email via URL so upsertCurrentUser can merge old records when JWT lacks email claim.
  */
 export async function loginWithClerkTicket(page: Page, email: string): Promise<void> {
   const userId = await getClerkUserIdByEmail(email);
   const ticket = await createClerkSignInToken(userId);
-  await page.goto(`/login?__clerk_ticket=${encodeURIComponent(ticket)}`);
+  await page.goto(
+    `/login?__clerk_ticket=${encodeURIComponent(ticket)}&__email=${encodeURIComponent(email)}`
+  );
   await page.waitForURL((url) => !url.toString().includes("/login"), { timeout: 25000 });
 }

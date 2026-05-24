@@ -20,6 +20,7 @@ import type * as organizations from "../organizations.js";
 import type * as plantSettings from "../plantSettings.js";
 import type * as shiftRecords from "../shiftRecords.js";
 import type * as subscriptions from "../subscriptions.js";
+import type * as testHelpers from "../testHelpers.js";
 import type * as users from "../users.js";
 import type * as visitas from "../visitas.js";
 
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   plantSettings: typeof plantSettings;
   shiftRecords: typeof shiftRecords;
   subscriptions: typeof subscriptions;
+  testHelpers: typeof testHelpers;
   users: typeof users;
   visitas: typeof visitas;
 }>;
