@@ -8,6 +8,8 @@ export const create = mutation({
     source: v.string(),
     category: v.string(),
     summary: v.string(),
+    operatorId: v.optional(v.id("users")),
+    operatorName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUserId(ctx);
