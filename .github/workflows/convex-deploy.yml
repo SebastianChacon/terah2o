@@ -1,0 +1,36 @@
+# Push Convex backend (functions + schema) on every merge to master.
+# Vercel still deploys the Next.js frontend separately; both must stay in sync.
+#
+# Setup (one-time, GitHub repo → Settings → Secrets and variables → Actions):
+#   CONVEX_DEPLOY_KEY — Production deploy key from Convex Dashboard → Project Settings → Deploy Keys
+#
+name: Deploy Convex
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "convex/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/convex-deploy.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Deploy to Convex production
+        run: npx convex deploy --yes --typecheck disable
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
