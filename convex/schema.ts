@@ -84,6 +84,7 @@ export default defineSchema({
 
   shiftRecords: defineTable({
     operatorName: v.string(),
+    operatorId: v.optional(v.id("users")),
     date: v.string(),
     operationHours: v.number(),
     plantFlowRef: v.optional(v.number()),
@@ -208,6 +209,8 @@ export default defineSchema({
     source: v.string(),
     category: v.string(),
     summary: v.string(),
+    operatorId: v.optional(v.id("users")),
+    operatorName: v.optional(v.string()),
     organizationId: v.optional(v.id("organizations")),
   })
     .index("by_date", ["date"])
