@@ -339,3 +339,16 @@ npm run lint       # Verificar linting
 4. En Convex Dashboard → tabla `users` → cambiar `role` a `"admin"` para tu usuario
 5. En tabla `organizations` → crear registro con tu `userId` como `adminUserId`
 6. En tabla `subscriptions` → crear registro con `status: "trialing"` y tu `organizationId`
+
+---
+
+## Credenciales de Prueba E2E (Playwright)
+
+```bash
+# Operador de prueba — usuario carlos creado en Convex/auth
+TEST_EMAIL=carlos.test.777@ptap.ec
+TEST_PASSWORD=segura123@
+```
+
+Estas credenciales se usan en `tests/auth.spec.ts` y `tests/bitacora.spec.ts`.
+El helper `loginWithClerkTicket` usa `CLERK_SECRET_KEY` (en `.env.local`) para emitir tokens sin CAPTCHA.
