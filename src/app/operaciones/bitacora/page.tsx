@@ -79,19 +79,41 @@ interface FinanceRecord {
 
 /* ── Tab config ───────────────────────────────────────────── */
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: "design", label: "Diseño Técnico", icon: <Pencil className="w-5 h-5" /> },
-  { id: "ops", label: "Operación Turnos", icon: <BarChart3 className="w-5 h-5" /> },
-  { id: "inventory", label: "Control Insumos", icon: <Package className="w-5 h-5" /> },
-  { id: "finance", label: "Reporte Financiero", icon: <DollarSign className="w-5 h-5" /> },
-  { id: "audit", label: "Auditoría", icon: <ClipboardList className="w-5 h-5" /> },
+  {
+    id: "design",
+    label: "Diseño Técnico",
+    icon: <Pencil className="w-5 h-5" />,
+  },
+  {
+    id: "ops",
+    label: "Operación Turnos",
+    icon: <BarChart3 className="w-5 h-5" />,
+  },
+  {
+    id: "inventory",
+    label: "Control Insumos",
+    icon: <Package className="w-5 h-5" />,
+  },
+  {
+    id: "finance",
+    label: "Reporte Financiero",
+    icon: <DollarSign className="w-5 h-5" />,
+  },
+  {
+    id: "audit",
+    label: "Auditoría",
+    icon: <ClipboardList className="w-5 h-5" />,
+  },
 ];
 
 /* ── Helpers ──────────────────────────────────────────────── */
 function formatDate(d: string) {
   if (!d) return "";
   if (d.includes("/")) return d;
-  const [y, m, day] = d.split("-");
-  return `${day}/${m}/${y}`;
+  const isoPart = d.includes("T") ? d.split("T")[0] : d;
+  const [y, m, day] = isoPart.split("-");
+  if (y && m && day) return `${day}/${m}/${y}`;
+  return d;
 }
 
 function getMonthKey(dateStr: string): string {
@@ -102,7 +124,20 @@ function getMonthKey(dateStr: string): string {
   } else {
     date = new Date(dateStr);
   }
-  const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+  const months = [
+    "Ene",
+    "Feb",
+    "Mar",
+    "Abr",
+    "May",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dic",
+  ];
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
@@ -114,7 +149,20 @@ function getMonthKeyLong(dateStr: string): string {
   } else {
     date = new Date(dateStr);
   }
-  const months = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+  const months = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
   return `${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
@@ -128,7 +176,13 @@ function SkeletonChart({ height = 180 }: { height?: number }) {
   );
 }
 
-function EmptyChart({ message, height = 180 }: { message: string; height?: number }) {
+function EmptyChart({
+  message,
+  height = 180,
+}: {
+  message: string;
+  height?: number;
+}) {
   return (
     <div
       className="w-full flex flex-col items-center justify-center gap-2 text-slate-600"
@@ -145,7 +199,9 @@ function EmptyChart({ message, height = 180 }: { message: string; height?: numbe
 /* ── Page ─────────────────────────────────────────────────── */
 export default function BitacoraIntegralPage() {
   const { toast, showToast } = useToast();
-  const { generate: generateAI, loading: aiLoading } = useGemini({ context: "bitacora-audit" });
+  const { generate: generateAI, loading: aiLoading } = useGemini({
+    context: "bitacora-audit",
+  });
 
   /* Tabs */
   const [activeTab, setActiveTab] = useState<TabId>("design");
@@ -190,10 +246,16 @@ export default function BitacoraIntegralPage() {
       op: r.operatorName,
       flow: r.stats.avgFlow,
       vol: r.stats.volumeTurno,
-      phct: r.hourlyReadings.length > 0
-        ? `${r.hourlyReadings[0].ph ?? "—"} / ${r.hourlyReadings[0].color ?? "—"} / ${r.hourlyReadings[0].turbiedad ?? "—"}`
-        : "—",
-      chem: r.dosificationEntries.map((d: NonNullable<typeof r.dosificationEntries>[number]) => d.product).join(", ") || "—",
+      phct:
+        r.hourlyReadings.length > 0
+          ? `${r.hourlyReadings[0].ph ?? "—"} / ${r.hourlyReadings[0].color ?? "—"} / ${r.hourlyReadings[0].turbiedad ?? "—"}`
+          : "—",
+      chem:
+        r.dosificationEntries
+          .map(
+            (d: NonNullable<typeof r.dosificationEntries>[number]) => d.product,
+          )
+          .join(", ") || "—",
       compliance: r.stats.compliancePercent,
       obs: r.notes || "",
     }));
@@ -201,31 +263,42 @@ export default function BitacoraIntegralPage() {
 
   const inventoryHistory: InventoryRecord[] = useMemo(() => {
     if (!inventoryItems) return [];
-    return inventoryItems.map((i: NonNullable<typeof inventoryItems>[number]) => ({
-      fecha: i.lastUpdated || "—",
-      item: i.itemName,
-      consumed: `${i.dailyConsumption} ${i.unit}/día`,
-      auto: i.dailyConsumption > 0 ? `${Math.round(i.amount / i.dailyConsumption)} días` : "N/A",
-      saldo: `${i.amount} ${i.unit}`,
-    }));
+    return inventoryItems.map(
+      (i: NonNullable<typeof inventoryItems>[number]) => ({
+        fecha: i.lastUpdated ? formatDate(i.lastUpdated) : "—",
+        item: i.itemName,
+        consumed: `${i.dailyConsumption} ${i.unit}/día`,
+        auto:
+          i.dailyConsumption > 0
+            ? `${Math.round(i.amount / i.dailyConsumption)} días`
+            : "N/A",
+        saldo: `${i.amount} ${i.unit}`,
+      }),
+    );
   }, [inventoryItems]);
 
   const financeHistory: FinanceRecord[] = useMemo(() => {
     if (!financialProjs) return [];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return financialProjs.map((f: any) => {
-      const hasLinked = f.analisisProyectado !== undefined && f.analisisReal !== undefined;
+      const hasLinked =
+        f.analisisProyectado !== undefined && f.analisisReal !== undefined;
       const proy = hasLinked
         ? (f.analisisProyectado as number)
         : f.mode === "projection"
-        ? f.totals.grandTotal
-        : 0;
+          ? f.totals.grandTotal
+          : 0;
       const real = hasLinked
         ? (f.analisisReal as number)
         : f.mode === "analysis"
-        ? f.totals.grandTotal
-        : 0;
-      const comp = proy > 0 && real > 0 ? Math.round((real / proy) * 100) : proy > 0 ? 0 : 100;
+          ? f.totals.grandTotal
+          : 0;
+      const comp =
+        proy > 0 && real > 0
+          ? Math.round((real / proy) * 100)
+          : proy > 0
+            ? 0
+            : 100;
       const diff = Math.round((real - proy) * 100) / 100;
       return {
         mes: `${f.institutionName || "Periodo"}${f.period ? ` (${f.period})` : ""}`,
@@ -244,11 +317,15 @@ export default function BitacoraIntegralPage() {
       const key = getMonthKey(r.fecha);
       sums[key] = (sums[key] || 0) + (r.vol || 0);
     });
-    return Object.entries(sums).map(([name, vol]) => ({ name, vol: Math.round(vol) }));
+    return Object.entries(sums).map(([name, vol]) => ({
+      name,
+      vol: Math.round(vol),
+    }));
   }, [opsHistory]);
 
   const complianceData = useMemo(() => {
-    if (opsHistory.length === 0) return [{ name: "Sin datos", value: 1, color: "#1e293b" }];
+    if (opsHistory.length === 0)
+      return [{ name: "Sin datos", value: 1, color: "#1e293b" }];
     const pass = opsHistory.filter((r) => r.compliance === 100).length;
     const fail = opsHistory.length - pass;
     return [
@@ -259,10 +336,12 @@ export default function BitacoraIntegralPage() {
 
   const inventoryChartData = useMemo(() => {
     if (!inventoryItems) return [];
-    return inventoryItems.map((i: NonNullable<typeof inventoryItems>[number]) => ({
-      name: i.itemName.length > 8 ? i.itemName.slice(0, 8) + "…" : i.itemName,
-      consumo: i.dailyConsumption * 30,
-    }));
+    return inventoryItems.map(
+      (i: NonNullable<typeof inventoryItems>[number]) => ({
+        name: i.itemName.length > 8 ? i.itemName.slice(0, 8) + "…" : i.itemName,
+        consumo: i.dailyConsumption * 30,
+      }),
+    );
   }, [inventoryItems]);
 
   const financeChartData = useMemo(() => {
@@ -275,7 +354,10 @@ export default function BitacoraIntegralPage() {
 
   /* Monthly aggregation for ops */
   const monthlyOpsData = useMemo(() => {
-    const data: Record<string, { records: number; sumFlow: number; sumVol: number }> = {};
+    const data: Record<
+      string,
+      { records: number; sumFlow: number; sumVol: number }
+    > = {};
     opsHistory.forEach((r) => {
       const key = getMonthKeyLong(r.fecha);
       if (!data[key]) data[key] = { records: 0, sumFlow: 0, sumVol: 0 };
@@ -293,17 +375,26 @@ export default function BitacoraIntegralPage() {
 
   /* ── Search filter ─────────────────────────────────────── */
   const q = searchText.toLowerCase();
-  const filteredDesign = designHistory.filter((r) =>
-    !q || `${r.fecha} ${r.org} ${r.flow}`.toLowerCase().includes(q)
+  const filteredDesign = designHistory.filter(
+    (r) => !q || `${r.fecha} ${r.org} ${r.flow}`.toLowerCase().includes(q),
   );
-  const filteredOps = opsHistory.filter((r) =>
-    !q || `${r.fecha} ${r.op} ${r.chem} ${r.obs}`.toLowerCase().includes(q)
+  const filteredOps = opsHistory.filter(
+    (r) =>
+      !q || `${r.fecha} ${r.op} ${r.chem} ${r.obs}`.toLowerCase().includes(q),
   );
-  const filteredInventory = inventoryHistory.filter((r) =>
-    !q || `${r.fecha} ${r.item} ${r.saldo}`.toLowerCase().includes(q)
+  const filteredInventory = inventoryHistory.filter(
+    (r) => !q || `${r.fecha} ${r.item} ${r.saldo}`.toLowerCase().includes(q),
   );
-  const filteredFinance = financeHistory.filter((r) =>
-    !q || `${r.mes}`.toLowerCase().includes(q)
+  const filteredFinance = financeHistory.filter(
+    (r) => !q || `${r.mes}`.toLowerCase().includes(q),
+  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filteredAudit = ((auditEntries ?? []) as any[]).filter(
+    (e: any) =>
+      !q ||
+      `${e.date} ${e.source} ${e.category} ${e.summary} ${e.operatorName ?? ""}`
+        .toLowerCase()
+        .includes(q),
   );
 
   /* ── AI functions ──────────────────────────────────────── */
@@ -322,28 +413,31 @@ export default function BitacoraIntegralPage() {
       finanzas: financeHistory.length,
     };
     runAudit(
-      `Analiza el estado general de la planta basado en estos registros: ${JSON.stringify(summary)}. Proporciona un resumen ejecutivo de la salud operativa.`
+      `Analiza el estado general de la planta basado en estos registros: ${JSON.stringify(summary)}. Proporciona un resumen ejecutivo de la salud operativa.`,
     );
   }
 
   function runOpsAI() {
-    if (opsHistory.length === 0) return showToast("No hay registros de turno para analizar.", "error");
+    if (opsHistory.length === 0)
+      return showToast("No hay registros de turno para analizar.", "error");
     runAudit(
-      `Revisa estos registros de turno PTAP: ${JSON.stringify(opsHistory.slice(0, 20))}. Detecta patrones de incumplimiento y sugiere ajustes.`
+      `Revisa estos registros de turno PTAP: ${JSON.stringify(opsHistory.slice(0, 20))}. Detecta patrones de incumplimiento y sugiere ajustes.`,
     );
   }
 
   function runInventoryAI() {
-    if (inventoryHistory.length === 0) return showToast("No hay datos de stock.", "error");
+    if (inventoryHistory.length === 0)
+      return showToast("No hay datos de stock.", "error");
     runAudit(
-      `Basado en el historial de inventario: ${JSON.stringify(inventoryHistory)}. Estima autonomía y recomienda compras.`
+      `Basado en el historial de inventario: ${JSON.stringify(inventoryHistory)}. Estima autonomía y recomienda compras.`,
     );
   }
 
   function runFinanceAI() {
-    if (financeHistory.length === 0) return showToast("No hay reportes financieros.", "error");
+    if (financeHistory.length === 0)
+      return showToast("No hay reportes financieros.", "error");
     runAudit(
-      `Compara la proyección vs el gasto real: ${JSON.stringify(financeHistory.slice(0, 10))}. Analiza desviaciones.`
+      `Compara la proyección vs el gasto real: ${JSON.stringify(financeHistory.slice(0, 10))}. Analiza desviaciones.`,
     );
   }
 
@@ -351,35 +445,91 @@ export default function BitacoraIntegralPage() {
     const dateStr = new Date().toISOString().slice(0, 10);
     switch (tipo) {
       case "Diseño":
-        if (filteredDesign.length === 0) return showToast("No hay datos de diseño para exportar.", "error");
+        if (filteredDesign.length === 0)
+          return showToast("No hay datos de diseño para exportar.", "error");
         exportToExcel(
-          filteredDesign.map((r) => ({ Fecha: r.fecha, "Entidad / Planta": r.org, "Caudal Evaluado": r.flow, Optimización: r.opt, "Horas Op.": r.cost })),
+          filteredDesign.map((r) => ({
+            Fecha: r.fecha,
+            "Entidad / Planta": r.org,
+            "Caudal Evaluado": r.flow,
+            Optimización: r.opt,
+            "Horas Op.": r.cost,
+          })),
           "Diseño Técnico",
-          `Bitacora_Diseno_${dateStr}`
+          `Bitacora_Diseno_${dateStr}`,
         );
         break;
       case "Operación":
-        if (filteredOps.length === 0) return showToast("No hay registros de operación para exportar.", "error");
+        if (filteredOps.length === 0)
+          return showToast(
+            "No hay registros de operación para exportar.",
+            "error",
+          );
         exportToExcel(
-          filteredOps.map((r) => ({ Fecha: r.fecha, Operador: r.op, "Caudal (L/s)": r.flow, "Volumen (m³)": r.vol, "pH/Color/Turb": r.phct, Químicos: r.chem, "% Cumplimiento": r.compliance, Observaciones: r.obs })),
+          filteredOps.map((r) => ({
+            Fecha: r.fecha,
+            Operador: r.op,
+            "Caudal (L/s)": r.flow,
+            "Volumen (m³)": r.vol,
+            "pH/Color/Turb": r.phct,
+            Químicos: r.chem,
+            "% Cumplimiento": r.compliance,
+            Observaciones: r.obs,
+          })),
           "Operación Turnos",
-          `Bitacora_Operacion_${dateStr}`
+          `Bitacora_Operacion_${dateStr}`,
         );
         break;
       case "Insumos":
-        if (filteredInventory.length === 0) return showToast("No hay datos de insumos para exportar.", "error");
+        if (filteredInventory.length === 0)
+          return showToast("No hay datos de insumos para exportar.", "error");
         exportToExcel(
-          filteredInventory.map((r) => ({ Fecha: r.fecha, Producto: r.item, "Consumo Real": r.consumed, Autonomía: r.auto, "Saldo Bodega": r.saldo })),
+          filteredInventory.map((r) => ({
+            Fecha: r.fecha,
+            Producto: r.item,
+            "Consumo Real": r.consumed,
+            Autonomía: r.auto,
+            "Saldo Bodega": r.saldo,
+          })),
           "Control Insumos",
-          `Bitacora_Insumos_${dateStr}`
+          `Bitacora_Insumos_${dateStr}`,
         );
         break;
       case "Finanzas":
-        if (filteredFinance.length === 0) return showToast("No hay reportes financieros para exportar.", "error");
+        if (filteredFinance.length === 0)
+          return showToast(
+            "No hay reportes financieros para exportar.",
+            "error",
+          );
         exportToExcel(
-          filteredFinance.map((r) => ({ Periodo: r.mes, "Proyectado (USD)": r.proy, "Real (USD)": r.real, "% Cumplimiento": r.comp, Diferencia: r.diff })),
+          filteredFinance.map((r) => ({
+            Periodo: r.mes,
+            "Proyectado (USD)": r.proy,
+            "Real (USD)": r.real,
+            "% Cumplimiento": r.comp,
+            Diferencia: r.diff,
+          })),
           "Reporte Financiero",
-          `Bitacora_Finanzas_${dateStr}`
+          `Bitacora_Finanzas_${dateStr}`,
+        );
+        break;
+      case "Auditoria":
+        if (filteredAudit.length === 0)
+          return showToast(
+            "No hay eventos de auditoría para exportar.",
+            "error",
+          );
+        exportToExcel(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          filteredAudit.map((e: any) => ({
+            Fecha: e.date,
+            Fuente: e.source,
+            Categoría: e.category,
+            Operador: e.operatorName ?? "—",
+            Resumen: e.summary,
+          })),
+          "Auditoría",
+          `Bitacora_Auditoria_${dateStr}`,
         );
         break;
     }
@@ -393,26 +543,71 @@ export default function BitacoraIntegralPage() {
 
     switch (tipo) {
       case "Diseño":
-        headers = "<th>Fecha</th><th>Entidad</th><th>Caudal</th><th>Optimización</th><th>Horas</th>";
-        rows = filteredDesign.map((r) => `<tr><td>${r.fecha}</td><td>${r.org}</td><td>${r.flow} L/s</td><td>${r.opt}</td><td>${r.cost}</td></tr>`).join("");
+        headers =
+          "<th>Fecha</th><th>Entidad</th><th>Caudal</th><th>Optimización</th><th>Horas</th>";
+        rows = filteredDesign
+          .map(
+            (r) =>
+              `<tr><td>${r.fecha}</td><td>${r.org}</td><td>${r.flow} L/s</td><td>${r.opt}</td><td>${r.cost}</td></tr>`,
+          )
+          .join("");
         break;
       case "Operación":
-        headers = "<th>Fecha</th><th>Operador</th><th>Caudal</th><th>pH/Color/Turb</th><th>Químicos</th><th>%Cumpl.</th><th>Obs.</th>";
-        rows = filteredOps.map((r) => `<tr><td>${r.fecha}</td><td>${r.op}</td><td>${r.flow}</td><td>${r.phct}</td><td>${r.chem}</td><td>${r.compliance}%</td><td>${r.obs}</td></tr>`).join("");
+        headers =
+          "<th>Fecha</th><th>Operador</th><th>Caudal</th><th>pH/Color/Turb</th><th>Químicos</th><th>%Cumpl.</th><th>Obs.</th>";
+        rows = filteredOps
+          .map(
+            (r) =>
+              `<tr><td>${r.fecha}</td><td>${r.op}</td><td>${r.flow}</td><td>${r.phct}</td><td>${r.chem}</td><td>${r.compliance}%</td><td>${r.obs}</td></tr>`,
+          )
+          .join("");
         break;
       case "Insumos":
-        headers = "<th>Fecha</th><th>Producto</th><th>Consumo</th><th>Autonomía</th><th>Saldo</th>";
-        rows = filteredInventory.map((r) => `<tr><td>${r.fecha}</td><td>${r.item}</td><td>${r.consumed}</td><td>${r.auto}</td><td>${r.saldo}</td></tr>`).join("");
+        headers =
+          "<th>Fecha</th><th>Producto</th><th>Consumo</th><th>Autonomía</th><th>Saldo</th>";
+        rows = filteredInventory
+          .map(
+            (r) =>
+              `<tr><td>${r.fecha}</td><td>${r.item}</td><td>${r.consumed}</td><td>${r.auto}</td><td>${r.saldo}</td></tr>`,
+          )
+          .join("");
         break;
       case "Finanzas":
-        headers = "<th>Periodo</th><th>Proyectado</th><th>Real</th><th>% Cumpl.</th><th>Diferencia</th>";
-        rows = filteredFinance.map((r) => `<tr><td>${r.mes}</td><td>$${r.proy.toLocaleString()}</td><td>$${r.real.toLocaleString()}</td><td>${r.comp}%</td><td>${r.diff}</td></tr>`).join("");
+        headers =
+          "<th>Periodo</th><th>Proyectado</th><th>Real</th><th>% Cumpl.</th><th>Diferencia</th>";
+        rows = filteredFinance
+          .map(
+            (r) =>
+              `<tr><td>${r.mes}</td><td>$${r.proy.toLocaleString()}</td><td>$${r.real.toLocaleString()}</td><td>${r.comp}%</td><td>${r.diff}</td></tr>`,
+          )
+          .join("");
         break;
+      case "Auditoria": {
+        if (filteredAudit.length === 0)
+          return showToast(
+            "No hay eventos de auditoría para exportar.",
+            "error",
+          );
+        headers =
+          "<th>Fecha</th><th>Fuente</th><th>Categoría</th><th>Operador</th><th style='text-align:left'>Resumen</th>";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        rows = filteredAudit
+          .map(
+            (e: any) =>
+              `<tr><td>${e.date}</td><td>${e.source}</td><td>${e.category}</td><td>${e.operatorName ?? "—"}</td><td style='text-align:left'>${e.summary}</td></tr>`,
+          )
+          .join("");
+        break;
+      }
     }
 
     const html = `<html><head><title>Bitácora ${tipo} — TERAH2O</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{font-size:18px;margin-bottom:4px}p{font-size:12px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:#fff;padding:8px;text-align:center}td{padding:8px;text-align:center;border-bottom:1px solid #e2e8f0}</style></head><body><h1>TERAH2O — Bitácora ${tipo}</h1><p>Fecha de emisión: ${dateStr}</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
     const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); w.print(); }
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.print();
+    }
   }
 
   function openDesignSessionPDF(r: DesignRecord) {
@@ -420,10 +615,16 @@ export default function BitacoraIntegralPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const s = r.session as any;
     const paramsRows = (s.rawWaterParams || [])
-      .map((p: { label: string; value: number }) => `<tr><td>${p.label}</td><td>${p.value}</td></tr>`)
+      .map(
+        (p: { label: string; value: number }) =>
+          `<tr><td>${p.label}</td><td>${p.value}</td></tr>`,
+      )
       .join("");
     const chemRows = (s.chemicals || [])
-      .map((c: { name: string; func: string; concentration: number }) => `<tr><td>${c.name}</td><td>${c.func}</td><td>${c.concentration}%</td></tr>`)
+      .map(
+        (c: { name: string; func: string; concentration: number }) =>
+          `<tr><td>${c.name}</td><td>${c.func}</td><td>${c.concentration}%</td></tr>`,
+      )
       .join("");
     const html = `<html><head><title>Memoria Técnica — ${r.org}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:11px}h1{font-size:18px;margin:0}h2{font-size:12px;background:#f1f5f9;padding:8px;border-left:4px solid #0ea5e9;margin:16px 0 8px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#0a192f;color:#fff;padding:8px;text-align:left}td{border:1px solid #e2e8f0;padding:8px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>MEMORIA TÉCNICA — ${r.org}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr} · Fecha ensayo: ${r.fecha}</p>
@@ -438,7 +639,11 @@ export default function BitacoraIntegralPage() {
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
     const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); w.print(); }
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.print();
+    }
   }
 
   function openInventoryRowPDF(r: InventoryRecord) {
@@ -449,7 +654,11 @@ export default function BitacoraIntegralPage() {
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
     const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); w.print(); }
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.print();
+    }
   }
 
   function openFinanceRowPDF(r: FinanceRecord) {
@@ -461,12 +670,19 @@ export default function BitacoraIntegralPage() {
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
     const w = window.open("", "_blank");
-    if (w) { w.document.write(html); w.document.close(); w.print(); }
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.print();
+    }
   }
 
   /* ── Render ────────────────────────────────────────────── */
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "var(--navy-solid)", color: "#e2e8f0" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "var(--navy-solid)", color: "#e2e8f0" }}
+    >
       {/* AI Modal */}
       {aiModalOpen && (
         <div
@@ -489,9 +705,14 @@ export default function BitacoraIntegralPage() {
                 <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
                   <Zap className="w-6 h-6" />
                 </div>
-                <h2 className="text-xl font-black italic uppercase text-white">IA Insights</h2>
+                <h2 className="text-xl font-black italic uppercase text-white">
+                  IA Insights
+                </h2>
               </div>
-              <button onClick={() => setAiModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
+              <button
+                onClick={() => setAiModalOpen(false)}
+                className="text-slate-400 hover:text-white transition-colors"
+              >
                 <X className="w-6 h-6" />
               </button>
             </div>
@@ -614,43 +835,84 @@ export default function BitacoraIntegralPage() {
                 Memorias de Tratabilidad y Optimización
               </h2>
               <div className="flex items-center gap-2">
-                <button onClick={() => exportarExcel("Diseño")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                <button
+                  onClick={() => exportarExcel("Diseño")}
+                  className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+                >
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button onClick={() => exportarPDF("Diseño")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                <button
+                  onClick={() => exportarPDF("Diseño")}
+                  className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
+                >
                   <FileText className="w-4 h-4" /> PDF
                 </button>
               </div>
             </div>
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               {filteredDesign.length === 0 ? (
                 <div className="p-10 text-center text-slate-500 italic text-sm">
-                  No hay informes de diseño archivados. Los registros se crean en la Consola Técnica.
+                  No hay informes de diseño archivados. Los registros se crean
+                  en la Consola Técnica.
                 </div>
               ) : (
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Fecha</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Entidad / Planta</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Caudal Evaluado</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Optimización</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Horas Op.</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Acción</th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Fecha
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Entidad / Planta
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Caudal Evaluado
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Optimización
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Horas Op.
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Acción
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDesign.map((r, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3.5 text-[11px] text-center text-slate-400 font-mono">{r.fecha}</td>
-                        <td className="p-3.5 text-[11px] text-center font-black text-white">{r.org}</td>
-                        <td className="p-3.5 text-[11px] text-center font-bold text-sky-400">{r.flow} L/s</td>
-                        <td className="p-3.5 text-center">
-                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-sky-500/15 text-sky-400">{r.opt}</span>
+                      <tr
+                        key={i}
+                        className="hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="p-3.5 text-[11px] text-center text-slate-400 font-mono">
+                          {r.fecha}
                         </td>
-                        <td className="p-3.5 text-[11px] text-center font-mono font-bold text-slate-300">{r.cost}</td>
+                        <td className="p-3.5 text-[11px] text-center font-black text-white">
+                          {r.org}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-bold text-sky-400">
+                          {r.flow} L/s
+                        </td>
                         <td className="p-3.5 text-center">
-                          <button onClick={() => openDesignSessionPDF(r)} className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all">
+                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-sky-500/15 text-sky-400">
+                            {r.opt}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-mono font-bold text-slate-300">
+                          {r.cost}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            onClick={() => openDesignSessionPDF(r)}
+                            className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all"
+                          >
                             <FileText className="w-3 h-3" /> PDF
                           </button>
                         </td>
@@ -670,20 +932,31 @@ export default function BitacoraIntegralPage() {
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h2 className="text-sm font-black uppercase text-white tracking-widest">Consola de Operación Real</h2>
+                <h2 className="text-sm font-black uppercase text-white tracking-widest">
+                  Consola de Operación Real
+                </h2>
                 <button
                   onClick={runOpsAI}
                   className="flex items-center gap-2 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase"
-                  style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", boxShadow: "0 4px 15px rgba(168,85,247,0.3)" }}
+                  style={{
+                    background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                    boxShadow: "0 4px 15px rgba(168,85,247,0.3)",
+                  }}
                 >
                   <Zap className="w-3.5 h-3.5" /> Diagnóstico Calidad
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => exportarExcel("Operación")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                <button
+                  onClick={() => exportarExcel("Operación")}
+                  className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+                >
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button onClick={() => exportarPDF("Operación")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                <button
+                  onClick={() => exportarPDF("Operación")}
+                  className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
+                >
                   <FileText className="w-4 h-4" /> PDF
                 </button>
               </div>
@@ -691,35 +964,73 @@ export default function BitacoraIntegralPage() {
 
             {/* Charts */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <h4 className="text-[10px] font-black uppercase text-sky-400 mb-4 tracking-widest">Producción Real Mensual (m³/Mes)</h4>
+              <div
+                className="rounded-2xl p-6"
+                style={{
+                  background: "#112240",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                }}
+              >
+                <h4 className="text-[10px] font-black uppercase text-sky-400 mb-4 tracking-widest">
+                  Producción Real Mensual (m³/Mes)
+                </h4>
                 <div className="h-[180px]">
                   {isLoading ? (
                     <SkeletonChart height={180} />
                   ) : monthlyProductionData.length === 0 ? (
-                    <EmptyChart height={180} message="Sin registros de producción. Crea turnos en la Hoja Operativa." />
+                    <EmptyChart
+                      height={180}
+                      message="Sin registros de producción. Crea turnos en la Hoja Operativa."
+                    />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={monthlyProductionData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                        <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="rgba(255,255,255,0.03)"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          tick={{ fill: "#64748b", fontSize: 10 }}
+                        />
                         <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
                         <Tooltip
-                          contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                          contentStyle={{
+                            background: "#1e293b",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            borderRadius: "8px",
+                            color: "#e2e8f0",
+                            fontSize: 11,
+                          }}
                         />
-                        <Bar dataKey="vol" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                        <Bar
+                          dataKey="vol"
+                          fill="#0ea5e9"
+                          radius={[4, 4, 0, 0]}
+                        />
                       </BarChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               </div>
-              <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
-                <h4 className="text-[10px] font-black uppercase text-emerald-400 mb-4 tracking-widest">Cumplimiento de Calidad INEN</h4>
+              <div
+                className="rounded-2xl p-6"
+                style={{
+                  background: "#112240",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                }}
+              >
+                <h4 className="text-[10px] font-black uppercase text-emerald-400 mb-4 tracking-widest">
+                  Cumplimiento de Calidad INEN
+                </h4>
                 <div className="h-[180px]">
                   {isLoading ? (
                     <SkeletonChart height={180} />
-                  ) : complianceData.every(d => d.value === 0) ? (
-                    <EmptyChart height={180} message="Sin parámetros registrados. Crea turnos en la Hoja Operativa." />
+                  ) : complianceData.every((d) => d.value === 0) ? (
+                    <EmptyChart
+                      height={180}
+                      message="Sin parámetros registrados. Crea turnos en la Hoja Operativa."
+                    />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
@@ -738,7 +1049,11 @@ export default function BitacoraIntegralPage() {
                         </Pie>
                         <Legend
                           verticalAlign="bottom"
-                          formatter={(value: string) => <span style={{ color: "#64748b", fontSize: 10 }}>{value}</span>}
+                          formatter={(value: string) => (
+                            <span style={{ color: "#64748b", fontSize: 10 }}>
+                              {value}
+                            </span>
+                          )}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -748,32 +1063,65 @@ export default function BitacoraIntegralPage() {
             </div>
 
             {/* Monthly Production Table */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               <div className="p-4 border-b border-white/5 bg-black/10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-400">01. Historial de Producción Mensual Acumulada</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-400">
+                  01. Historial de Producción Mensual Acumulada
+                </h3>
               </div>
               {monthlyOpsData.length === 0 ? (
-                <div className="p-10 text-center text-slate-500 italic text-sm">Sin datos mensuales registrados.</div>
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  Sin datos mensuales registrados.
+                </div>
               ) : (
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Mes / Año</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Registros Turno</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Caudal Promedio (L/s)</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Volumen Acumulado (m³)</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Estado</th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Mes / Año
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Registros Turno
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Caudal Promedio (L/s)
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Volumen Acumulado (m³)
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Estado
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlyOpsData.map((d, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">{d.month}</td>
-                        <td className="p-3.5 text-[11px] text-center text-slate-400">{d.records}</td>
-                        <td className="p-3.5 text-[11px] text-center font-mono font-bold text-slate-300">{d.avgFlow}</td>
-                        <td className="p-3.5 text-[11px] text-center font-black text-emerald-400">{d.totalVol.toLocaleString()} m³</td>
+                      <tr
+                        key={i}
+                        className="hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">
+                          {d.month}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center text-slate-400">
+                          {d.records}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-mono font-bold text-slate-300">
+                          {d.avgFlow}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-black text-emerald-400">
+                          {d.totalVol.toLocaleString()} m³
+                        </td>
                         <td className="p-3.5 text-center">
-                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-emerald-500/15 text-emerald-400">Cerrado</span>
+                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-emerald-500/15 text-emerald-400">
+                            Cerrado
+                          </span>
                         </td>
                       </tr>
                     ))}
@@ -783,40 +1131,81 @@ export default function BitacoraIntegralPage() {
             </div>
 
             {/* Shift Detail Table */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               <div className="p-4 border-b border-white/5 bg-black/10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">02. Registro Detallado de Turnos Operativos</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  02. Registro Detallado de Turnos Operativos
+                </h3>
               </div>
               {filteredOps.length === 0 ? (
-                <div className="p-10 text-center text-slate-500 italic text-sm">No hay registros de turnos guardados.</div>
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  No hay registros de turnos guardados.
+                </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse">
                     <thead>
                       <tr>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Fecha</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Operador</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Caudal</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">pH / Color / Turb</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Químicos</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">% Cumpl.</th>
-                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Obs.</th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Fecha
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Operador
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Caudal
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          pH / Color / Turb
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Químicos
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          % Cumpl.
+                        </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Obs.
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredOps.map((r, i) => (
-                        <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="p-3.5 text-[10px] text-center font-mono text-slate-400">{r.fecha}</td>
-                          <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">{r.op}</td>
-                          <td className="p-3.5 text-[11px] text-center font-bold text-sky-400">{r.flow}</td>
-                          <td className="p-3.5 text-[10px] text-center text-slate-400">{r.phct}</td>
-                          <td className="p-3.5 text-[11px] text-center font-mono text-emerald-400">{r.chem}</td>
+                        <tr
+                          key={i}
+                          className="hover:bg-white/[0.02] transition-colors"
+                        >
+                          <td className="p-3.5 text-[10px] text-center font-mono text-slate-400">
+                            {r.fecha}
+                          </td>
+                          <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">
+                            {r.op}
+                          </td>
+                          <td className="p-3.5 text-[11px] text-center font-bold text-sky-400">
+                            {r.flow}
+                          </td>
+                          <td className="p-3.5 text-[10px] text-center text-slate-400">
+                            {r.phct}
+                          </td>
+                          <td className="p-3.5 text-[11px] text-center font-mono text-emerald-400">
+                            {r.chem}
+                          </td>
                           <td className="p-3.5 text-center">
-                            <span className={`px-2 py-1 rounded text-[8px] font-black uppercase ${r.compliance === 100 ? "bg-emerald-500/15 text-emerald-400" : "bg-sky-500/15 text-sky-400"}`}>
+                            <span
+                              className={`px-2 py-1 rounded text-[8px] font-black uppercase ${r.compliance === 100 ? "bg-emerald-500/15 text-emerald-400" : "bg-sky-500/15 text-sky-400"}`}
+                            >
                               {r.compliance}%
                             </span>
                           </td>
-                          <td className="p-3.5 text-[9px] text-center italic text-slate-500 max-w-[150px] truncate">{r.obs}</td>
+                          <td className="p-3.5 text-[9px] text-center italic text-slate-500 max-w-[150px] truncate">
+                            {r.obs}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -834,46 +1223,92 @@ export default function BitacoraIntegralPage() {
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h2 className="text-sm font-black uppercase text-white tracking-widest">Kardex y Stock de Insumos</h2>
+                <h2 className="text-sm font-black uppercase text-white tracking-widest">
+                  Kardex y Stock de Insumos
+                </h2>
                 <button
                   onClick={runInventoryAI}
                   className="flex items-center gap-2 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase"
-                  style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", boxShadow: "0 4px 15px rgba(168,85,247,0.3)" }}
+                  style={{
+                    background: "linear-gradient(135deg, #6366f1, #a855f7)",
+                    boxShadow: "0 4px 15px rgba(168,85,247,0.3)",
+                  }}
                 >
                   <Zap className="w-3.5 h-3.5" /> Predecir Stock
                 </button>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => exportarExcel("Insumos")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                <button
+                  onClick={() => exportarExcel("Insumos")}
+                  className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+                >
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button onClick={() => exportarPDF("Insumos")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                <button
+                  onClick={() => exportarPDF("Insumos")}
+                  className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
+                >
                   <FileText className="w-4 h-4" /> PDF
                 </button>
               </div>
             </div>
 
             {/* Chart */}
-            <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <h4 className="text-[10px] font-black uppercase text-amber-500 mb-4 tracking-widest">Consumo Global de Productos (kg/mes estimado)</h4>
+            <div
+              className="rounded-2xl p-6"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
+              <h4 className="text-[10px] font-black uppercase text-amber-500 mb-4 tracking-widest">
+                Consumo Global de Productos (kg/mes estimado)
+              </h4>
               <div className="h-[250px]">
                 {isLoading ? (
                   <SkeletonChart height={250} />
                 ) : inventoryChartData.length === 0 ? (
-                  <EmptyChart height={250} message="Sin insumos registrados. Añade productos en el módulo de Stock." />
+                  <EmptyChart
+                    height={250}
+                    message="Sin insumos registrados. Añade productos en el módulo de Stock."
+                  />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={inventoryChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                      <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.03)"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "#64748b", fontSize: 10 }}
+                      />
                       <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
                       <Tooltip
-                        contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                        contentStyle={{
+                          background: "#1e293b",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "8px",
+                          color: "#e2e8f0",
+                          fontSize: 11,
+                        }}
                       />
                       <Bar dataKey="consumo" radius={[4, 4, 0, 0]}>
-                        {inventoryChartData.map((_: (typeof inventoryChartData)[number], i: number) => (
-                          <Cell key={i} fill={["#0ea5e9", "#ec4899", "#f59e0b", "#10b981"][i % 4]} />
-                        ))}
+                        {inventoryChartData.map(
+                          (
+                            _: (typeof inventoryChartData)[number],
+                            i: number,
+                          ) => (
+                            <Cell
+                              key={i}
+                              fill={
+                                ["#0ea5e9", "#ec4899", "#f59e0b", "#10b981"][
+                                  i % 4
+                                ]
+                              }
+                            />
+                          ),
+                        )}
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
@@ -882,36 +1317,74 @@ export default function BitacoraIntegralPage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               <div className="p-4 border-b border-white/5 bg-black/10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Informes de Inventario y Autonomía</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                  Informes de Inventario y Autonomía
+                </h3>
               </div>
               {filteredInventory.length === 0 ? (
-                <div className="p-10 text-center text-slate-500 italic text-sm">No hay informes de stock archivados.</div>
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  No hay informes de stock archivados.
+                </div>
               ) : (
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Fecha</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Producto</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Consumo Real</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Autonomía</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Saldo Bodega</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Documento</th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Fecha
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Producto
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Consumo Real
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Autonomía
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Saldo Bodega
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Documento
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredInventory.map((r, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3.5 text-[11px] text-center font-mono text-slate-400">{r.fecha}</td>
-                        <td className="p-3.5 text-[11px] text-center font-black text-white">{r.item}</td>
-                        <td className="p-3.5 text-[11px] text-center font-bold text-pink-500">{r.consumed}</td>
-                        <td className="p-3.5 text-center">
-                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-sky-500/15 text-sky-400">{r.auto}</span>
+                      <tr
+                        key={i}
+                        className="hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="p-3.5 text-[11px] text-center font-mono text-slate-400">
+                          {r.fecha}
                         </td>
-                        <td className="p-3.5 text-[11px] text-center font-black text-white">{r.saldo}</td>
+                        <td className="p-3.5 text-[11px] text-center font-black text-white">
+                          {r.item}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-bold text-pink-500">
+                          {r.consumed}
+                        </td>
                         <td className="p-3.5 text-center">
-                          <button onClick={() => openInventoryRowPDF(r)} className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all">
+                          <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-sky-500/15 text-sky-400">
+                            {r.auto}
+                          </span>
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-black text-white">
+                          {r.saldo}
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <button
+                            onClick={() => openInventoryRowPDF(r)}
+                            className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all"
+                          >
                             <FileText className="w-3 h-3" /> PDF
                           </button>
                         </td>
@@ -931,45 +1404,90 @@ export default function BitacoraIntegralPage() {
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h2 className="text-sm font-black uppercase text-white tracking-widest">Auditoría Financiera PTAP</h2>
-                <button
+                <h2 className="text-sm font-black uppercase text-white tracking-widest">
+                  Auditoría Financiera PTAP
+                </h2>
+                {/* <button
                   onClick={runFinanceAI}
                   className="flex items-center gap-2 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase"
                   style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", boxShadow: "0 4px 15px rgba(168,85,247,0.3)" }}
                 >
                   <Zap className="w-3.5 h-3.5" /> Auditoría Económica
-                </button>
+                </button> */}
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={() => exportarExcel("Finanzas")} className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all">
+                <button
+                  onClick={() => exportarExcel("Finanzas")}
+                  className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+                >
                   <Download className="w-4 h-4" /> Excel
                 </button>
-                <button onClick={() => exportarPDF("Finanzas")} className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all">
+                <button
+                  onClick={() => exportarPDF("Finanzas")}
+                  className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
+                >
                   <FileText className="w-4 h-4" /> PDF
                 </button>
               </div>
             </div>
 
             {/* Chart */}
-            <div className="rounded-2xl p-6" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <h4 className="text-[10px] font-black uppercase text-pink-400 mb-4 tracking-widest">Comparativa Financiera: Proyectado vs Real (USD)</h4>
+            <div
+              className="rounded-2xl p-6"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
+              <h4 className="text-[10px] font-black uppercase text-pink-400 mb-4 tracking-widest">
+                Comparativa Financiera: Proyectado vs Real (USD)
+              </h4>
               <div className="h-[250px]">
                 {isLoading ? (
                   <SkeletonChart height={250} />
                 ) : financeChartData.length === 0 ? (
-                  <EmptyChart height={250} message="Sin proyecciones guardadas. Genera informes en el módulo de Finanzas." />
+                  <EmptyChart
+                    height={250}
+                    message="Sin proyecciones guardadas. Genera informes en el módulo de Finanzas."
+                  />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={financeChartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
-                      <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="rgba(255,255,255,0.03)"
+                      />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "#64748b", fontSize: 10 }}
+                      />
                       <YAxis tick={{ fill: "#64748b", fontSize: 10 }} />
                       <Tooltip
-                        contentStyle={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", color: "#e2e8f0", fontSize: 11 }}
+                        contentStyle={{
+                          background: "#1e293b",
+                          border: "1px solid rgba(255,255,255,0.1)",
+                          borderRadius: "8px",
+                          color: "#e2e8f0",
+                          fontSize: 11,
+                        }}
                       />
-                      <Legend formatter={(value: string) => <span style={{ color: "#94a3b8", fontSize: 10 }}>{value}</span>} />
-                      <Bar dataKey="Proyectado" fill="#1e3a8a" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Real" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Legend
+                        formatter={(value: string) => (
+                          <span style={{ color: "#94a3b8", fontSize: 10 }}>
+                            {value}
+                          </span>
+                        )}
+                      />
+                      <Bar
+                        dataKey="Proyectado"
+                        fill="#1e3a8a"
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Real"
+                        fill="#10b981"
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -977,36 +1495,75 @@ export default function BitacoraIntegralPage() {
             </div>
 
             {/* Table */}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               <div className="p-4 border-b border-white/5 bg-black/10">
-                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">Informes de Análisis de Cumplimiento Económico</h3>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                  Informes de Análisis de Cumplimiento Económico
+                </h3>
               </div>
               {filteredFinance.length === 0 ? (
-                <div className="p-10 text-center text-slate-500 italic text-sm">No hay informes financieros registrados.</div>
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  No hay informes financieros registrados.
+                </div>
               ) : (
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Periodo</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Análisis Proyectado</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Análisis Real</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">% Cumplimiento</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Diferencia</th>
-                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">Informes</th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Periodo
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Análisis Proyectado
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Análisis Real
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        % Cumplimiento
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Diferencia
+                      </th>
+                      <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                        Informes
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredFinance.map((r, i) => (
-                      <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">{r.mes}</td>
-                        <td className="p-3.5 text-[11px] text-center font-mono text-slate-400">$ {r.proy.toLocaleString()}</td>
-                        <td className="p-3.5 text-[11px] text-center font-bold text-white">$ {r.real.toLocaleString()}</td>
-                        <td className="p-3.5 text-[11px] text-center font-black text-emerald-400">{r.comp}%</td>
-                        <td className={`p-3.5 text-[11px] text-center font-mono ${r.diff >= 0 ? "text-emerald-400" : "text-pink-500"}`}>
-                          {r.diff > 0 ? "+" : ""}{r.diff}
+                      <tr
+                        key={i}
+                        className="hover:bg-white/[0.02] transition-colors"
+                      >
+                        <td className="p-3.5 text-[11px] text-center font-black text-white uppercase">
+                          {r.mes}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-mono text-slate-400">
+                          $ {r.proy.toLocaleString()}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-bold text-white">
+                          $ {r.real.toLocaleString()}
+                        </td>
+                        <td className="p-3.5 text-[11px] text-center font-black text-emerald-400">
+                          {r.comp}%
+                        </td>
+                        <td
+                          className={`p-3.5 text-[11px] text-center font-mono ${r.diff >= 0 ? "text-emerald-400" : "text-pink-500"}`}
+                        >
+                          {r.diff > 0 ? "+" : ""}
+                          {r.diff}
                         </td>
                         <td className="p-3.5 text-center">
-                          <button onClick={() => openFinanceRowPDF(r)} className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all">
+                          <button
+                            onClick={() => openFinanceRowPDF(r)}
+                            className="flex items-center gap-1 mx-auto text-pink-400 text-[9px] font-black px-3 py-1 rounded-lg border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500 hover:text-white transition-all"
+                          >
                             <FileText className="w-3 h-3" /> PDF
                           </button>
                         </td>
@@ -1025,70 +1582,115 @@ export default function BitacoraIntegralPage() {
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
-                <h2 className="text-sm font-black uppercase text-white tracking-widest">Timeline de Eventos Operativos</h2>
+                <h2 className="text-sm font-black uppercase text-white tracking-widest">
+                  Timeline de Eventos Operativos
+                </h2>
                 <span className="px-2 py-1 rounded text-[8px] font-black uppercase bg-purple-500/15 text-purple-400">
                   {auditEntries?.length ?? 0} eventos
                 </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => exportarExcel("Auditoria")}
+                  className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
+                >
+                  <Download className="w-4 h-4" /> Excel
+                </button>
+                <button
+                  onClick={() => exportarPDF("Auditoria")}
+                  className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
+                >
+                  <FileText className="w-4 h-4" /> PDF
+                </button>
               </div>
             </div>
 
             {/* Filter chips */}
             {auditEntries && auditEntries.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {["Turno", "Inventario", "Diseño", "Finanzas", "Stock"].map((cat) => {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const count = auditEntries.filter((e: any) => e.category === cat).length;
-                  if (count === 0) return null;
-                  return (
-                    <span key={cat} className="px-3 py-1 rounded-full text-[9px] font-black uppercase border border-white/10 text-slate-400">
-                      {cat} ({count})
-                    </span>
-                  );
-                })}
+                {["Turno", "Inventario", "Diseño", "Finanzas", "Stock"].map(
+                  (cat) => {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const count = auditEntries.filter(
+                      (e: any) => e.category === cat,
+                    ).length;
+                    if (count === 0) return null;
+                    return (
+                      <span
+                        key={cat}
+                        className="px-3 py-1 rounded-full text-[9px] font-black uppercase border border-white/10 text-slate-400"
+                      >
+                        {cat} ({count})
+                      </span>
+                    );
+                  },
+                )}
               </div>
             )}
 
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#112240", border: "1px solid rgba(255,255,255,0.05)" }}>
+            <div
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "#112240",
+                border: "1px solid rgba(255,255,255,0.05)",
+              }}
+            >
               {isLoading ? (
-                <div className="p-10 text-center text-slate-500 italic text-sm">Cargando eventos...</div>
+                <div className="p-10 text-center text-slate-500 italic text-sm">
+                  Cargando eventos...
+                </div>
               ) : !auditEntries || auditEntries.length === 0 ? (
                 <div className="p-10 text-center text-slate-500 italic text-sm">
-                  No hay eventos registrados. Los eventos se generan al guardar turnos, ajustar stock o registrar diseños.
+                  No hay eventos registrados. Los eventos se generan al guardar
+                  turnos, ajustar stock o registrar diseños.
                 </div>
               ) : (
                 <div className="divide-y divide-white/[0.04]">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {(auditEntries as any[])
-                    .filter((e: any) => !searchText || `${e.date} ${e.source} ${e.category} ${e.summary} ${e.operatorName ?? ""}`.toLowerCase().includes(searchText.toLowerCase()))
-                    .map((entry: any, i: number) => {
-                      const categoryColors: Record<string, string> = {
-                        Turno: "text-sky-400 bg-sky-500/15",
-                        Inventario: "text-amber-400 bg-amber-500/15",
-                        Diseño: "text-purple-400 bg-purple-500/15",
-                        Finanzas: "text-emerald-400 bg-emerald-500/15",
-                        Stock: "text-pink-400 bg-pink-500/15",
-                      };
-                      const colorClass = categoryColors[entry.category] ?? "text-slate-400 bg-slate-500/15";
-                      return (
-                        <div key={i} className="flex items-start gap-4 p-4 hover:bg-white/[0.02] transition-colors">
-                          <div className="flex flex-col items-center gap-1 min-w-[80px]">
-                            <span className="text-[10px] font-mono text-slate-500">{entry.date}</span>
-                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${colorClass}`}>
-                              {entry.category}
-                            </span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">{entry.source}</span>
-                              {entry.operatorName && (
-                                <span className="text-[9px] text-slate-400">· {entry.operatorName}</span>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-slate-300 leading-relaxed">{entry.summary}</p>
-                          </div>
+                  {filteredAudit.map((entry: any, i: number) => {
+                    const categoryColors: Record<string, string> = {
+                      Turno: "text-sky-400 bg-sky-500/15",
+                      Inventario: "text-amber-400 bg-amber-500/15",
+                      Diseño: "text-purple-400 bg-purple-500/15",
+                      Finanzas: "text-emerald-400 bg-emerald-500/15",
+                      Stock: "text-pink-400 bg-pink-500/15",
+                    };
+                    const colorClass =
+                      categoryColors[entry.category] ??
+                      "text-slate-400 bg-slate-500/15";
+                    return (
+                      <div
+                        key={i}
+                        className="flex items-start gap-4 p-4 hover:bg-white/[0.02] transition-colors"
+                      >
+                        <div className="flex flex-col items-center gap-1 min-w-[80px]">
+                          <span className="text-[10px] font-mono text-slate-500">
+                            {entry.date}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${colorClass}`}
+                          >
+                            {entry.category}
+                          </span>
                         </div>
-                      );
-                    })}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[9px] font-black uppercase text-slate-500 tracking-widest">
+                              {entry.source}
+                            </span>
+                            {entry.operatorName && (
+                              <span className="text-[9px] text-slate-400">
+                                · {entry.operatorName}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-300 leading-relaxed">
+                            {entry.summary}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
