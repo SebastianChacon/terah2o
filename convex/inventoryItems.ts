@@ -84,11 +84,13 @@ export const updateAmount = mutation({
     id: v.id("inventoryItems"),
     amount: v.number(),
     lastUpdated: v.string(),
+    dailyConsumption: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.id, {
-      amount: args.amount,
-      lastUpdated: args.lastUpdated,
+    const { id, dailyConsumption, ...rest } = args;
+    await ctx.db.patch(id, {
+      ...rest,
+      ...(dailyConsumption !== undefined ? { dailyConsumption } : {}),
     });
   },
 });
