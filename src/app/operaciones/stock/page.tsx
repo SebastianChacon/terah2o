@@ -21,7 +21,10 @@ import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 import { DEFAULT_STOCK_ITEMS } from "@/types/inventory";
 import type { StockItem } from "@/types/inventory";
-import { calculateAutonomy } from "@/lib/calculations/dosification";
+import {
+  calculateAutonomy,
+  calculateDailyConsumption,
+} from "@/lib/calculations/dosification";
 import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 
@@ -235,42 +238,86 @@ export default function StockPage() {
   );
 
   /* Enlazar Turno */
-  const handleLinkShift = useCallback(() => {
-    if (shiftRecords && (shiftRecords as unknown[]).length > 0) {
-      const latest = (
-        shiftRecords as Array<{
-          plantFlowRef?: number;
-          operationHours: number;
-          dosificationEntries: Array<{ product: string; doseResult: number }>;
-        }>
-      )[0];
-      setStock((prev) =>
-        prev.map((item) => {
-          const entry = latest.dosificationEntries.find(
-            (d) => d.product === item.itemId || d.product === item.itemName,
-          );
-          if (entry && entry.doseResult > 0) {
-            const dailyCons =
-              (entry.doseResult *
-                (latest.plantFlowRef || 0) *
-                3.6 *
-                latest.operationHours) /
-              1000;
-            return {
-              ...item,
-              dailyConsumption: Math.round(dailyCons * 100) / 100,
-              isCorrelated: true,
-            };
-          }
-          return item;
-        }),
+  const handleLinkShift = useCallback(async () => {
+    if (shiftRecords === undefined) {
+      showToast("Cargando turnos operativos…", "info");
+      return;
+    }
+    if ((shiftRecords as unknown[]).length === 0) {
+      showToast("No hay datos de turno disponibles", "info");
+      return;
+    }
+
+    const latest = (
+      shiftRecords as Array<{
+        plantFlowRef?: number;
+        operationHours: number;
+        stats: { avgFlow: number };
+        dosificationEntries: Array<{ product: string; doseResult: number }>;
+      }>
+    )[0];
+
+    const flowLps =
+      latest.plantFlowRef && latest.plantFlowRef > 0
+        ? latest.plantFlowRef
+        : latest.stats?.avgFlow ?? 0;
+
+    if (flowLps <= 0) {
+      showToast(
+        "El turno no tiene caudal de referencia — registre caudal en Hoja Operativa",
+        "error",
+      );
+      return;
+    }
+
+    const updates: Array<{ item: StockItem; dailyCons: number }> = [];
+    const nextStock = stock.map((item) => {
+      const entry = latest.dosificationEntries.find(
+        (d) => d.product === item.itemId || d.product === item.itemName,
+      );
+      if (entry && entry.doseResult > 0) {
+        const dailyCons = calculateDailyConsumption(
+          entry.doseResult,
+          flowLps,
+          latest.operationHours,
+        );
+        const rounded = Math.round(dailyCons * 100) / 100;
+        if (rounded > 0 && item._id) {
+          updates.push({ item, dailyCons: rounded });
+        }
+        return {
+          ...item,
+          dailyConsumption: rounded,
+          isCorrelated: true,
+        };
+      }
+      return item;
+    });
+    setStock(nextStock);
+
+    if (updates.length === 0) {
+      showToast("No hay dosificación válida en el último turno", "info");
+      return;
+    }
+
+    try {
+      const now = new Date().toISOString();
+      await Promise.all(
+        updates.map(({ item, dailyCons }) =>
+          updateAmountMut({
+            id: item._id as never,
+            amount: item.amount,
+            dailyConsumption: dailyCons,
+            lastUpdated: now,
+          }),
+        ),
       );
       setLastSync(new Date().toLocaleString("es-ES"));
       showToast("Sincronización con Hoja Operativa exitosa", "success");
-    } else {
-      showToast("No hay datos de turno disponibles", "info");
+    } catch {
+      showToast("Error al sincronizar consumo diario", "error");
     }
-  }, [shiftRecords, showToast]);
+  }, [shiftRecords, stock, showToast, updateAmountMut]);
 
   /* PDF report */
   const handlePdf = useCallback(() => {
