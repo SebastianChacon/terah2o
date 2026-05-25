@@ -302,6 +302,7 @@ export default function HojaOperativaPage() {
             await updateInventoryAmount({
               id: invItem._id as never,
               amount: Math.round(newAmount * 100) / 100,
+              dailyConsumption: Math.round(dailyCons * 100) / 100,
               lastUpdated: new Date().toISOString(),
             });
             try {
