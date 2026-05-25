@@ -297,4 +297,52 @@ test.describe("bitacora — Auditoría tab UI", () => {
       .first();
     await expect(bitacoraLink).toBeVisible({ timeout: 10000 });
   });
+
+  // ── 13. Auditoría tab shows PDF + Excel download buttons ─────────────
+  test("Auditoría tab shows PDF and Excel download buttons", async ({ page }) => {
+    await loginAndWaitForSync(page);
+    await page.goto("/operaciones/bitacora");
+
+    const auditTab = page.getByRole("button", { name: /Auditoría/i });
+    await expect(auditTab).toBeVisible({ timeout: 10000 });
+    await auditTab.click();
+
+    await expect(page.locator("text=Timeline de Eventos Operativos")).toBeVisible({ timeout: 8000 });
+
+    // Both export buttons must be visible in the tab header
+    const pdfBtn = page.getByRole("button", { name: /^PDF$/i }).last();
+    const excelBtn = page.getByRole("button", { name: /^Excel$/i }).last();
+    await expect(pdfBtn).toBeVisible({ timeout: 5000 });
+    await expect(excelBtn).toBeVisible({ timeout: 5000 });
+  });
+
+  // ── 14. PDF button triggers print dialog (or toast if no data) ────────
+  test("PDF button in Auditoría tab triggers window.open or shows empty toast", async ({ page }) => {
+    // Track window.open calls — prevent actual print dialog
+    let windowOpenCalled = false;
+    await page.addInitScript(() => {
+      window.open = () => { (window as unknown as Record<string, unknown>).__auditPdfOpened = true; return null; };
+    });
+
+    await loginAndWaitForSync(page);
+    await page.goto("/operaciones/bitacora");
+
+    await page.getByRole("button", { name: /Auditoría/i }).click();
+    await expect(page.locator("text=Timeline de Eventos Operativos")).toBeVisible({ timeout: 8000 });
+    await page.waitForTimeout(3000); // Convex data load
+
+    const pdfBtn = page.getByRole("button", { name: /^PDF$/i }).last();
+    await expect(pdfBtn).toBeVisible({ timeout: 5000 });
+    await pdfBtn.click();
+
+    // Either window.open fired (has data) or toast shows "no hay eventos" (empty)
+    windowOpenCalled = await page.evaluate(() => !!(window as unknown as Record<string, unknown>).__auditPdfOpened);
+    const bodyText = await page.locator("body").innerText();
+    const hasToast = bodyText.toLowerCase().includes("no hay eventos");
+
+    expect(
+      windowOpenCalled || hasToast,
+      `PDF button must either open print window or show empty-state toast. Body: ${bodyText.slice(0, 200)}`
+    ).toBe(true);
+  });
 });
