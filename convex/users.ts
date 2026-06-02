@@ -29,7 +29,7 @@ export const upsertCurrentUser = mutation({
     const clerkId = identity.subject;
     // identity.email is null when Clerk JWT template doesn't include the email claim.
     // args.email (from client useUser()) is the reliable fallback.
-    const email = identity.email ?? args.email ?? "";
+    const email = (identity.email ?? args.email ?? "").trim().toLowerCase();
 
     // 1. Buscar por clerkId (ruta principal)
     const byClerk = await ctx.db
@@ -131,17 +131,18 @@ export const createOperator = mutation({
       );
     }
 
+    const email = args.email.trim().toLowerCase();
     const existingByEmail = await ctx.db
       .query("users")
-      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", email))
       .first();
     if (existingByEmail)
       throw new Error("Ya existe un usuario con ese correo electrónico");
 
     // clerkId se llenará cuando el operador haga su primer login
     const operatorId = await ctx.db.insert("users", {
-      email: args.email,
-      name: args.name,
+      email,
+      name: args.name.trim(),
       role: "operator",
       organizationId: args.organizationId,
       createdAt: Date.now(),
