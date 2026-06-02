@@ -111,11 +111,61 @@ export const getPermissionsByOrg = query({
     const user = await ctx.db.get(userId);
     if (!user?.organizationId) return [];
 
-    return await ctx.db
+    const orgId = user.organizationId;
+    const byOrgIndex = await ctx.db
       .query("operatorPermissions")
-      .withIndex("by_organizationId", (q) =>
-        q.eq("organizationId", user.organizationId!)
-      )
+      .withIndex("by_organizationId", (q) => q.eq("organizationId", orgId))
       .collect();
+
+    const seen = new Set(byOrgIndex.map((p) => p._id));
+
+    // Incluir registros legacy sin organizationId indexado
+    const operators = await ctx.db
+      .query("users")
+      .withIndex("by_organizationId", (q) => q.eq("organizationId", orgId))
+      .filter((q) => q.eq(q.field("role"), "operator"))
+      .collect();
+
+    for (const op of operators) {
+      const perm = await ctx.db
+        .query("operatorPermissions")
+        .withIndex("by_operatorId", (q) => q.eq("operatorId", op._id))
+        .unique();
+      if (perm && !seen.has(perm._id)) {
+        byOrgIndex.push(perm);
+        seen.add(perm._id);
+      }
+    }
+
+    return byOrgIndex;
+  },
+});
+
+// ── Backfill organizationId en permisos legacy (admin-only, idempotente) ───
+export const backfillOrganizationIds = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthenticatedUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+
+    const caller = await ctx.db.get(userId);
+    if (!caller || caller.role !== "admin")
+      throw new Error("Solo un Admin puede ejecutar el backfill");
+
+    const allPerms = await ctx.db.query("operatorPermissions").collect();
+    let patched = 0;
+
+    for (const perm of allPerms) {
+      const operator = await ctx.db.get(perm.operatorId);
+      if (!operator?.organizationId) continue;
+      if (perm.organizationId === operator.organizationId) continue;
+
+      await ctx.db.patch(perm._id, {
+        organizationId: operator.organizationId,
+      });
+      patched += 1;
+    }
+
+    return { patched };
   },
 });
