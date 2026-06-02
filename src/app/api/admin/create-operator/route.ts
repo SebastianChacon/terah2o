@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
 import type { Id } from "../../../../../convex/_generated/dataModel";
+import { sendInvitationEmail } from "@/lib/email/invitation";
 
 /**
  * POST /api/admin/create-operator
@@ -32,10 +33,11 @@ export async function POST(req: NextRequest) {
     convex.setAuth(token);
 
     const body = await req.json();
-    const { email, name, organizationId } = body as {
+    const { email, name, organizationId, orgName } = body as {
       email?: string;
       name?: string;
       organizationId?: string;
+      orgName?: string;
     };
 
     if (!email || !name || !organizationId) {
@@ -46,12 +48,27 @@ export async function POST(req: NextRequest) {
     }
 
     const operatorId = await convex.mutation(api.users.createOperator, {
-      email,
-      name,
+      email: email.trim(),
+      name: name.trim(),
       organizationId: organizationId as Id<"organizations">,
     });
 
-    return NextResponse.json({ success: true, operatorId }, { status: 201 });
+    const emailResult = await sendInvitationEmail({
+      to: email.trim(),
+      name: name.trim(),
+      orgName: orgName ?? "tu organización",
+      role: "operator",
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        operatorId,
+        emailSent: emailResult.sent,
+        emailSkipReason: emailResult.reason,
+      },
+      { status: 201 }
+    );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error interno";
     const status = msg.includes("Límite") ? 422 : msg.includes("Solo un Admin") ? 403 : 500;
