@@ -21,7 +21,21 @@ export const proxy = clerkMiddleware(async (auth, request) => {
     if (pathname.startsWith("/login")) {
       const { userId } = await auth();
       if (userId) {
-        return NextResponse.redirect(new URL("/operaciones", request.url));
+        const next =
+          request.nextUrl.searchParams.get("next") ??
+          request.nextUrl.searchParams.get("redirect_url");
+        let dest = "/operaciones";
+        if (next) {
+          try {
+            const parsed = next.startsWith("http")
+              ? new URL(next).pathname
+              : decodeURIComponent(next);
+            if (parsed.startsWith("/") && !parsed.startsWith("//")) dest = parsed;
+          } catch {
+            if (next.startsWith("/") && !next.startsWith("//")) dest = next;
+          }
+        }
+        return NextResponse.redirect(new URL(dest, request.url));
       }
     }
     return NextResponse.next();
