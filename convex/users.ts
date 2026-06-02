@@ -161,6 +161,96 @@ export const createOperator = mutation({
   },
 });
 
+// ── Eliminar operador (admin-only, misma org) ─────────────────────────────
+export const deleteOperator = mutation({
+  args: { operatorId: v.id("users") },
+  handler: async (ctx, args) => {
+    const caller = await requireAuthUser(ctx);
+    if (caller.role !== "admin")
+      throw new Error("Solo un Admin puede eliminar operadores");
+
+    const operator = await ctx.db.get(args.operatorId);
+    if (!operator || operator.organizationId !== caller.organizationId)
+      throw new Error("El operador no pertenece a tu organización");
+
+    if (operator.role !== "operator")
+      throw new Error("No se puede eliminar un administrador");
+
+    const perms = await ctx.db
+      .query("operatorPermissions")
+      .withIndex("by_operatorId", (q) => q.eq("operatorId", args.operatorId))
+      .unique();
+    if (perms) await ctx.db.delete(perms._id);
+
+    await ctx.db.delete(args.operatorId);
+  },
+});
+
+const MAX_ADMINS_PER_ORG = 2;
+
+// ── Invitar co-admin (pre-registro; se vincula en primer login con Clerk) ───
+export const inviteAdmin = mutation({
+  args: {
+    email: v.string(),
+    name: v.string(),
+    organizationId: v.id("organizations"),
+  },
+  handler: async (ctx, args) => {
+    const caller = await requireAuthUser(ctx);
+    if (caller.role !== "admin")
+      throw new Error("Solo un Admin puede invitar administradores");
+    if (caller.organizationId !== args.organizationId)
+      throw new Error("No perteneces a esta organización");
+
+    const admins = await ctx.db
+      .query("users")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .filter((q) => q.eq(q.field("role"), "admin"))
+      .collect();
+
+    if (admins.length >= MAX_ADMINS_PER_ORG) {
+      throw new Error(
+        `Límite de administradores alcanzado (${MAX_ADMINS_PER_ORG}).`
+      );
+    }
+
+    const email = args.email.trim().toLowerCase();
+    const existingByEmail = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+    if (existingByEmail)
+      throw new Error("Ya existe un usuario con ese correo electrónico");
+
+    return await ctx.db.insert("users", {
+      email,
+      name: args.name.trim(),
+      role: "admin",
+      organizationId: args.organizationId,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+// ── Listar administradores de la organización ─────────────────────────────
+export const getAdminsByOrg = query({
+  args: {},
+  handler: async (ctx) => {
+    const caller = await getAuthenticatedUser(ctx);
+    if (!caller?.organizationId || caller.role !== "admin") return [];
+
+    return await ctx.db
+      .query("users")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", caller.organizationId)
+      )
+      .filter((q) => q.eq(q.field("role"), "admin"))
+      .collect();
+  },
+});
+
 // ── Listar operadores de la organización ───────────────────────────────────
 export const getOperatorsByOrg = query({
   args: {},
