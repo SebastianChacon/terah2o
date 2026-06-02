@@ -29,8 +29,20 @@ function parseClerkError(err: unknown): string {
 export default function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const rawNext = searchParams.get("next") ?? "/operaciones";
-  const nextPath = rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : "/operaciones";
+  const rawRedirect = searchParams.get("next") ?? searchParams.get("redirect_url");
+  let nextPath = "/operaciones";
+  if (rawRedirect) {
+    try {
+      const parsed = rawRedirect.startsWith("http")
+        ? new URL(rawRedirect).pathname
+        : decodeURIComponent(rawRedirect);
+      if (parsed.startsWith("/") && !parsed.startsWith("//")) nextPath = parsed;
+    } catch {
+      if (rawRedirect.startsWith("/") && !rawRedirect.startsWith("//")) {
+        nextPath = rawRedirect;
+      }
+    }
+  }
 
   const { isLoaded: signInLoaded, signIn, setActive: setSignInActive } = useSignIn();
   const { isLoaded: signUpLoaded, signUp, setActive: setSignUpActive } = useSignUp();
