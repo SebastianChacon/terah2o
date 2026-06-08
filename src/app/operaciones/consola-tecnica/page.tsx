@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/useToast";
 import { useGemini } from "@/hooks/useGemini";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useSafeMutation } from "@/hooks/useConvex";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { api } from "../../../../convex/_generated/api";
@@ -493,6 +494,7 @@ export default function ConsolaTecnicaPage() {
   /* ── Render ────────────────────────────────────────────── */
 
   return (
+    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessConsolaTecnica"]} moduleName="Consola Técnica">
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-navy-deep text-white py-5 px-6 shadow-2xl dot-grid border-b-[3px] border-transparent"
@@ -1269,5 +1271,6 @@ export default function ConsolaTecnicaPage() {
 
       <Toast {...toast} />
     </div>
+    </AuthGuard>
   );
 }

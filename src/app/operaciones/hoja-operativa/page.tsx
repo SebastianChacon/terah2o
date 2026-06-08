@@ -19,6 +19,7 @@ import { InputField } from "@/components/ui/InputField";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { CHEMICAL_PRODUCTS } from "@/types/chemical";
 import {
   calculateDose,
@@ -388,6 +389,7 @@ export default function HojaOperativaPage() {
   ]);
 
   return (
+    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessHojaOperativa"]} moduleName="Hoja Operativa">
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
       <header className="bg-navy-deep text-white py-6 px-6 shadow-2xl flex justify-between items-center border-b-4 border-sky-500 sticky top-0 z-50">
@@ -868,5 +870,6 @@ export default function HojaOperativaPage() {
       <Footer />
       <Toast {...toast} />
     </div>
+    </AuthGuard>
   );
 }

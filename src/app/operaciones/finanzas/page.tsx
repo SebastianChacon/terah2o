@@ -17,6 +17,7 @@ import { InputField } from "@/components/ui/InputField";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { HR_ROLES } from "@/lib/constants";
 import { calculateMonthlyVolume, calculateBillableVolume } from "@/lib/calculations/hydraulic";
 import {
@@ -317,6 +318,7 @@ export default function FinanzasPage() {
   const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
   return (
+    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessFinanzas"]} moduleName="Finanzas">
     <div className="min-h-screen bg-slate-100">
       {/* Header */}
       <header className="bg-navy-deep text-white shadow-2xl border-b-4 border-amber-500 sticky top-0 z-50">
@@ -650,5 +652,6 @@ export default function FinanzasPage() {
       <Footer />
       <Toast {...toast} />
     </div>
+    </AuthGuard>
   );
 }

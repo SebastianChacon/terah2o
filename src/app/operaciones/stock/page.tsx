@@ -19,6 +19,7 @@ import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { DEFAULT_STOCK_ITEMS } from "@/types/inventory";
 import type { StockItem } from "@/types/inventory";
 import {
@@ -352,6 +353,7 @@ export default function StockPage() {
   }, [stock]);
 
   return (
+    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessStock"]} moduleName="Stock & Kardex">
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Header */}
       <header className="bg-navy-deep text-white shadow-2xl border-b-4 border-fuchsia-500 sticky top-0 z-50">
@@ -722,5 +724,6 @@ export default function StockPage() {
       <Footer />
       <Toast {...toast} />
     </div>
+    </AuthGuard>
   );
 }

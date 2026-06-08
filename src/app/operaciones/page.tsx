@@ -5,6 +5,7 @@ import { Zap, FileBarChart, Package, DollarSign } from "lucide-react";
 import { GlassPanel } from "@/components/ui/GlassPanel";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 const modules = [
   {
@@ -47,6 +48,7 @@ const modules = [
 
 export default function OperacionesPage() {
   return (
+    <AuthGuard permissionKey="canAccessOperaciones" moduleName="Hub de Operaciones">
     <div className="dot-grid min-h-screen flex flex-col bg-navy-solid text-white">
       {/* Navbar */}
       <nav className="relative z-20 p-8 max-w-7xl mx-auto w-full flex justify-between items-center fade-in">
@@ -103,5 +105,6 @@ export default function OperacionesPage() {
 
       <Footer />
     </div>
+    </AuthGuard>
   );
 }
