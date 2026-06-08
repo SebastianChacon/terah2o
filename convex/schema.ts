@@ -259,10 +259,16 @@ export default defineSchema({
   operatorPermissions: defineTable({
     operatorId: v.id("users"),
     organizationId: v.id("organizations"),
+    // Top-level module permissions
     canAccessOperaciones: v.boolean(),
     canAccessAsistencia: v.boolean(),
     canAccessAcademia: v.boolean(),
     canAccessBitacora: v.boolean(),
+    // Sub-module permissions (within /operaciones)
+    canAccessConsolaTecnica: v.optional(v.boolean()),
+    canAccessHojaOperativa: v.optional(v.boolean()),
+    canAccessStock: v.optional(v.boolean()),
+    canAccessFinanzas: v.optional(v.boolean()),
   })
     .index("by_operatorId", ["operatorId"])
     .index("by_organizationId", ["organizationId"]),

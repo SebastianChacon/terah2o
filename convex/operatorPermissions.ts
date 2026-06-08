@@ -19,6 +19,10 @@ export const getMyPermissions = query({
         canAccessAsistencia: true,
         canAccessAcademia: true,
         canAccessBitacora: true,
+        canAccessConsolaTecnica: true,
+        canAccessHojaOperativa: true,
+        canAccessStock: true,
+        canAccessFinanzas: true,
       };
     }
 
@@ -34,14 +38,24 @@ export const getMyPermissions = query({
         canAccessAsistencia: false,
         canAccessAcademia: false,
         canAccessBitacora: false,
+        canAccessConsolaTecnica: false,
+        canAccessHojaOperativa: false,
+        canAccessStock: false,
+        canAccessFinanzas: false,
       };
     }
 
+    // Si canAccessOperaciones=false, todos los sub-módulos también bloqueados
+    const canOps = perms.canAccessOperaciones;
     return {
-      canAccessOperaciones: perms.canAccessOperaciones,
+      canAccessOperaciones: canOps,
       canAccessAsistencia: perms.canAccessAsistencia,
       canAccessAcademia: perms.canAccessAcademia,
       canAccessBitacora: perms.canAccessBitacora,
+      canAccessConsolaTecnica: canOps && (perms.canAccessConsolaTecnica ?? false),
+      canAccessHojaOperativa: canOps && (perms.canAccessHojaOperativa ?? false),
+      canAccessStock: canOps && (perms.canAccessStock ?? false),
+      canAccessFinanzas: canOps && (perms.canAccessFinanzas ?? false),
     };
   },
 });
@@ -65,6 +79,10 @@ export const upsertPermissions = mutation({
     canAccessAsistencia: v.boolean(),
     canAccessAcademia: v.boolean(),
     canAccessBitacora: v.boolean(),
+    canAccessConsolaTecnica: v.optional(v.boolean()),
+    canAccessHojaOperativa: v.optional(v.boolean()),
+    canAccessStock: v.optional(v.boolean()),
+    canAccessFinanzas: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const callerId = await getAuthenticatedUserId(ctx);
@@ -91,6 +109,10 @@ export const upsertPermissions = mutation({
       canAccessAsistencia: args.canAccessAsistencia,
       canAccessAcademia: args.canAccessAcademia,
       canAccessBitacora: args.canAccessBitacora,
+      canAccessConsolaTecnica: args.canAccessConsolaTecnica ?? false,
+      canAccessHojaOperativa: args.canAccessHojaOperativa ?? false,
+      canAccessStock: args.canAccessStock ?? false,
+      canAccessFinanzas: args.canAccessFinanzas ?? false,
     };
 
     if (existing) {
