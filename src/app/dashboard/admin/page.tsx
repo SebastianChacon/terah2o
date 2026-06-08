@@ -28,10 +28,17 @@ interface PermissionToggle {
   label: string;
 }
 
-const PERMISSION_TOGGLES: PermissionToggle[] = [
-  { key: "canAccessOperaciones", label: "Operaciones" },
+const MAIN_PERMISSION_TOGGLES: PermissionToggle[] = [
+  { key: "canAccessOperaciones", label: "Operaciones (hub)" },
   { key: "canAccessAsistencia", label: "Asistencia" },
   { key: "canAccessAcademia", label: "Academia" },
+];
+
+const SUBMODULE_PERMISSION_TOGGLES: PermissionToggle[] = [
+  { key: "canAccessConsolaTecnica", label: "Consola Técnica" },
+  { key: "canAccessHojaOperativa", label: "Hoja Operativa" },
+  { key: "canAccessStock", label: "Stock & Kardex" },
+  { key: "canAccessFinanzas", label: "Finanzas" },
   { key: "canAccessBitacora", label: "Bitácora" },
 ];
 
@@ -40,6 +47,10 @@ const EMPTY_PERMS: OperatorPermissions = {
   canAccessAsistencia: false,
   canAccessAcademia: false,
   canAccessBitacora: false,
+  canAccessConsolaTecnica: false,
+  canAccessHojaOperativa: false,
+  canAccessStock: false,
+  canAccessFinanzas: false,
 };
 
 const MAX_ADMINS = 2;
@@ -86,7 +97,7 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     if (isLoading || user?.role === "admin") return;
-    if (user && user.role !== "admin") {
+    if (user) {
       router.replace("/operaciones");
     }
   }, [isLoading, user, router]);
@@ -108,6 +119,10 @@ export default function AdminDashboardPage() {
         canAccessAsistencia: found.canAccessAsistencia,
         canAccessAcademia: found.canAccessAcademia,
         canAccessBitacora: found.canAccessBitacora,
+        canAccessConsolaTecnica: found.canAccessConsolaTecnica ?? false,
+        canAccessHojaOperativa: found.canAccessHojaOperativa ?? false,
+        canAccessStock: found.canAccessStock ?? false,
+        canAccessFinanzas: found.canAccessFinanzas ?? false,
       };
     }
     return EMPTY_PERMS;
@@ -324,7 +339,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Co-admins */}
-        <div className="bg-[#0a1120] border border-white/[0.07] rounded-2xl p-6 mb-6">
+        <div className="bg-[#0a1120] border border-white/7 rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Shield className="w-4 h-4 text-violet-400" />
@@ -350,7 +365,7 @@ export default function AdminDashboardPage() {
           {showInviteAdminForm && (
             <form
               onSubmit={handleInviteAdmin}
-              className="mb-5 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl"
+              className="mb-5 p-4 bg-white/3 border border-white/6 rounded-xl"
             >
               <h3 className="text-white/60 text-xs font-mono uppercase tracking-widest mb-4">
                 Invitar co-administrador
@@ -366,7 +381,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setAdminName(e.target.value)}
                     required
                     placeholder="Ing. Juan Pérez"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-violet-500/40 transition-all"
+                    className="w-full bg-white/4 border border-white/8 rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-violet-500/40 transition-all"
                   />
                 </div>
                 <div>
@@ -379,7 +394,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setAdminEmail(e.target.value)}
                     required
                     placeholder="admin@ptap.ec"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-violet-500/40 transition-all"
+                    className="w-full bg-white/4 border border-white/8 rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-violet-500/40 transition-all"
                   />
                 </div>
               </div>
@@ -409,7 +424,7 @@ export default function AdminDashboardPage() {
             {admins.map((admin) => (
               <div
                 key={admin._id}
-                className="flex items-center justify-between p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl"
+                className="flex items-center justify-between p-3 bg-white/2 border border-white/5 rounded-xl"
               >
                 <div>
                   <p className="text-white text-sm font-semibold">
@@ -433,7 +448,7 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* Operadores */}
-        <div className="bg-[#0a1120] border border-white/[0.07] rounded-2xl p-6 mb-6">
+        <div className="bg-[#0a1120] border border-white/7 rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-blue-400" />
@@ -459,7 +474,7 @@ export default function AdminDashboardPage() {
           {showCreateForm && (
             <form
               onSubmit={handleCreateOperator}
-              className="mb-5 p-4 bg-white/[0.03] border border-white/[0.06] rounded-xl"
+              className="mb-5 p-4 bg-white/3 border border-white/6 rounded-xl"
             >
               <h3 className="text-white/60 text-xs font-mono uppercase tracking-widest mb-4">
                 Nuevo Operador
@@ -475,7 +490,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setNewName(e.target.value)}
                     required
                     placeholder="Ing. Ana Torres"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-blue-500/40 transition-all"
+                    className="w-full bg-white/4 border border-white/8 rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-blue-500/40 transition-all"
                   />
                 </div>
                 <div>
@@ -488,7 +503,7 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setNewEmail(e.target.value)}
                     required
                     placeholder="operador@ptap.ec"
-                    className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-blue-500/40 transition-all"
+                    className="w-full bg-white/4 border border-white/8 rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-blue-500/40 transition-all"
                   />
                 </div>
               </div>
@@ -525,7 +540,7 @@ export default function AdminDashboardPage() {
                 return (
                   <div
                     key={op._id}
-                    className="p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl"
+                    className="p-4 bg-white/2 border border-white/5 rounded-xl"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div>
@@ -559,27 +574,69 @@ export default function AdminDashboardPage() {
                         </button>
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {PERMISSION_TOGGLES.map(({ key, label }) => {
-                        const val = perms[key];
-                        return (
-                          <button
-                            key={key}
-                            onClick={() =>
-                              handleTogglePermission(op._id as Id<"users">, key, val)
-                            }
-                            disabled={isSaving}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
-                              val
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                : "bg-white/[0.03] border-white/[0.08] text-white/30 hover:border-white/20"
-                            }`}
-                          >
-                            {val ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                            {label}
-                          </button>
-                        );
-                      })}
+                    {/* Módulos principales */}
+                    <div className="mb-2">
+                      <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+                        Módulos principales
+                      </p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {MAIN_PERMISSION_TOGGLES.map(({ key, label }) => {
+                          const val = perms[key];
+                          return (
+                            <button
+                              key={key}
+                              onClick={() =>
+                                handleTogglePermission(op._id as Id<"users">, key, val)
+                              }
+                              disabled={isSaving}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                                val
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                  : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                              }`}
+                            >
+                              {val ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    {/* Sub-módulos de Operaciones */}
+                    <div>
+                      <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+                        Sub-módulos de Operaciones
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                        {SUBMODULE_PERMISSION_TOGGLES.map(({ key, label }) => {
+                          const val = perms[key];
+                          const opsBlocked = !perms.canAccessOperaciones;
+                          return (
+                            <button
+                              key={key}
+                              onClick={() =>
+                                handleTogglePermission(op._id as Id<"users">, key, val)
+                              }
+                              disabled={isSaving || opsBlocked}
+                              title={opsBlocked ? "Requiere permiso de Operaciones (hub)" : undefined}
+                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                                opsBlocked
+                                  ? "opacity-40 cursor-not-allowed bg-white/3 border-white/8 text-white/20"
+                                  : val
+                                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                  : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                              }`}
+                            >
+                              {val && !opsBlocked ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <X className="w-3 h-3" />
+                              )}
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 );
