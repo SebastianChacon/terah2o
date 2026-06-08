@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { INEN_1108_PARAMS, IVA_RATE } from "@/lib/constants";
@@ -317,6 +318,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
   ];
 
   return (
+    <AuthGuard permissionKey="canAccessAsistencia" moduleName="Asistencia Técnica">
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-36">
       <Toast {...toast} />
 
@@ -1037,5 +1039,6 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
         </div>
       </div>
     </div>
+    </AuthGuard>
   );
 }

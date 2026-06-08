@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookOpen, Filter, Shield, Settings, GraduationCap } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 
 const modules = [
   {
@@ -65,6 +66,7 @@ const modules = [
 
 export default function AcademiaPage() {
   return (
+    <AuthGuard permissionKey="canAccessAcademia" moduleName="Academia">
     <div className="dot-grid min-h-screen flex flex-col bg-[#0a1120] text-white">
       {/* Nav */}
       <nav className="p-8 max-w-7xl mx-auto w-full flex justify-between items-center fade-in">
@@ -134,5 +136,6 @@ export default function AcademiaPage() {
 
       <Footer />
     </div>
+    </AuthGuard>
   );
 }
