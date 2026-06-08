@@ -30,6 +30,7 @@ import {
 } from "recharts";
 import { Footer } from "@/components/layout/Footer";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { AuthGuard } from "@/components/auth/AuthGuard";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useGemini } from "@/hooks/useGemini";
@@ -602,11 +603,17 @@ export default function BitacoraIntegralPage() {
     }
 
     const html = `<html><head><title>Bitácora ${tipo} — TERAH2O</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{font-size:18px;margin-bottom:4px}p{font-size:12px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:#fff;padding:8px;text-align:center}td{padding:8px;text-align:center;border-bottom:1px solid #e2e8f0}</style></head><body><h1>TERAH2O — Bitácora ${tipo}</h1><p>Fecha de emisión: ${dateStr}</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
-    const w = window.open("", "_blank");
+    openHtmlInNewTab(html);
+  }
+
+  function openHtmlInNewTab(html: string) {
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank", "noopener,noreferrer");
     if (w) {
-      w.document.write(html);
-      w.document.close();
-      w.print();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } else {
+      showToast("No se pudo abrir el informe en una nueva pestaña.", "error");
     }
   }
 
@@ -638,12 +645,7 @@ export default function BitacoraIntegralPage() {
       ${s.observations ? `<h2>Observaciones</h2><p>${s.observations}</p>` : ""}
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
-    const w = window.open("", "_blank");
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-      w.print();
-    }
+    openHtmlInNewTab(html);
   }
 
   function openInventoryRowPDF(r: InventoryRecord) {
@@ -653,12 +655,7 @@ export default function BitacoraIntegralPage() {
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Fecha de registro</td><td>${r.fecha}</td></tr><tr><td>Producto</td><td>${r.item}</td></tr><tr><td>Consumo Real</td><td>${r.consumed}</td></tr><tr><td>Autonomía</td><td>${r.auto}</td></tr><tr><td>Saldo Bodega</td><td>${r.saldo}</td></tr></table>
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
-    const w = window.open("", "_blank");
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-      w.print();
-    }
+    openHtmlInNewTab(html);
   }
 
   function openFinanceRowPDF(r: FinanceRecord) {
@@ -669,16 +666,12 @@ export default function BitacoraIntegralPage() {
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Período</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>
       <div class="footer">TeraH2O — Documento válido digitalmente</div>
     </body></html>`;
-    const w = window.open("", "_blank");
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-      w.print();
-    }
+    openHtmlInNewTab(html);
   }
 
   /* ── Render ────────────────────────────────────────────── */
   return (
+    <AuthGuard permissionKey="canAccessBitacora" moduleName="Bitácora Maestra">
     <div
       className="min-h-screen flex flex-col"
       style={{ background: "var(--navy-solid)", color: "#e2e8f0" }}
@@ -1701,5 +1694,6 @@ export default function BitacoraIntegralPage() {
       <Footer />
       <Toast {...toast} />
     </div>
+    </AuthGuard>
   );
 }
