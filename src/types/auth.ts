@@ -39,10 +39,16 @@ export interface Subscription {
 
 // ── Permisos de operador ──────────────────────────────────────────────────
 export interface OperatorPermissions {
+  // Top-level modules
   canAccessOperaciones: boolean;
   canAccessAsistencia: boolean;
   canAccessAcademia: boolean;
   canAccessBitacora: boolean;
+  // Sub-modules within /operaciones
+  canAccessConsolaTecnica: boolean;
+  canAccessHojaOperativa: boolean;
+  canAccessStock: boolean;
+  canAccessFinanzas: boolean;
 }
 
 // Clave de permiso individual (para usar en AuthGuard)
