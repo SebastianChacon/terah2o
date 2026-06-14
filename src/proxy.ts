@@ -44,6 +44,12 @@ export const proxy = clerkMiddleware(async (auth, request) => {
   // Proteger todas las demás rutas — Clerk redirige a /login si no hay sesión
   await auth.protect();
 
+  // Panel Owner (super-admin global): requiere login pero NO suscripción activa.
+  // El dueño del sistema puede no tener una suscripción propia.
+  if (pathname.startsWith("/owner") || pathname.startsWith("/api/owner")) {
+    return NextResponse.next();
+  }
+
   // Verificar suscripción (cookie escrita por useSubscription en el cliente)
   const subStatus = request.cookies.get("__convexSubStatus")?.value;
   if (subStatus && subStatus !== "none" && subStatus !== "active" && subStatus !== "trialing") {

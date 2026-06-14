@@ -7,6 +7,7 @@ import { api } from "../../../convex/_generated/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import Link from "next/link";
 import { Check, Zap, Shield, Star, ArrowLeft } from "lucide-react";
+import { WHATSAPP_LINK } from "@/lib/constants";
 
 const PLANS = [
   {
@@ -157,7 +158,18 @@ export default function PricingPage() {
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-start gap-2.5">
                     <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    <span className="text-white/60 text-xs leading-relaxed">{feature}</span>
+                    {feature.includes("WhatsApp") ? (
+                      <a
+                        href={WHATSAPP_LINK}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-400 text-xs leading-relaxed hover:underline"
+                      >
+                        {feature}
+                      </a>
+                    ) : (
+                      <span className="text-white/60 text-xs leading-relaxed">{feature}</span>
+                    )}
                   </li>
                 ))}
               </ul>

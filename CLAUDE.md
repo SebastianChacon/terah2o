@@ -30,13 +30,15 @@ src/
 │   ├── academia/               # Módulos educativos (4 módulos)
 │   ├── dashboard/
 │   │   ├── profile/            # Perfil usuario y suscripción
-│   │   └── admin/              # Gestión operadores y permisos
+│   │   └── admin/              # Gestión operadores y permisos (scoped a la org)
+│   ├── owner/                  # Panel Owner (super-admin GLOBAL) — enlace secreto
 │   └── api/
 │       ├── gemini/route.ts     # Google Gemini 2.5 Flash (IA) — modelo: gemini-2.5-flash
 │       ├── gemini-tts/route.ts # TTS — modelo: gemini-2.5-flash-preview-tts
 │       ├── weather/route.ts    # OpenWeatherMap API
 │       ├── check-subscription/ # Verificar suscripción
-│       └── admin/              # Crear operadores, permisos
+│       ├── admin/              # Crear operadores, permisos (scoped a la org)
+│       └── owner/              # delete-user — borrar cualquier cuenta (Convex + Clerk)
 ├── components/
 │   ├── ui/                     # Card, Toast, InputField, SelectField, etc.
 │   ├── auth/                   # AuthGuard, NavbarUser, SubscriptionModal
@@ -68,7 +70,9 @@ src/
 
 convex/
 ├── schema.ts                   # Definición de tablas (ver abajo)
-├── auth.ts / auth.config.ts    # Configuración @convex-dev/auth (Password provider)
+├── auth.config.ts              # Valida JWT de Clerk (CLERK_JWT_ISSUER_DOMAIN)
+├── lib/auth.ts                 # getAuthenticatedUser/requireAuthUser (clerkId → users)
+├── superAdmin.ts               # Panel Owner global (gate SUPER_ADMIN_EMAIL)
 ├── visitas.ts                  # CRUD visitas asistencia técnica
 ├── jarTestSessions.ts          # CRUD jar-test sessions
 ├── shiftRecords.ts             # CRUD registros de turno
@@ -86,17 +90,21 @@ convex/
 
 ## Variables de Entorno (.env.local)
 
+> **Auth = Clerk (NO `@convex-dev/auth`).** La identidad la maneja Clerk; Convex valida el JWT
+> de Clerk (`identity.subject` = `clerkId`). Convex se conecta vía `ConvexProviderWithClerk`.
+
 ```bash
-# Convex Auth — generadas con npx convex dev
-JWKS={"keys":[...]}
-JWT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----...
+# Clerk (identidad)
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_...
+CLERK_SECRET_KEY=sk_test_...            # Backend API: borrar usuarios, sign-in tokens
+CLERK_JWT_ISSUER_DOMAIN=https://<tu-app>.clerk.accounts.dev
 
 # Convex conexión
 NEXT_PUBLIC_CONVEX_URL=https://clear-albatross-368.convex.cloud
 CONVEX_DEPLOY_KEY=dev:clear-albatross-368|...
 
-# Convex Auth URL
-CONVEX_SITE_URL=http://localhost:3000   # producción: https://tudominio.com
+# Panel Owner (super-admin global) — un solo correo entra a /owner
+SUPER_ADMIN_EMAIL=dueno@tudominio.com
 
 # IA (usado también para estimaciones climáticas en /api/weather)
 GEMINI_API_KEY=AIzaSy...               # aistudio.google.com
@@ -104,17 +112,14 @@ GEMINI_API_KEY=AIzaSy...               # aistudio.google.com
 
 **IMPORTANTE — Variables requeridas en Convex Dashboard → Environment Variables:**
 
-| Variable | Dev (localhost) | Producción (Vercel) |
+| Variable | Para qué | Notas |
 |---|---|---|
-| `CONVEX_SITE_URL` | `http://localhost:3000` | `https://terah2o.vercel.app` |
-| `SITE_URL` | `http://localhost:3000` | `https://terah2o.vercel.app` |
-| `JWKS` | mismo valor que .env.local | mismo valor que .env.local |
-| `JWT_PRIVATE_KEY` | mismo valor que .env.local | mismo valor que .env.local |
+| `CLERK_JWT_ISSUER_DOMAIN` | Validar el JWT de Clerk en Convex | Definida en `convex/auth.config.ts` |
+| `SUPER_ADMIN_EMAIL` | Gate del panel `/owner` (super-admin global) | El gate corre en el backend de Convex → DEBE estar aquí, no basta `.env.local`. Configurar con `npx convex env set SUPER_ADMIN_EMAIL <correo>` |
 
-⚠️  Nombres exactos: la librería `@convex-dev/auth` llama `requireEnv("CONVEX_SITE_URL")` en
-`tokens.js` (al emitir JWT) y `requireEnv("SITE_URL")` en `redirects.js` (OAuth redirects).
-Si se usa `SITE_URL` en lugar de `CONVEX_SITE_URL`, el sign-in lanza
-`Error: Missing environment variable \`CONVEX_SITE_URL\`` en el servidor Convex.
+⚠️  El gate de `/owner` (`convex/superAdmin.ts`) lee `process.env.SUPER_ADMIN_EMAIL` en el
+backend de Convex. Si solo está en `.env.local` (Next) y NO en el deployment de Convex,
+`amISuperAdmin` siempre devuelve `false` y nadie entra al panel.
 
 ---
 
@@ -191,24 +196,58 @@ plan: "starter"|"pro", trialEndsAt?, expiresAt?, createdAt
 ### operatorPermissions
 ```
 operatorId, organizationId
+# Módulos principales
 canAccessOperaciones, canAccessAsistencia, canAccessAcademia, canAccessBitacora
+# Sub-módulos de /operaciones (opcionales; bloqueados si canAccessOperaciones=false)
+canAccessConsolaTecnica?, canAccessHojaOperativa?, canAccessStock?, canAccessFinanzas?
 ```
 
 ---
 
 ## Flujo de Autenticación y Suscripción
 
-1. Login vía `@convex-dev/auth` (Password provider) → JWT en cookie `__convexAuthJWT`
+1. Login vía **Clerk** (`useSignIn`/`useSignUp` de `@clerk/nextjs` en `LoginContent.tsx`).
+   `UserSync.tsx` hace `upsertCurrentUser` para crear/sincronizar el doc `users` en Convex.
 2. `useSubscription.ts` carga estado desde Convex → escribe cookie `__convexSubStatus`
-3. `src/proxy.ts` verifica cookies en cada request (Next.js 16 reemplazó middleware.ts):
-   - Sin JWT → redirige a `/login`
+3. `src/proxy.ts` usa `clerkMiddleware`/`auth.protect()` en cada request (Next.js 16 reemplazó middleware.ts):
+   - Sin sesión Clerk → redirige a `/login`
    - `subStatus = "past_due" | "canceled"` → redirige a `/pricing`
    - `subStatus = undefined | "none"` → permite (primera carga, sin bloqueo aún)
    - `subStatus = "active" | "trialing"` → permite acceso
+   - `/owner` y `/api/owner` → requieren login pero saltan el gate de suscripción
 
 **Rutas públicas:** `/`, `/login`, `/pricing`, `/motor-inteligencia`
 
 **Prefijos bypass:** `/_next`, `/favicon`, `/api/gemini`, `/api/weather`, `/api/gemini-tts`
+
+### Roles y gates de acceso
+- `admin` (org): bypass total en `AuthGuard` — siempre ve todos los módulos de su org.
+  Gestiona operadores/permisos en `/dashboard/admin` (scoped a su organización).
+- `operator`: acceso por módulo según `operatorPermissions` (8 flags).
+- **Super-admin / Owner** (`/owner`): un solo correo definido en `SUPER_ADMIN_EMAIL`.
+  Alcance GLOBAL (todas las orgs). No es un rol en la tabla `users`; se identifica por correo.
+
+---
+
+## Panel Owner (Super-Admin global) — `/owner`
+
+Panel privado para el dueño del sistema. **Enlace secreto** (sin entrada en navbar). Requiere login.
+
+- **Gate:** `SUPER_ADMIN_EMAIL` (env de Convex). `convex/superAdmin.ts` → `requireSuperAdmin`
+  compara el correo autenticado con la env var. Sin la env var, nadie entra.
+- **Backend:** `convex/superAdmin.ts`
+  - `amISuperAdmin` (query, no lanza) — gate de la UI.
+  - `listAllUsers` (query) — TODAS las cuentas de TODAS las orgs (enriquecido: org, suscripción, permisos).
+  - `setPermissionsGlobal` (mutation) — fija permisos de cualquier operador (sin filtro de org).
+  - `deleteUserGlobal` (mutation) — borra cualquier cuenta. Reglas: no borrar al propio owner ni
+    al `adminUserId` dueño de una org. Devuelve `{ clerkId, email }`.
+- **API:** `src/app/api/owner/delete-user/route.ts` (DELETE) — llama `deleteUserGlobal` y además
+  borra la cuenta en Clerk (`clerkClient().users.deleteUser`). Necesita `CLERK_SECRET_KEY`.
+- **UI:** `src/app/owner/page.tsx` — lista cuentas agrupadas por org, toggles de permisos por
+  operador, botón eliminar con confirmación. Los **toggles solo aplican a operadores** (los admin
+  tienen acceso total por diseño de `AuthGuard`; se muestran como "Acceso total").
+- **Acciones incluidas:** ver cuentas + controlar permisos + eliminar. **NO** cambia contraseñas
+  ni crea cuentas (decisión de producto).
 
 ---
 

@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { UserSync } from "@/components/auth/UserSync";
+import { WhatsAppFab } from "@/components/fab/WhatsAppFab";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -46,6 +47,7 @@ export default function RootLayout({
           <ConvexClientProvider>
             <UserSync />
             {children}
+            <WhatsAppFab />
           </ConvexClientProvider>
         </body>
       </html>

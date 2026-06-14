@@ -34,6 +34,10 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import { Toast } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { useGemini } from "@/hooks/useGemini";
+import {
+  buildMemoriaTecnicaHTML,
+  type ChemFunc,
+} from "@/lib/export/memoriaTecnica";
 import { useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 import { exportToExcel } from "@/lib/export/excel";
@@ -602,12 +606,14 @@ export default function BitacoraIntegralPage() {
       }
     }
 
-    const html = `<html><head><title>Bitacora ${tipo} — TERAH2O</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{font-size:18px;margin-bottom:4px}p{font-size:12px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:#fff;padding:8px;text-align:center}td{padding:8px;text-align:center;border-bottom:1px solid #e2e8f0}</style></head><body><h1>TERAH2O — Bitacora ${tipo}</h1><p>Fecha de emision: ${dateStr}</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
+    const html = `<html><head><meta charset="utf-8"><title>Bitácora ${tipo} — TERAH2O</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{font-size:18px;margin-bottom:4px}p{font-size:12px;color:#64748b;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:11px}th{background:#0f172a;color:#fff;padding:8px;text-align:center}td{padding:8px;text-align:center;border-bottom:1px solid #e2e8f0}</style></head><body><h1>TERAH2O — Bitácora ${tipo}</h1><p>Fecha de emisión: ${dateStr}</p><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></body></html>`;
     openHtmlInNewTab(html);
   }
 
   function openHtmlInNewTab(html: string) {
-    const blob = new Blob([html], { type: "text/html" });
+    // charset=utf-8 obligatorio: sin él, un blob URL text/html se interpreta
+    // como Latin-1 y rompe acentos / em-dash (mojibake "MEMORIA TÃ‰CNICA").
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const w = window.open(url, "_blank", "noopener,noreferrer");
     if (w) {
@@ -618,39 +624,57 @@ export default function BitacoraIntegralPage() {
   }
 
   function openDesignSessionPDF(r: DesignRecord) {
-    const dateStr = new Date().toLocaleDateString("es-EC");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const s = r.session as any;
-    const paramsRows = (s.rawWaterParams || [])
-      .map(
-        (p: { label: string; value: number }) =>
-          `<tr><td>${p.label}</td><td>${p.value}</td></tr>`,
-      )
-      .join("");
-    const chemRows = (s.chemicals || [])
-      .map(
-        (c: { name: string; func: string; concentration: number }) =>
-          `<tr><td>${c.name}</td><td>${c.func}</td><td>${c.concentration}%</td></tr>`,
-      )
-      .join("");
-    const html = `<html><head><title>Memoria Tecnica — ${r.org}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:11px}h1{font-size:18px;margin:0}h2{font-size:12px;background:#f1f5f9;padding:8px;border-left:4px solid #0ea5e9;margin:16px 0 8px}table{width:100%;border-collapse:collapse;margin-bottom:12px}th{background:#0a192f;color:#fff;padding:8px;text-align:left}td{border:1px solid #e2e8f0;padding:8px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
-      <h1>MEMORIA TECNICA — ${r.org}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr} · Fecha ensayo: ${r.fecha}</p>
-      <h2>Datos de Planta</h2>
-      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Caudal</td><td>${r.flow} L/s</td></tr><tr><td>Horas Operacion</td><td>${r.cost}</td></tr><tr><td>Punto de Muestreo</td><td>${s.samplePoint || "—"}</td></tr></table>
-      <h2>Parametros Agua Cruda</h2>
-      <table><tr><th>Parametro</th><th>Valor</th></tr>${paramsRows}</table>
-      <h2>Insumos Tecnicos</h2>
-      <table><tr><th>Producto</th><th>Funcion</th><th>Concentracion</th></tr>${chemRows}</table>
-      ${s.aiDiagnosis ? `<h2>Diagnostico IA</h2><p style="font-style:italic;color:#4c1d95;background:#f5f3ff;padding:10px;border-radius:6px">${s.aiDiagnosis}</p>` : ""}
-      ${s.observations ? `<h2>Observaciones</h2><p>${s.observations}</p>` : ""}
-      <div class="footer">TeraH2O — Documento valido digitalmente</div>
-    </body></html>`;
+
+    // Aforos base guardados ([{name, aforo}]) → mapa por nombre para el builder.
+    const baselineAforos: Record<string, number> = {};
+    (s.baselineAforos || []).forEach((b: { name: string; aforo: number }) => {
+      baselineAforos[b.name] = b.aforo;
+    });
+
+    // Misma Memoria Técnica que la Consola (generador compartido). Sesiones
+    // antiguas sin targetDoses/baselineAforos → el builder degrada con nota.
+    const html = buildMemoriaTecnicaHTML({
+      org: s.organizationName ?? r.org,
+      samplePoint: s.samplePoint ?? "",
+      flow: s.plantFlow ?? 0,
+      hours: s.opHours ?? 0,
+      params: (s.rawWaterParams || []).map(
+        (p: { label: string; value: number }) => ({
+          label: p.label,
+          val: p.value,
+        }),
+      ),
+      chemicals: (s.chemicals || []).map(
+        (c: {
+          name: string;
+          func: string;
+          concentration: number;
+          pricePerKg: number;
+        }) => ({
+          name: c.name,
+          func: c.func,
+          conc: c.concentration,
+          price: c.pricePerKg,
+        }),
+      ),
+      targetDoses: (s.targetDoses ?? {
+        coag: 0,
+        ph: 0,
+        helper: 0,
+        oxid: 0,
+      }) as Record<ChemFunc, number>,
+      baselineAforos,
+      aiDiagnosis: s.aiDiagnosis || undefined,
+      observations: s.observations || undefined,
+    });
     openHtmlInNewTab(html);
   }
 
   function openInventoryRowPDF(r: InventoryRecord) {
     const dateStr = new Date().toLocaleDateString("es-EC");
-    const html = `<html><head><title>Informe Insumo — ${r.item}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
+    const html = `<html><head><meta charset="utf-8"><title>Informe Insumo — ${r.item}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>Informe de Insumo — ${r.item}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Fecha de registro</td><td>${r.fecha}</td></tr><tr><td>Producto</td><td>${r.item}</td></tr><tr><td>Consumo Real</td><td>${r.consumed}</td></tr><tr><td>Autonomia</td><td>${r.auto}</td></tr><tr><td>Saldo Bodega</td><td>${r.saldo}</td></tr></table>
       <div class="footer">TeraH2O — Documento valido digitalmente</div>
@@ -660,7 +684,7 @@ export default function BitacoraIntegralPage() {
 
   function openFinanceRowPDF(r: FinanceRecord) {
     const dateStr = new Date().toLocaleDateString("es-EC");
-    const html = `<html><head><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.notice{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;font-size:11px;color:#854d0e;margin-bottom:20px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
+    const html = `<html><head><meta charset="utf-8"><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.notice{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;font-size:11px;color:#854d0e;margin-bottom:20px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>Reporte Financiero — ${r.mes}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
       <div class="notice">Registro guardado — Los valores reflejan el estado de la proyeccion al momento de su guardado. Para ver los datos actuales, consulte la seccion Finanzas.</div>
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Periodo</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>

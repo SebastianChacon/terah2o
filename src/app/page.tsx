@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { WhatsAppFab } from "@/components/fab/WhatsAppFab";
 import { NavbarUser } from "@/components/auth/NavbarUser";
+import { CONTACT_PHONE_DISPLAY, WHATSAPP_LINK } from "@/lib/constants";
 
 export default function HomePage() {
   return (
@@ -71,12 +71,17 @@ export default function HomePage() {
             <span className="text-white/45 mx-1.5">·</span>
             07-573-0108
             <span className="text-white/45 mx-1.5">·</span>
-            +1-608-448-9126
+            <a
+              href={WHATSAPP_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline"
+            >
+              {CONTACT_PHONE_DISPLAY}
+            </a>
           </p>
         </footer>
       </div>
-
-      <WhatsAppFab />
     </div>
   );
 }
