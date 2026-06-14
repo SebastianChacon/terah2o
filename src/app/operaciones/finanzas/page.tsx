@@ -33,6 +33,7 @@ import type {
   FinancialProjection,
 } from "@/types/finance";
 import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
+import { buildMemoriaFinancieraHTML } from "@/lib/export/memoriaFinanciera";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -198,7 +199,7 @@ export default function FinanzasPage() {
     setAiResponse("");
   }, []);
 
-  const handleSave = useCallback(async () => {
+  const doSave = useCallback(async () => {
     if (!instName.trim()) return showToast("Nombre de institucion requerido", "error");
 
     // Snapshot all display-critical values synchronously before any async operation.
@@ -269,50 +270,70 @@ export default function FinanzasPage() {
       showToast("Error al guardar informe", "error");
     }
 
-    /* PDF — uses snap to guarantee values match what was on screen at click time */
-    const w = window.open("", "_blank");
+    /* PDF — usa snap + el builder compartido para garantizar paridad exacta
+       con la Bitácora (misma fuente de verdad: memoriaFinanciera.ts). */
+    const html = buildMemoriaFinancieraHTML({
+      instName: snap.instName,
+      mode: snap.mode,
+      dateLabel: new Date().toLocaleDateString(),
+      volumeMonth: snap.volumeMonth,
+      billableVolume: snap.billableVolume,
+      costPerM3: snap.totals.costPerM3,
+      hrRows: snap.hrRows,
+      expenses: snap.expenses,
+      chemicals: snap.chemicals,
+      totalChemicals: snap.totals.totalChemicals,
+      totalLabor: snap.totals.totalLabor,
+      grandTotal: snap.totals.grandTotal,
+      userRate: parseFloat(snap.userRate) || 0,
+      breakEvenRate: snap.breakEvenRate,
+      revenue: snap.revenue,
+      profit: snap.profit,
+      aiResponse: snap.aiResponse || undefined,
+      autoPrint: true,
+    });
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const w = window.open(url, "_blank", "noopener,noreferrer");
     if (w) {
-      const chemRows2 = snap.chemicals
-        .map(
-          (c) =>
-            `<tr><td>${c.name}</td><td>${snap.mode === "projection" ? (c.dose ?? 0) + " mg/L" : (c.totalKg ?? 0) + " kg"}</td><td>$${c.pricePerKg.toFixed(2)}</td><td>$${c.monthlyCost.toFixed(2)}</td></tr>`
-        )
-        .join("");
-      w.document.write(`<html><head><title>Reporte PTAP - ${snap.instName}</title>
-        <style>body{font-family:sans-serif;color:#0a192f;padding:40px;font-size:11px}
-        .header{border-bottom:5px solid #f59e0b;padding-bottom:10px;margin-bottom:25px;display:flex;justify-content:space-between}
-        h1{font-size:22px;margin:0;font-style:italic;text-transform:uppercase}
-        h3{text-transform:uppercase;color:#0a192f;border-bottom:2px solid #e2e8f0;padding-bottom:5px;margin-top:25px;font-size:13px}
-        .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:20px 0}
-        .card{border:1px solid #e2e8f0;padding:15px;border-radius:8px;background:#f8fafc}
-        .card b{display:block;color:#64748b;font-size:9px;text-transform:uppercase;margin-bottom:5px}
-        table{width:100%;border-collapse:collapse;margin-top:10px}
-        th{background:#0a192f;color:white;padding:10px;font-size:10px;text-transform:uppercase}
-        td{border:1px solid #e2e8f0;padding:8px;text-align:center}
-        .footer{background:#0a192f;color:white;padding:30px;border-radius:15px;text-align:center;margin-top:40px}</style></head><body>
-        <div class="header"><div><h1>Memoria de Gestion Financiera</h1>
-        <p><b>Institucion:</b> ${snap.instName}</p><p><b>Fecha:</b> ${new Date().toLocaleDateString()}</p></div>
-        <div style="background:#0a192f;color:white;padding:6px 12px;border-radius:6px;font-size:10px;text-transform:uppercase;font-weight:900;height:fit-content">MODO: ${snap.mode.toUpperCase()}</div></div>
-        <div class="grid">
-          <div class="card"><b>Volumen Mes</b><span style="font-size:16px;font-weight:900">${snap.volumeMonth.toFixed(0)} m³</span></div>
-          <div class="card"><b>Vol. Facturable</b><span style="font-size:16px;font-weight:900">${snap.billableVolume.toFixed(0)} m³</span></div>
-          <div class="card"><b>Costo/m³</b><span style="font-size:16px;font-weight:900">$${snap.totals.costPerM3.toFixed(4)}</span></div>
-        </div>
-        <h3>Recurso Humano</h3>
-        <table><thead><tr><th>Cargo</th><th>N°</th><th>Unitario</th><th>Total</th></tr></thead><tbody>
-        ${snap.hrRows.map((h) => `<tr><td>${h.role}</td><td>${h.quantity}</td><td>$${h.salary}</td><td>$${h.subtotal.toFixed(2)}</td></tr>`).join("")}
-        </tbody></table>
-        <h3>Matriz Quimica</h3>
-        <table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Gasto</th></tr></thead><tbody>${chemRows2}</tbody></table>
-        ${snap.aiResponse ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANALISIS IA</h4><div>${snap.aiResponse.replace(/\n/g, "<br>")}</div></div>` : ""}
-        <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversion Mensual Total</p>
-        <h2 style="font-size:42px;margin:10px 0">$${snap.totals.grandTotal.toFixed(2)}</h2>
-        <div style="display:inline-block;padding:8px 20px;border-radius:50px;background:${snap.profit >= 0 ? "#10b981" : "#f43f5e"};font-weight:900;font-size:14px">
-        MARGEN NETO: $${snap.profit.toFixed(2)}</div></div>
-        <script>window.onload=function(){window.print()}<\/script></body></html>`);
-      w.document.close();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    } else {
+      showToast("No se pudo abrir el informe en una nueva pestana.", "error");
     }
   }, [instName, mode, plantFlow, opHours, realM3, volumeMonth, hrRows, expenses, chemicals, lossPercent, billableVolume, userRate, breakEvenRate, revenue, profit, totals, aiResponse, createProjection, linkRealAnalysis, createBitacora, showToast, resetForm]);
+
+  /* Informes ya generados HOY (mismo día calendario). _creationTime = ms epoch
+     auto-asignado por Convex. Solo hoy — no días anteriores. */
+  const [showTodayModal, setShowTodayModal] = useState(false);
+  const todaysReports = useMemo<
+    { id: string; title: string; grandTotal: number; time: string }[]
+  >(() => {
+    if (!historicalData) return [];
+    const today = new Date().toDateString();
+    return historicalData
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((r: any) => new Date(r._creationTime).toDateString() === today)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((r: any) => ({
+        id: r._id as string,
+        title: `${r.mode === "projection" ? "Proyeccion" : "Analisis Real"} — ${r.institutionName}`,
+        grandTotal: (r.totals?.grandTotal ?? 0) as number,
+        time: new Date(r._creationTime).toLocaleTimeString("es-EC", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      }));
+  }, [historicalData]);
+
+  /* Click en "Generar Informe": si ya hay informes hoy, confirmar primero. */
+  const handleGenerateClick = useCallback(() => {
+    if (!instName.trim()) return showToast("Nombre de institucion requerido", "error");
+    if (todaysReports.length > 0) {
+      setShowTodayModal(true);
+      return;
+    }
+    doSave();
+  }, [instName, todaysReports, doSave, showToast]);
 
   /* Format currency */
   const fmt = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -641,13 +662,79 @@ export default function FinanzasPage() {
 
         {/* Save + PDF */}
         <button
-          onClick={handleSave}
+          onClick={handleGenerateClick}
           className="w-full bg-navy-deep hover:bg-blue-900 text-white py-5 rounded-xl font-black uppercase tracking-wider shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3"
         >
           <FileText className="w-6 h-6" />
           Generar Informe Gerencial PTAP (PDF)
         </button>
       </main>
+
+      {/* Modal — informes ya generados hoy */}
+      {showTodayModal && (
+        <div
+          className="fixed inset-0 z-[1000] flex items-center justify-center p-5"
+          style={{ background: "rgba(10,16,30,0.7)", backdropFilter: "blur(6px)" }}
+          onClick={() => setShowTodayModal(false)}
+        >
+          <div
+            className="w-full max-w-lg bg-white rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-navy-deep text-white px-6 py-4 flex items-center gap-3">
+              <FileText className="w-6 h-6 text-amber-400" />
+              <div>
+                <h2 className="text-base font-black uppercase italic tracking-tight">
+                  Informes generados hoy
+                </h2>
+                <p className="text-sky-400 text-[10px] font-bold uppercase tracking-widest">
+                  {todaysReports.length} informe{todaysReports.length === 1 ? "" : "s"} en esta fecha
+                </p>
+              </div>
+            </div>
+            <div className="p-6 space-y-3 max-h-[50vh] overflow-y-auto">
+              <p className="text-[12px] text-slate-500 mb-2">
+                Ya registraste {todaysReports.length === 1 ? "un informe" : "informes"} hoy.
+                Revisa el resumen antes de generar uno nuevo.
+              </p>
+              {todaysReports.map((r) => (
+                <div
+                  key={r.id}
+                  className="flex items-center justify-between gap-4 border border-slate-200 rounded-xl px-4 py-3 bg-slate-50"
+                >
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-black text-navy-deep truncate">{r.title}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {r.time}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-[8px] font-black text-slate-400 uppercase">Inversion Mensual</p>
+                    <p className="text-base font-black font-mono text-emerald-600">{fmt(r.grandTotal)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="px-6 py-4 bg-slate-100 flex justify-end gap-3">
+              <button
+                onClick={() => setShowTodayModal(false)}
+                className="px-5 py-2.5 rounded-xl text-[12px] font-black uppercase text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  setShowTodayModal(false);
+                  doSave();
+                }}
+                className="px-5 py-2.5 rounded-xl text-[12px] font-black uppercase text-white bg-navy-deep hover:bg-blue-900 transition-colors"
+              >
+                Continuar y generar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
       <Toast {...toast} />

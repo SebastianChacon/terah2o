@@ -38,6 +38,7 @@ import {
   buildMemoriaTecnicaHTML,
   type ChemFunc,
 } from "@/lib/export/memoriaTecnica";
+import { buildMemoriaFinancieraHTML } from "@/lib/export/memoriaFinanciera";
 import { useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../../convex/_generated/api";
 import { exportToExcel } from "@/lib/export/excel";
@@ -80,6 +81,10 @@ interface FinanceRecord {
   real: number;
   comp: number;
   diff: number;
+  // Documento completo guardado en Convex → permite reconstruir la Memoria
+  // Financiera idéntica a la del módulo Finanzas (misma fuente de verdad).
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  record: any;
 }
 
 /* ── Tab config ───────────────────────────────────────────── */
@@ -311,6 +316,7 @@ export default function BitacoraIntegralPage() {
         real,
         comp,
         diff,
+        record: f,
       };
     });
   }, [financialProjs]);
@@ -683,13 +689,58 @@ export default function BitacoraIntegralPage() {
   }
 
   function openFinanceRowPDF(r: FinanceRecord) {
-    const dateStr = new Date().toLocaleDateString("es-EC");
-    const html = `<html><head><meta charset="utf-8"><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.notice{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;font-size:11px;color:#854d0e;margin-bottom:20px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
-      <h1>Reporte Financiero — ${r.mes}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
-      <div class="notice">Registro guardado — Los valores reflejan el estado de la proyeccion al momento de su guardado. Para ver los datos actuales, consulte la seccion Finanzas.</div>
-      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Periodo</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>
-      <div class="footer">TeraH2O — Documento valido digitalmente</div>
-    </body></html>`;
+    const f = r.record;
+    if (!f || !f.totals || !f.production || !f.sustainability) {
+      showToast("Registro financiero incompleto, no se puede generar el PDF.", "error");
+      return;
+    }
+    // Misma Memoria Financiera que el módulo Finanzas (generador compartido).
+    const html = buildMemoriaFinancieraHTML({
+      instName: f.institutionName || "Periodo",
+      mode: f.mode === "analysis" ? "analysis" : "projection",
+      dateLabel: f._creationTime
+        ? new Date(f._creationTime).toLocaleDateString("es-EC")
+        : new Date().toLocaleDateString("es-EC"),
+      volumeMonth: f.production.volumeMonth ?? 0,
+      billableVolume: f.sustainability.billableVolume ?? 0,
+      costPerM3: f.totals.costPerM3 ?? 0,
+      hrRows: (f.humanResources ?? []).map(
+        (h: { role: string; quantity: number; salary: number; subtotal: number }) => ({
+          role: h.role,
+          quantity: h.quantity,
+          salary: h.salary,
+          subtotal: h.subtotal,
+        }),
+      ),
+      expenses: f.operationalExpenses ?? {
+        energy: 0,
+        internet: 0,
+        pettyCash: 0,
+        maintenance: 0,
+      },
+      chemicals: (f.chemicals ?? []).map(
+        (c: {
+          name: string;
+          dose?: number;
+          totalKg?: number;
+          pricePerKg: number;
+          monthlyCost: number;
+        }) => ({
+          name: c.name,
+          dose: c.dose,
+          totalKg: c.totalKg,
+          pricePerKg: c.pricePerKg,
+          monthlyCost: c.monthlyCost,
+        }),
+      ),
+      totalChemicals: f.totals.totalChemicals ?? 0,
+      totalLabor: f.totals.totalLabor ?? 0,
+      grandTotal: f.totals.grandTotal ?? 0,
+      userRate: f.sustainability.userRate ?? 0,
+      breakEvenRate: f.sustainability.breakEvenRate ?? 0,
+      revenue: f.sustainability.revenue ?? 0,
+      profit: f.sustainability.profit ?? 0,
+    });
     openHtmlInNewTab(html);
   }
 
