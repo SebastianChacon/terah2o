@@ -14,16 +14,16 @@ const PLANS = [
     name: "Starter",
     price: "$49",
     period: "/mes",
-    description: "Ideal para plantas pequeñas y medianas",
+    description: "Ideal para plantas pequenas y medianas",
     color: "border-white/10",
     accentColor: "text-blue-400",
     badgeColor: "bg-blue-500/10 border-blue-500/20 text-blue-400",
     features: [
       "1 Admin + hasta 3 Operadores",
       "Operaciones: Consola, Hoja, Stock",
-      "Finanzas PTAP básica",
-      "Motor IA Hidrometeorológica",
-      "Academia (Módulos I-II)",
+      "Finanzas PTAP basica",
+      "Motor IA Hidrometeorologica",
+      "Academia (Modulos I-II)",
       "Soporte por email",
     ],
   },
@@ -32,18 +32,18 @@ const PLANS = [
     name: "Pro",
     price: "$89",
     period: "/mes",
-    description: "Para plantas con operación intensiva",
+    description: "Para plantas con operacion intensiva",
     color: "border-blue-500/30",
     accentColor: "text-blue-400",
     badgeColor: "bg-blue-500/20 border-blue-500/40 text-blue-300",
-    badge: "MÁS POPULAR",
+    badge: "MAS POPULAR",
     features: [
       "1 Admin + hasta 5 Operadores",
       "Acceso completo a Operaciones",
-      "Asistencia Técnica multicliente",
-      "Bitácora Maestra + Auditoría",
+      "Asistencia Tecnica multicliente",
+      "Bitacora Maestra + Auditoria",
       "Academia completa (I-IV)",
-      "Motor IA + predicción avanzada",
+      "Motor IA + prediccion avanzada",
       "Soporte prioritario WhatsApp",
     ],
   },
@@ -69,10 +69,10 @@ export default function PricingPage() {
     setError(null);
 
     try {
-      // Crear organización si no existe
+      // Crear organizacion si no existe
       let orgId = myOrg?._id;
       if (!orgId) {
-        orgId = await createOrg({ name: `Organización de ${user.name ?? user.email}` });
+        orgId = await createOrg({ name: `Organizacion de ${user.name ?? user.email}` });
       }
 
       // Activar trial
@@ -117,7 +117,7 @@ export default function PricingPage() {
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-white mb-3">Planes y Precios</h1>
           <p className="text-white/40 text-sm leading-relaxed max-w-md mx-auto">
-            14 días de prueba gratuita en cualquier plan. Sin tarjeta de crédito requerida.
+            14 dias de prueba gratuita en cualquier plan. Sin tarjeta de credito requerida.
           </p>
         </div>
 
@@ -170,7 +170,7 @@ export default function PricingPage() {
               >
                 {loading === plan.id
                   ? "Activando..."
-                  : "Iniciar prueba gratis — 14 días"}
+                  : "Iniciar prueba gratis — 14 dias"}
               </button>
             </div>
           ))}
@@ -179,9 +179,9 @@ export default function PricingPage() {
         {/* Features grid */}
         <div className="mt-16 grid grid-cols-3 gap-6 max-w-2xl mx-auto">
           {[
-            { icon: Zap, title: "Activación instantánea", desc: "Empieza a usar la plataforma en segundos" },
+            { icon: Zap, title: "Activacion instantanea", desc: "Empieza a usar la plataforma en segundos" },
             { icon: Shield, title: "Sin compromiso", desc: "Cancela en cualquier momento sin penalizaciones" },
-            { icon: Star, title: "Soporte técnico", desc: "Asesoría de ingenieros especializados en PTAP" },
+            { icon: Star, title: "Soporte tecnico", desc: "Asesoria de ingenieros especializados en PTAP" },
           ].map(({ icon: Icon, title, desc }) => (
             <div key={title} className="text-center">
               <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">

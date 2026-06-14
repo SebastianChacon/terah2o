@@ -15,15 +15,15 @@ function parseClerkError(err: unknown): string {
     const errors = (err as { errors: Array<{ code: string; message: string }> }).errors;
     if (errors?.length > 0) {
       const code = errors[0].code;
-      if (code === "form_password_incorrect") return "Contraseña incorrecta. Verifica tus credenciales.";
-      if (code === "form_password_pwned") return "Esta contraseña aparece en filtraciones de datos. Elige una contraseña más segura.";
-      if (code === "form_identifier_not_found") return "No existe cuenta con ese correo. Regístrate primero.";
-      if (code === "form_identifier_exists") return "Ya existe una cuenta con ese correo. Inicia sesión.";
-      if (code === "session_exists") return "Ya tienes sesión activa.";
-      return errors[0].message ?? "Error de autenticación.";
+      if (code === "form_password_incorrect") return "Contrasena incorrecta. Verifica tus credenciales.";
+      if (code === "form_password_pwned") return "Esta contrasena aparece en filtraciones de datos. Elige una contrasena mas segura.";
+      if (code === "form_identifier_not_found") return "No existe cuenta con ese correo. Registrate primero.";
+      if (code === "form_identifier_exists") return "Ya existe una cuenta con ese correo. Inicia sesion.";
+      if (code === "session_exists") return "Ya tienes sesion activa.";
+      return errors[0].message ?? "Error de autenticacion.";
     }
   }
-  return "Error de autenticación. Verifica tus datos e intenta de nuevo.";
+  return "Error de autenticacion. Verifica tus datos e intenta de nuevo.";
 }
 
 export default function LoginContent() {
@@ -64,14 +64,14 @@ export default function LoginContent() {
   // E2E tests pass email via URL so upsert can merge old records when JWT lacks email claim
   const emailFromParam = searchParams.get("__email") ?? undefined;
 
-  // Único punto de navegación post-login (evita doble router.replace)
+  // Unico punto de navegacion post-login (evita doble router.replace)
   useEffect(() => {
     if (isSignedIn) {
       router.replace(nextPath);
     }
   }, [isSignedIn, nextPath, router]);
 
-  // Sign-in con ticket (__clerk_ticket) — usado en E2E y enlaces mágicos de Clerk
+  // Sign-in con ticket (__clerk_ticket) — usado en E2E y enlaces magicos de Clerk
   useEffect(() => {
     if (!signInLoaded || !clerkTicket || isSignedIn || redirecting) return;
     let cancelled = false;
@@ -85,7 +85,7 @@ export default function LoginContent() {
           await completeSession(result.createdSessionId, setSignInActive, undefined, emailFromParam);
         } else {
           setRedirecting(false);
-          setError("No se pudo iniciar sesión con el enlace. Intenta con email y contraseña.");
+          setError("No se pudo iniciar sesion con el enlace. Intenta con email y contrasena.");
         }
       } catch (err: unknown) {
         if (!cancelled) {
@@ -99,7 +99,7 @@ export default function LoginContent() {
     };
   }, [signInLoaded, clerkTicket, isSignedIn]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Activar sesión Clerk + sincronizar Convex; la redirección la hace el useEffect
+  // Activar sesion Clerk + sincronizar Convex; la redireccion la hace el useEffect
   async function completeSession(
     sessionId: string | null,
     setter: ((args: { session: string | null }) => Promise<void>) | undefined,
@@ -113,7 +113,7 @@ export default function LoginContent() {
       await upsertUser({ name: userName, email: userEmail });
       if (userName && orgName) await createOrganization({ name: orgName });
     } catch {
-      // non-fatal: se sincronizará en la próxima carga
+      // non-fatal: se sincronizara en la proxima carga
     }
   }
 
@@ -135,9 +135,9 @@ export default function LoginContent() {
         if (result.status === "complete") {
           await completeSession(result.createdSessionId, setSignInActive, undefined, email);
         } else if (result.status === "needs_new_password") {
-          setError("Debes restablecer tu contraseña. Contacta al administrador.");
+          setError("Debes restablecer tu contrasena. Contacta al administrador.");
         } else {
-          setError("No se pudo completar el inicio de sesión. Intenta de nuevo.");
+          setError("No se pudo completar el inicio de sesion. Intenta de nuevo.");
         }
       } else {
         // ── Sign Up ──────────────────────────────────────────────────────────
@@ -151,7 +151,7 @@ export default function LoginContent() {
         if (result.status === "complete") {
           await completeSession(result.createdSessionId, setSignUpActive, name, email);
         } else {
-          setError("Registro incompleto. Verifica que la verificación de email esté desactivada en el Dashboard de Clerk.");
+          setError("Registro incompleto. Verifica que la verificacion de email este desactivada en el Dashboard de Clerk.");
         }
       }
     } catch (err: unknown) {
@@ -167,7 +167,7 @@ export default function LoginContent() {
         <div className="flex flex-col items-center gap-4">
           <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
           <p className="text-white/30 text-xs font-mono tracking-widest uppercase">
-            {redirecting ? "Iniciando sesión..." : "Cargando..."}
+            {redirecting ? "Iniciando sesion..." : "Cargando..."}
           </p>
         </div>
       </div>
@@ -221,13 +221,13 @@ export default function LoginContent() {
                 </label>
                 <input type="text" name="name" autoComplete="name" value={name}
                   onChange={(e) => setName(e.target.value)} required
-                  placeholder="Ing. Juan Pérez" className={inputClass} />
+                  placeholder="Ing. Juan Perez" className={inputClass} />
               </div>
             )}
 
             <div>
               <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
-                Correo electrónico
+                Correo electronico
               </label>
               <input type="email" name="email" autoComplete="email" value={email}
                 onChange={(e) => setEmail(e.target.value)} required
@@ -236,7 +236,7 @@ export default function LoginContent() {
 
             <div>
               <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
-                Contraseña
+                Contrasena
               </label>
               <div className="relative">
                 <input
@@ -254,7 +254,7 @@ export default function LoginContent() {
                 <button
                   type="button"
                   data-testid="toggle-password"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  aria-label={showPassword ? "Ocultar contrasena" : "Mostrar contrasena"}
                   onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
                 >
@@ -277,7 +277,7 @@ export default function LoginContent() {
             {mode === "signUp" && (
               <div>
                 <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
-                  Nombre de tu PTAP / Organización
+                  Nombre de tu PTAP / Organizacion
                 </label>
                 <input type="text" name="organization" autoComplete="organization"
                   value={orgName} onChange={(e) => setOrgName(e.target.value)} required

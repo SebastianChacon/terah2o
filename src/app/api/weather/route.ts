@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     const locationDesc =
       lat && lon
-        ? `Coordenadas geográficas: latitud ${lat}, longitud ${lon}`
+        ? `Coordenadas geograficas: latitud ${lat}, longitud ${lon}`
         : `Ciudad: ${location}`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
           {
             parts: [
               {
-                text: `${locationDesc}. Mes actual: ${month} ${year}. Proporciona una estimación climática típica para este lugar y época del año.`,
+                text: `${locationDesc}. Mes actual: ${month} ${year}. Proporciona una estimacion climatica tipica para este lugar y epoca del ano.`,
               },
             ],
           },
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
         systemInstruction: {
           parts: [
             {
-              text: `Eres un servicio de estimación climática para plantas de tratamiento de agua potable en Ecuador y Latinoamérica. Dado el nombre de una ubicación o coordenadas geográficas y el mes actual, proporciona estimaciones climáticas basadas en patrones históricos y conocimiento de la región. Responde ÚNICAMENTE con un JSON válido con estos campos: temp (temperatura en °C entero), feelsLike (sensación térmica en °C entero), humidity (humedad relativa 0-100 entero), description (condición del tiempo en español, ej: "Parcialmente nublado"), pop (probabilidad de lluvia 0-100 entero), rain24h (lluvia estimada en 24h en mm, un decimal), cityName (nombre de la ciudad o localidad más cercana), pressure (presión atmosférica en hPa entero), cloudCover (nubosidad 0-100 entero), visibility (visibilidad en km un decimal), windSpeed (velocidad del viento en km/h un decimal).`,
+              text: `Eres un servicio de estimacion climatica para plantas de tratamiento de agua potable en Ecuador y Latinoamerica. Dado el nombre de una ubicacion o coordenadas geograficas y el mes actual, proporciona estimaciones climaticas basadas en patrones historicos y conocimiento de la region. Responde UNICAMENTE con un JSON valido con estos campos: temp (temperatura en °C entero), feelsLike (sensacion termica en °C entero), humidity (humedad relativa 0-100 entero), description (condicion del tiempo en espanol, ej: "Parcialmente nublado"), pop (probabilidad de lluvia 0-100 entero), rain24h (lluvia estimada en 24h en mm, un decimal), cityName (nombre de la ciudad o localidad mas cercana), pressure (presion atmosferica en hPa entero), cloudCover (nubosidad 0-100 entero), visibility (visibilidad en km un decimal), windSpeed (velocidad del viento en km/h un decimal).`,
             },
           ],
         },

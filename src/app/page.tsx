@@ -38,10 +38,10 @@ export default function HomePage() {
         {/* Main */}
         <main className="flex-1 flex flex-col items-center justify-center px-6 pb-24 text-center">
           <p className="max-w-[480px] text-[0.92rem] leading-[1.75] text-white/70 font-light mb-11 animate-[fadeUp_0.9s_0.2s_ease_both] opacity-0">
-            Infraestructura digital para la dirección técnica y operativa de
+            Infraestructura digital para la direccion tecnica y operativa de
             sistemas de agua potable.
             <br />
-            Integra control, soporte especializado y formación continua bajo un
+            Integra control, soporte especializado y formacion continua bajo un
             enfoque de eficiencia y excelencia operativa.
           </p>
 
@@ -49,7 +49,7 @@ export default function HomePage() {
             <NavLink href="/operaciones">Operaciones</NavLink>
             <NavLink href="/asistencia">Asistencia</NavLink>
             <NavLink href="/motor-inteligencia">
-              Motor de Inteligencia Hidrometeorológica
+              Motor de Inteligencia Hidrometeorologica
             </NavLink>
             <NavLink href="/academia">Academia</NavLink>
           </div>

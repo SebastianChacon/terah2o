@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     const emailResult = await sendInvitationEmail({
       to: email.trim(),
       name: name.trim(),
-      orgName: orgName ?? "tu organización",
+      orgName: orgName ?? "tu organizacion",
       role: "admin",
     });
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error interno";
-    const status = msg.includes("Límite") ? 422 : msg.includes("Solo un Admin") ? 403 : 500;
+    const status = msg.includes("Limite") ? 422 : msg.includes("Solo un Admin") ? 403 : 500;
     return NextResponse.json({ error: msg }, { status });
   }
 }

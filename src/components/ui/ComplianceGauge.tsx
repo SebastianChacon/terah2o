@@ -9,9 +9,9 @@ export function ComplianceGauge({ percentage, size = 80 }: ComplianceGaugeProps)
   const offset = circumference - (circumference * percentage) / 100;
 
   const getLevel = () => {
-    if (percentage >= 90) return { label: "NIVEL ÓPTIMO", color: "text-success-green" };
+    if (percentage >= 90) return { label: "NIVEL OPTIMO", color: "text-success-green" };
     if (percentage >= 70) return { label: "NIVEL ALERTA", color: "text-amber-500" };
-    return { label: "NIVEL CRÍTICO", color: "text-danger-red" };
+    return { label: "NIVEL CRITICO", color: "text-danger-red" };
   };
 
   const level = getLevel();
