@@ -1,14 +1,25 @@
 import Link from "next/link";
+import { WHATSAPP_NUMBER, WHATSAPP_DEFAULT_MESSAGE } from "@/lib/constants";
 
 interface WhatsAppFabProps {
+  /** Número en formato wa.me (solo dígitos con código país). Por defecto el número de la empresa. */
   phoneNumber?: string;
+  /** Mensaje pre-llenado en el chat. */
+  message?: string;
 }
 
-export function WhatsAppFab({ phoneNumber = "" }: WhatsAppFabProps) {
+export function WhatsAppFab({
+  phoneNumber = WHATSAPP_NUMBER,
+  message = WHATSAPP_DEFAULT_MESSAGE,
+}: WhatsAppFabProps) {
+  const href = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
   return (
     <Link
-      href={`https://wa.me/${phoneNumber}`}
+      href={href}
       target="_blank"
+      rel="noopener noreferrer"
+      data-testid="whatsapp-fab"
       className="fixed bottom-6 left-6 z-[100] w-12 h-12 rounded-full bg-[#25d366] flex items-center justify-center shadow-[0_4px_20px_rgba(37,211,102,0.35)] hover:scale-110 hover:shadow-[0_6px_28px_rgba(37,211,102,0.5)] transition-all"
       aria-label="WhatsApp"
     >
