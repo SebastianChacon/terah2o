@@ -21,6 +21,7 @@ import { NavbarUser } from "@/components/auth/NavbarUser";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { useSafeMutation } from "@/hooks/useConvex";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { buildMemoriaTecnicaHTML } from "@/lib/export/memoriaTecnica";
 import { api } from "../../../../convex/_generated/api";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -381,74 +382,42 @@ export default function ConsolaTecnicaPage() {
       ...extraParams.map((p) => ({ label: p.label, val: n(p.value) })),
     ];
 
-    const baselineData = chemicals.map((c) => ({
-      name: c.name,
-      aforo: n(baselineAforos[c.id] || "0"),
-      conc: c.conc,
-      mgl: calcBaselineMgL(n(baselineAforos[c.id] || "0"), c.conc, flow),
-    }));
-
-    const title = hasBaseline
-      ? "MEMORIA TECNICA DE OPTIMIZACION"
-      : "MEMORIA TECNICA DE DISENO Y POTABILIZACION";
-
     const win = window.open("", "_blank");
     if (!win) {
       showToast("Habilite ventanas emergentes", "error");
       return;
     }
 
-    const exportId = new Date().getTime();
-    const exportDate = new Date().toLocaleString();
     const clientInfo = user?.name || user?.email || "TeraH2O";
-    win.document.write(`<html><head><title>Memoria Tecnica - Tera Engineering</title>
-      <style>
-        body{font-family:sans-serif;padding:35px;color:#0a192f;line-height:1.4;font-size:10px}
-        .header{display:flex;justify-content:space-between;border-bottom:3px solid #0a192f;padding-bottom:15px;margin-bottom:20px}
-        .section-title{background:#f1f5f9;padding:8px;font-weight:900;text-transform:uppercase;margin:15px 0 8px 0;border-left:5px solid #0ea5e9;font-size:10px}
-        table{width:100%;border-collapse:collapse;margin-bottom:12px}
-        th{background:#0a192f;color:white;padding:8px;text-align:left;font-size:9px}
-        td{border:1px solid #e2e8f0;padding:8px}
-        .highlight-box{background:#dcfce7;padding:12px;border-radius:6px;border:1px solid #10b981;margin:10px 0}
-        .param-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;border:1px solid #e2e8f0;padding:12px;border-radius:6px}
-        .ai-box{background:#f5f3ff;padding:12px;border-radius:6px;border:1px solid #8b5cf6;font-style:italic;margin-top:10px;color:#4c1d95}
-        .footer{margin-top:40px;text-align:center;border-top:1px solid #eee;padding-top:15px}
-      </style></head><body>
-      <div class="header"><div><h1 style="margin:0;font-size:20px">${title}</h1><p style="margin:3px 0;font-weight:bold">TeraH2O - Ingenieria de Potabilizacion</p><p style="margin:2px 0;color:#64748b">Generado por: <b>${clientInfo}</b></p></div><div style="text-align:right"><b>EXP:</b> ${exportId}<br><b>Fecha:</b> ${exportDate}</div></div>
-      <div class="section-title">1. Resumen Operativo de Planta</div>
-      <table><tr><td><b>Entidad:</b></td><td>${repoOrg}</td><td><b>Horas Operacion:</b></td><td>${hours} h/dia</td></tr><tr><td><b>Caudal:</b></td><td>${flow} L/s</td><td><b>Volumen/Dia:</b></td><td>${dailyVolume.toFixed(1)} m3</td></tr><tr><td><b>Ubicacion:</b></td><td colspan="3">${repoSample || "S/N"}</td></tr></table>
-      <div class="section-title">2. Caracterizacion Integral del Agua Cruda</div>
-      <div class="param-grid">${allParams.map((p) => `<div><b>${p.label}:</b> ${p.val}</div>`).join("")}</div>
-      ${aiDiagnosis && aiDiagnosis !== "IA analizando parámetros..." ? `<div class="ai-box"><b>Diagnostico IA Expert:</b> ${aiDiagnosis}</div>` : ""}
-      ${
-        hasBaseline
-          ? `<div class="section-title">3. Comparativa: Linea Base vs. Optimizacion Proyectada</div><table><thead><tr><th>Insumo Tecnico</th><th>Aforo Base</th><th>Dosis Base</th><th>Dosis Meta</th><th>Diferencia</th></tr></thead><tbody>${baselineData
-              .map((b) => {
-                const chem = chemicals.find((c) => c.name === b.name);
-                const optDose = chem ? (chem.func === "oxid" ? activeDoses.oxid : activeDoses[chem.func] || 0) : 0;
-                return `<tr><td>${b.name}</td><td>${b.aforo.toFixed(1)} ml/min</td><td>${b.mgl.toFixed(1)} mg/L</td><td>${optDose.toFixed(1)} mg/L</td><td>${(optDose - b.mgl).toFixed(1)} mg/L</td></tr>`;
-              })
-              .join("")}</tbody></table>`
-          : ""
-      }
-      <div class="section-title">${hasBaseline ? "4" : "3"}. Validacion de Laboratorio y Plan de Dosificacion</div>
-      <div class="highlight-box"><b>DOSIS VALIDADA:</b> Configuracion tecnica para cumplimiento INEN 1108.<br><br><b>Coagulacion:</b> ${activeDoses.coag.toFixed(1)} mg/L | <b>Regulacion pH:</b> ${activeDoses.ph.toFixed(1)} mg/L | <b>Floculacion:</b> ${activeDoses.helper.toFixed(1)} mg/L | <b>Oxidacion:</b> ${activeDoses.oxid.toFixed(1)} mg/L</div>
-      <table><thead><tr><th>Insumo</th><th>Aforo Sugerido (ml/min)</th><th>Consumo Diario (kg)</th><th>Consumo Mensual (kg)</th></tr></thead><tbody>${chemicals
-        .map((c) => {
-          const d = activeDoses[c.func] || 0;
-          const aforo = c.conc > 0 ? (d * flow * 60) / (c.conc * 10) : 0;
-          const dailyKg = (d * flow * 3.6 * hours) / 1000;
-          const monthlyKg = dailyKg * 30;
-          return `<tr><td>${c.name}</td><td>${aforo.toFixed(1)} ml/min</td><td>${dailyKg.toFixed(2)} kg</td><td>${monthlyKg.toFixed(1)} kg</td></tr>`;
-        })
-        .join("")}</tbody></table>
-      <div class="section-title">${hasBaseline ? "5" : "4"}. Analisis Economico y Eficiencia</div>
-      <div style="background:#0a192f;color:white;padding:15px;border-radius:6px;display:grid;grid-template-columns:repeat(${hasBaseline ? 3 : 2}, 1fr);gap:10px">
-        <div>COSTO UNITARIO:<br><b>${costPerM3.toFixed(4)} USD/m3</b></div><div>INVERSION MES:<br><b>$ ${totalOptCost.toLocaleString("en-US", { minimumFractionDigits: 2 })}</b></div>${hasBaseline ? `<div>AHORRO DETECTADO:<br><b>$ ${savings > 0 ? savings.toLocaleString("en-US", { minimumFractionDigits: 2 }) : "0.00"}</b><br><small>Eficiencia: ${efficiency.toFixed(1)}%</small></div>` : ""}
-      </div>
-      <div class="section-title">${hasBaseline ? "6" : "5"}. Observaciones Tecnicas Finales</div>
-      <div style="padding:10px;border:1px solid #e2e8f0;min-height:70px;font-style:italic">${repoObs || "Sin observaciones."}</div>
-      <div class="footer"><p>TeraH2O - Software de Ingenieria de Tratamiento de Agua Potable</p><br><b>__________________________</b><br>DOCUMENTO VALIDO DIGITALMENTE</div></body></html>`);
+    // Mapear aforos base por nombre de químico (estable al persistir).
+    const baselineByName: Record<string, number> = {};
+    chemicals.forEach((c) => {
+      baselineByName[c.name] = n(baselineAforos[c.id] || "0");
+    });
+
+    win.document.write(
+      buildMemoriaTecnicaHTML({
+        org: repoOrg,
+        samplePoint: repoSample,
+        flow,
+        hours,
+        params: allParams,
+        chemicals: chemicals.map((c) => ({
+          name: c.name,
+          func: c.func,
+          conc: c.conc,
+          price: c.price,
+        })),
+        targetDoses: activeDoses,
+        baselineAforos: baselineByName,
+        aiDiagnosis:
+          aiDiagnosis && aiDiagnosis !== "IA analizando parámetros..."
+            ? aiDiagnosis
+            : undefined,
+        observations: repoObs || undefined,
+        generatedBy: clientInfo,
+      })
+    );
 
     win.document.close();
     win.print();
@@ -476,6 +445,16 @@ export default function ConsolaTecnicaPage() {
         })),
         observations: repoObs || undefined,
         aiDiagnosis: aiDiagnosis && aiDiagnosis !== "IA analizando parámetros..." ? aiDiagnosis : undefined,
+        targetDoses: {
+          coag: activeDoses.coag,
+          ph: activeDoses.ph,
+          helper: activeDoses.helper,
+          oxid: activeDoses.oxid,
+        },
+        baselineAforos: chemicals.map((c) => ({
+          name: c.name,
+          aforo: n(baselineAforos[c.id] || "0"),
+        })),
       });
       await createBitacora({
         date: today,
