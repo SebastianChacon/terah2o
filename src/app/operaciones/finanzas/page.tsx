@@ -142,7 +142,7 @@ export default function FinanzasPage() {
   const [aiResponse, setAiResponse] = useState("");
 
   const buildAiPrompt = useCallback(() => {
-    const current = `Datos PTAP (${mode}): Institución: ${instName}, Volumen/Mes: ${volumeMonth.toFixed(0)} m³, Gasto Total: $${totals.grandTotal.toFixed(2)}, Costo/m³: $${totals.costPerM3.toFixed(4)}, RRHH: $${totals.totalLabor}, Químicos: $${totals.totalChemicals}, Margen: $${profit.toFixed(2)}, Tarifa: $${userRate || 0}/m³, Equilibrio: $${breakEvenRate.toFixed(4)}/m³`;
+    const current = `Datos PTAP (${mode}): Institucion: ${instName}, Volumen/Mes: ${volumeMonth.toFixed(0)} m³, Gasto Total: $${totals.grandTotal.toFixed(2)}, Costo/m³: $${totals.costPerM3.toFixed(4)}, RRHH: $${totals.totalLabor}, Quimicos: $${totals.totalChemicals}, Margen: $${profit.toFixed(2)}, Tarifa: $${userRate || 0}/m³, Equilibrio: $${breakEvenRate.toFixed(4)}/m³`;
 
     if (!historicalData || historicalData.length === 0) return current;
 
@@ -162,7 +162,7 @@ export default function FinanzasPage() {
 
     if (!relevant) return current;
 
-    return `${current}\n\nHistorial previo de ${instName}:\n${relevant}\n\nUsa el historial para identificar tendencias, variaciones y oportunidades de optimización.`;
+    return `${current}\n\nHistorial previo de ${instName}:\n${relevant}\n\nUsa el historial para identificar tendencias, variaciones y oportunidades de optimizacion.`;
   }, [mode, instName, volumeMonth, totals, profit, userRate, breakEvenRate, historicalData]);
 
   const handleAi = useCallback(
@@ -199,7 +199,7 @@ export default function FinanzasPage() {
   }, []);
 
   const handleSave = useCallback(async () => {
-    if (!instName.trim()) return showToast("Nombre de institución requerido", "error");
+    if (!instName.trim()) return showToast("Nombre de institucion requerido", "error");
 
     // Snapshot all display-critical values synchronously before any async operation.
     // After awaits, React 18 may flush batched state updates (e.g., from resetForm()),
@@ -261,7 +261,7 @@ export default function FinanzasPage() {
         date: new Date().toISOString().split("T")[0],
         source: "Finanzas PTAP",
         category: "Finanzas",
-        summary: `${snap.mode === "projection" ? "Proyección" : "Análisis Real"} — ${snap.instName} — Total: $${snap.totals.grandTotal.toFixed(2)} — Costo/m³: $${snap.totals.costPerM3.toFixed(4)}`,
+        summary: `${snap.mode === "projection" ? "Proyeccion" : "Analisis Real"} — ${snap.instName} — Total: $${snap.totals.grandTotal.toFixed(2)} — Costo/m³: $${snap.totals.costPerM3.toFixed(4)}`,
       });
       showToast("Informe guardado", "success");
       resetForm();
@@ -290,8 +290,8 @@ export default function FinanzasPage() {
         th{background:#0a192f;color:white;padding:10px;font-size:10px;text-transform:uppercase}
         td{border:1px solid #e2e8f0;padding:8px;text-align:center}
         .footer{background:#0a192f;color:white;padding:30px;border-radius:15px;text-align:center;margin-top:40px}</style></head><body>
-        <div class="header"><div><h1>Memoria de Gestión Financiera</h1>
-        <p><b>Institución:</b> ${snap.instName}</p><p><b>Fecha:</b> ${new Date().toLocaleDateString()}</p></div>
+        <div class="header"><div><h1>Memoria de Gestion Financiera</h1>
+        <p><b>Institucion:</b> ${snap.instName}</p><p><b>Fecha:</b> ${new Date().toLocaleDateString()}</p></div>
         <div style="background:#0a192f;color:white;padding:6px 12px;border-radius:6px;font-size:10px;text-transform:uppercase;font-weight:900;height:fit-content">MODO: ${snap.mode.toUpperCase()}</div></div>
         <div class="grid">
           <div class="card"><b>Volumen Mes</b><span style="font-size:16px;font-weight:900">${snap.volumeMonth.toFixed(0)} m³</span></div>
@@ -302,10 +302,10 @@ export default function FinanzasPage() {
         <table><thead><tr><th>Cargo</th><th>N°</th><th>Unitario</th><th>Total</th></tr></thead><tbody>
         ${snap.hrRows.map((h) => `<tr><td>${h.role}</td><td>${h.quantity}</td><td>$${h.salary}</td><td>$${h.subtotal.toFixed(2)}</td></tr>`).join("")}
         </tbody></table>
-        <h3>Matriz Química</h3>
+        <h3>Matriz Quimica</h3>
         <table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Gasto</th></tr></thead><tbody>${chemRows2}</tbody></table>
-        ${snap.aiResponse ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANÁLISIS IA</h4><div>${snap.aiResponse.replace(/\n/g, "<br>")}</div></div>` : ""}
-        <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversión Mensual Total</p>
+        ${snap.aiResponse ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANALISIS IA</h4><div>${snap.aiResponse.replace(/\n/g, "<br>")}</div></div>` : ""}
+        <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversion Mensual Total</p>
         <h2 style="font-size:42px;margin:10px 0">$${snap.totals.grandTotal.toFixed(2)}</h2>
         <div style="display:inline-block;padding:8px 20px;border-radius:50px;background:${snap.profit >= 0 ? "#10b981" : "#f43f5e"};font-weight:900;font-size:14px">
         MARGEN NETO: $${snap.profit.toFixed(2)}</div></div>
@@ -336,10 +336,10 @@ export default function FinanzasPage() {
               </div>
               <div>
                 <h1 className="text-xl font-black italic uppercase tracking-tight">
-                  Gestión Económica Integral PTAP
+                  Gestion Economica Integral PTAP
                 </h1>
                 <p className="text-sky-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
-                  Simulador de Proyecciones y Análisis Real Mensual
+                  Simulador de Proyecciones y Analisis Real Mensual
                 </p>
               </div>
             </div>
@@ -356,7 +356,7 @@ export default function FinanzasPage() {
                 : "text-white border-white/10 hover:border-white/30"
             }`}
           >
-            Proyección Teórica
+            Proyeccion Teorica
           </button>
           <button
             onClick={() => setMode("analysis")}
@@ -366,7 +366,7 @@ export default function FinanzasPage() {
                 : "text-white border-white/10 hover:border-white/30"
             }`}
           >
-            Análisis Real Mensual
+            Analisis Real Mensual
           </button>
         </div>
       </header>
@@ -377,7 +377,7 @@ export default function FinanzasPage() {
           <section className="bg-white rounded-2xl border-t-4 border-navy-deep p-6 shadow-md lg:col-span-2">
             <SectionHeader number="00" title="Datos Institucionales" />
             <InputField
-              label="Nombre de la Institución / Planta"
+              label="Nombre de la Institucion / Planta"
               value={instName}
               onChange={(e) => setInstName(e.target.value)}
               placeholder="Ingrese nombre de la planta"
@@ -387,13 +387,13 @@ export default function FinanzasPage() {
           <section className="bg-white rounded-2xl border-t-4 border-navy-deep p-6 shadow-md lg:col-span-2">
             <SectionHeader
               number="01"
-              title={mode === "projection" ? "Producción Proyectada" : "Datos Reales de Producción"}
+              title={mode === "projection" ? "Produccion Proyectada" : "Datos Reales de Produccion"}
             />
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {mode === "projection" ? (
                 <>
                   <InputField label="Caudal (L/s)" type="number" value={plantFlow} onChange={(e) => setPlantFlow(e.target.value)} placeholder="0.0" />
-                  <InputField label="Horas Operación/Día" type="number" value={opHours} onChange={(e) => setOpHours(e.target.value)} placeholder="0" />
+                  <InputField label="Horas Operacion/Dia" type="number" value={opHours} onChange={(e) => setOpHours(e.target.value)} placeholder="0" />
                 </>
               ) : (
                 <div className="col-span-2">
@@ -461,7 +461,7 @@ export default function FinanzasPage() {
           <section className="bg-white rounded-2xl border-t-4 border-navy-deep p-6 shadow-md lg:col-span-1">
             <SectionHeader number="03" title="Gastos Operativos" />
             <div className="space-y-3">
-              <InputField label="Energía Eléctrica ($)" type="number" value={expenses.energy || ""} onChange={(e) => updateExp("energy", e.target.value)} placeholder="0" />
+              <InputField label="Energia Electrica ($)" type="number" value={expenses.energy || ""} onChange={(e) => updateExp("energy", e.target.value)} placeholder="0" />
               <InputField label="Internet / Conectividad ($)" type="number" value={expenses.internet || ""} onChange={(e) => updateExp("internet", e.target.value)} placeholder="0" />
               <InputField label="Gastos Caja Chica ($)" type="number" value={expenses.pettyCash || ""} onChange={(e) => updateExp("pettyCash", e.target.value)} placeholder="0" />
               <InputField label="Mantenimiento / Otros ($)" type="number" value={expenses.maintenance || ""} onChange={(e) => updateExp("maintenance", e.target.value)} placeholder="0" />
@@ -472,13 +472,13 @@ export default function FinanzasPage() {
             <div className="flex items-center justify-between mb-6">
               <SectionHeader
                 number="04"
-                title={mode === "projection" ? "Dosificación Teórica" : "Consumo Real y Stock"}
+                title={mode === "projection" ? "Dosificacion Teorica" : "Consumo Real y Stock"}
               />
               <button
                 onClick={addChem}
                 className="bg-amber-500 text-navy-deep text-[11px] font-black uppercase px-3 py-1.5 rounded-lg hover:bg-amber-400 transition-colors flex items-center gap-1"
               >
-                <Plus className="w-3 h-3" /> Añadir
+                <Plus className="w-3 h-3" /> Anadir
               </button>
             </div>
             <div className="w-full overflow-x-auto rounded-xl border border-slate-200">
@@ -550,7 +550,7 @@ export default function FinanzasPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-4">
               <InputField
-                label="Pérdidas Técnicas/Comerciales (%)"
+                label="Perdidas Tecnicas/Comerciales (%)"
                 type="number"
                 value={lossPercent}
                 onChange={(e) => setLossPercent(e.target.value)}
@@ -573,7 +573,7 @@ export default function FinanzasPage() {
                 className="text-2xl text-emerald-600"
               />
               <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-center">
-                <p className="text-[9px] font-black text-amber-600 uppercase">Tarifa Equilibrio Crítica</p>
+                <p className="text-[9px] font-black text-amber-600 uppercase">Tarifa Equilibrio Critica</p>
                 <p className="text-xl font-black text-navy-deep font-mono">
                   ${breakEvenRate.toFixed(4)}
                 </p>
@@ -581,7 +581,7 @@ export default function FinanzasPage() {
             </div>
             <div className="space-y-3">
               <div className="bg-emerald-600 text-white p-4 rounded-xl shadow-lg text-center">
-                <p className="text-[9px] uppercase font-black opacity-80">Recaudación Proyectada</p>
+                <p className="text-[9px] uppercase font-black opacity-80">Recaudacion Proyectada</p>
                 <p className="text-2xl font-black font-mono">{fmt(revenue)}</p>
               </div>
               <div className={`border-2 p-4 rounded-xl text-center ${profit >= 0 ? "border-emerald-500 bg-white" : "border-red-500 bg-red-50"}`}>
@@ -599,7 +599,7 @@ export default function FinanzasPage() {
         {/* S06 — Summary */}
         <section className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white border border-slate-200 p-5 rounded-2xl text-center shadow-sm">
-            <p className="text-slate-500 text-[9px] uppercase font-black">Gasto en Químicos</p>
+            <p className="text-slate-500 text-[9px] uppercase font-black">Gasto en Quimicos</p>
             <p className="text-xl font-black font-mono text-navy-deep">{fmt(totals.totalChemicals)}</p>
           </div>
           <div className="bg-white border border-slate-200 p-5 rounded-2xl text-center shadow-sm">
@@ -618,9 +618,9 @@ export default function FinanzasPage() {
 
         {/* S07 — IA */}
         <section className="bg-white rounded-2xl border-t-8 border-violet-500 p-6 shadow-md">
-          <SectionHeader number="07" title="Inteligencia Artificial Estratégica ✨" />
+          <SectionHeader number="07" title="Inteligencia Artificial Estrategica ✨" />
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <AiButton onClick={() => handleAi("opt")} loading={loadOpt} label="Optimización ✨" variant="blue" />
+            <AiButton onClick={() => handleAi("opt")} loading={loadOpt} label="Optimizacion ✨" variant="blue" />
             <AiButton onClick={() => handleAi("strat")} loading={loadStrat} label="Estrategia ✨" variant="blue" />
             <AiButton onClick={() => handleAi("sum")} loading={loadSum} label="Resumen ✨" variant="amber" />
           </div>
@@ -633,7 +633,7 @@ export default function FinanzasPage() {
                 onClick={() => setAiResponse("")}
                 className="mt-4 text-[9px] font-bold text-slate-400 uppercase hover:text-slate-600"
               >
-                Ocultar análisis
+                Ocultar analisis
               </button>
             </div>
           )}

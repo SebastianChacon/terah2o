@@ -46,7 +46,7 @@ export const DEFAULT_STOCK_ITEMS: Omit<StockItem, "_id">[] = [
   },
   {
     itemId: "AYUDANTE",
-    itemName: "Polímero Ayudante",
+    itemName: "Polimero Ayudante",
     amount: 0,
     unit: "kg",
     minimumLevel: 10,

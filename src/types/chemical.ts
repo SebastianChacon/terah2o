@@ -33,7 +33,7 @@ export const CHEMICAL_PRODUCTS: ChemicalProduct[] = [
   { value: "Sulfato de Aluminio", label: "Sulfato de Aluminio" },
   { value: "Hipoclorito de Sodio", label: "Hipoclorito de Sodio" },
   { value: "Cloro Gas", label: "Cloro Gas" },
-  { value: "Floculante", label: "Polímero Floculante" },
+  { value: "Floculante", label: "Polimero Floculante" },
   { value: "Regulador pH", label: "Regulador de pH" },
 ];
 
@@ -41,5 +41,5 @@ export const COAGULANT_OPTIONS = [
   { value: "Alumbre", label: "Sulfato de Aluminio" },
   { value: "PAC", label: "Policloruro (PAC)" },
   { value: "PACS", label: "Policlorosulfato (PACS)" },
-  { value: "Ferrico", label: "Cloruro Férrico" },
+  { value: "Ferrico", label: "Cloruro Ferrico" },
 ];

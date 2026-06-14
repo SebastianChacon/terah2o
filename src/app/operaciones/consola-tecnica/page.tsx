@@ -74,7 +74,7 @@ const FUNC_TEXT_COLORS: Record<ChemFunc, string> = {
 const DEFAULT_CHEMICALS: Chemical[] = [
   { id: 1, name: "SULFATO DE ALUMINIO 10%", func: "coag", conc: 10, price: 0.85 },
   { id: 2, name: "CAL HIDRATADA 5%", func: "ph", conc: 5, price: 0.32 },
-  { id: 3, name: "POLÍMERO ANIÓNICO 0.1%", func: "helper", conc: 0.1, price: 6.5 },
+  { id: 3, name: "POLIMERO ANIONICO 0.1%", func: "helper", conc: 0.1, price: 6.5 },
   { id: 4, name: "HIPOCLORITO CALCIO 6.5%", func: "oxid", conc: 6.5, price: 2.15 },
 ];
 
@@ -256,11 +256,11 @@ export default function ConsolaTecnicaPage() {
 
   const ejecutarSimulacion = () => {
     if (flow <= 0) {
-      showToast("Ingrese el caudal de operación", "error");
+      showToast("Ingrese el caudal de operacion", "error");
       return;
     }
     setShowSimResults(true);
-    showToast("Simulación calculada", "info");
+    showToast("Simulacion calculada", "info");
   };
 
   const consultarIA = async () => {
@@ -268,12 +268,12 @@ export default function ConsolaTecnicaPage() {
     extraParams.forEach((p) => {
       paramsText += `${p.label}: ${n(p.value)}, `;
     });
-    paramsText += `Caudal: ${flow} L/s, Horas operación: ${hours}h.`;
+    paramsText += `Caudal: ${flow} L/s, Horas operacion: ${hours}h.`;
 
     setShowAiPanel(true);
-    setAiDiagnosis("IA analizando parámetros...");
+    setAiDiagnosis("IA analizando parametros...");
 
-    const prompt = `Analiza estos datos de agua cruda: ${paramsText}. Recomienda estrategia de dosificación para garantizar potabilidad bajo INEN 1108. Máximo 5 líneas.`;
+    const prompt = `Analiza estos datos de agua cruda: ${paramsText}. Recomienda estrategia de dosificacion para garantizar potabilidad bajo INEN 1108. Maximo 5 lineas.`;
     const result = await generateAI(prompt);
     setAiDiagnosis(result || "No se pudo obtener respuesta de la IA.");
   };
@@ -300,7 +300,7 @@ export default function ConsolaTecnicaPage() {
 
   const compararJarras = () => {
     if (flow <= 0) {
-      showToast("Ingrese el caudal de operación", "error");
+      showToast("Ingrese el caudal de operacion", "error");
       return;
     }
 
@@ -458,7 +458,7 @@ export default function ConsolaTecnicaPage() {
       });
       await createBitacora({
         date: today,
-        source: "Consola Técnica",
+        source: "Consola Tecnica",
         category: "Jar-Test",
         summary: `Jar-Test — ${repoOrg} — Costo/m³: $${costPerM3.toFixed(4)} — Ganadora: Vaso ${bestJarId ?? "N/A"}`,
       });
@@ -473,7 +473,7 @@ export default function ConsolaTecnicaPage() {
   /* ── Render ────────────────────────────────────────────── */
 
   return (
-    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessConsolaTecnica"]} moduleName="Consola Técnica">
+    <AuthGuard permissionKey={["canAccessOperaciones", "canAccessConsolaTecnica"]} moduleName="Consola Tecnica">
     <div className="min-h-screen flex flex-col bg-slate-100 text-slate-900">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-navy-deep text-white py-5 px-6 shadow-2xl dot-grid border-b-[3px] border-transparent"
@@ -691,7 +691,7 @@ export default function ConsolaTecnicaPage() {
                   value={newParamName}
                   onChange={(e) => setNewParamName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addExtraParam()}
-                  placeholder="Nombre del parámetro"
+                  placeholder="Nombre del parametro"
                   className="py-1.5 px-2 text-[10px] rounded-lg border border-slate-200 focus:outline-none focus:border-sky-400 w-44"
                 />
                 <button

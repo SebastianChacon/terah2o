@@ -10,9 +10,9 @@ const modules = [
   {
     href: "/academia/modulo-1",
     number: "I - II.1",
-    title: "Fundamentos de Potabilización",
+    title: "Fundamentos de Potabilizacion",
     description:
-      "Introducción a la ingeniería de tratamiento, coagulación y jar-test.",
+      "Introduccion a la ingenieria de tratamiento, coagulacion y jar-test.",
     icon: <BookOpen className="w-5 h-5" />,
     color: "border-sky-500",
     iconBg: "bg-sky-500/10",
@@ -21,9 +21,9 @@ const modules = [
   {
     href: "/academia/modulo-2-filtracion",
     number: "II.2",
-    title: "Ingeniería de Filtración",
+    title: "Ingenieria de Filtracion",
     description:
-      "Diseño de lechos filtrantes, cinética y dimensionamiento hidráulico.",
+      "Diseno de lechos filtrantes, cinetica y dimensionamiento hidraulico.",
     icon: <Filter className="w-5 h-5" />,
     color: "border-cyan-500",
     iconBg: "bg-cyan-500/10",
@@ -32,9 +32,9 @@ const modules = [
   {
     href: "/academia/modulo-2-desinfeccion",
     number: "II.3",
-    title: "Inactivación Microbiológica",
+    title: "Inactivacion Microbiologica",
     description:
-      "Desinfección, seguridad NFPA y protocolos de cloración.",
+      "Desinfeccion, seguridad NFPA y protocolos de cloracion.",
     icon: <Shield className="w-5 h-5" />,
     color: "border-emerald-500",
     iconBg: "bg-emerald-500/10",
@@ -43,9 +43,9 @@ const modules = [
   {
     href: "/academia/modulo-3",
     number: "III",
-    title: "Operación y Control",
+    title: "Operacion y Control",
     description:
-      "Monitoreo analítico, inyección química y control de procesos.",
+      "Monitoreo analitico, inyeccion quimica y control de procesos.",
     icon: <Settings className="w-5 h-5" />,
     color: "border-violet-500",
     iconBg: "bg-violet-500/10",
@@ -54,9 +54,9 @@ const modules = [
   {
     href: "/academia/modulo-4",
     number: "IV",
-    title: "Gestión Avanzada",
+    title: "Gestion Avanzada",
     description:
-      "Patologías, membranas, ROI y sostenibilidad hídrica.",
+      "Patologias, membranas, ROI y sostenibilidad hidrica.",
     icon: <GraduationCap className="w-5 h-5" />,
     color: "border-amber-500",
     iconBg: "bg-amber-500/10",
@@ -83,15 +83,15 @@ export default function AcademiaPage() {
       <main className="flex-1 max-w-5xl mx-auto w-full px-6 py-12 space-y-12 fade-in">
         <div className="text-center space-y-4">
           <span className="inline-block px-3 py-1 bg-white/5 border border-white/10 text-sky-400 rounded-full text-[10px] font-bold uppercase tracking-[0.2em]">
-            PROGRAMA DE FORMACIÓN TÉCNICA
+            PROGRAMA DE FORMACION TECNICA
           </span>
           <h1 className="text-2xl sm:text-4xl font-extrabold uppercase tracking-tight">
-            Ingeniería de{" "}
-            <span className="text-sky-500">Potabilización Profesional</span>
+            Ingenieria de{" "}
+            <span className="text-sky-500">Potabilizacion Profesional</span>
           </h1>
           <p className="text-slate-500 text-sm max-w-xl mx-auto font-medium">
-            Ruta formativa completa para la gestión técnica y operativa de
-            plantas de tratamiento de agua potable bajo estándares INEN 1108,
+            Ruta formativa completa para la gestion tecnica y operativa de
+            plantas de tratamiento de agua potable bajo estandares INEN 1108,
             AWWA y CEPIS.
           </p>
         </div>
@@ -118,7 +118,7 @@ export default function AcademiaPage() {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">
-                      Módulo {mod.number}
+                      Modulo {mod.number}
                     </span>
                   </div>
                   <h3 className="text-white font-bold text-sm mb-1 group-hover:text-sky-400 transition-colors">

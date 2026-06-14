@@ -1,11 +1,11 @@
 import type { DoseResult } from "@/types/chemical";
 
 /**
- * Calcula la dosis de un químico en mg/L.
- * Fórmula: dose = (mlMin * concPct) / (flow * 6)
+ * Calcula la dosis de un quimico en mg/L.
+ * Formula: dose = (mlMin * concPct) / (flow * 6)
  *
  * @param mlMin - Caudal de la bomba dosificadora (mL/min)
- * @param concPct - Concentración de la solución (%)
+ * @param concPct - Concentracion de la solucion (%)
  * @param flowLps - Caudal de la planta (L/s)
  */
 export function calculateDose(
@@ -19,7 +19,7 @@ export function calculateDose(
 
 /**
  * Calcula el consumo diario en kg.
- * Fórmula: dailyCons = (dose * flow * 3.6 * hours) / 1000
+ * Formula: dailyCons = (dose * flow * 3.6 * hours) / 1000
  */
 export function calculateDailyConsumption(
   doseMgL: number,
@@ -30,8 +30,8 @@ export function calculateDailyConsumption(
 }
 
 /**
- * Calcula la autonomía en días.
- * Fórmula: days = stockKg / dailyConsKg
+ * Calcula la autonomia en dias.
+ * Formula: days = stockKg / dailyConsKg
  */
 export function calculateAutonomy(
   stockKg: number,
@@ -56,7 +56,7 @@ export function calculatePumpFlow(
 }
 
 /**
- * Calcula resultado completo de dosificación.
+ * Calcula resultado completo de dosificacion.
  */
 export function calculateFullDose(
   mlMin: number,

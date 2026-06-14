@@ -86,12 +86,12 @@ interface FinanceRecord {
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   {
     id: "design",
-    label: "Diseño Técnico",
+    label: "Diseno Tecnico",
     icon: <Pencil className="w-5 h-5" />,
   },
   {
     id: "ops",
-    label: "Operación Turnos",
+    label: "Operacion Turnos",
     icon: <BarChart3 className="w-5 h-5" />,
   },
   {
@@ -106,7 +106,7 @@ const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
   },
   {
     id: "audit",
-    label: "Auditoría",
+    label: "Auditoria",
     icon: <ClipboardList className="w-5 h-5" />,
   },
 ];
@@ -272,10 +272,10 @@ export default function BitacoraIntegralPage() {
       (i: NonNullable<typeof inventoryItems>[number]) => ({
         fecha: i.lastUpdated ? formatDate(i.lastUpdated) : "—",
         item: i.itemName,
-        consumed: `${i.dailyConsumption} ${i.unit}/día`,
+        consumed: `${i.dailyConsumption} ${i.unit}/dia`,
         auto:
           i.dailyConsumption > 0
-            ? `${Math.round(i.amount / i.dailyConsumption)} días`
+            ? `${Math.round(i.amount / i.dailyConsumption)} dias`
             : "N/A",
         saldo: `${i.amount} ${i.unit}`,
       }),
@@ -405,14 +405,14 @@ export default function BitacoraIntegralPage() {
   /* ── AI functions ──────────────────────────────────────── */
   async function runAudit(prompt: string) {
     setAiModalOpen(true);
-    setAiResponse("Generando análisis avanzado...");
+    setAiResponse("Generando analisis avanzado...");
     const result = await generateAI(prompt);
     setAiResponse(result || "No se pudo generar una respuesta.");
   }
 
   function runGlobalAudit() {
     const summary = {
-      diseños: designHistory.length,
+      disenos: designHistory.length,
       turnos: opsHistory.length,
       inventario: inventoryHistory.length,
       finanzas: financeHistory.length,
@@ -434,7 +434,7 @@ export default function BitacoraIntegralPage() {
     if (inventoryHistory.length === 0)
       return showToast("No hay datos de stock.", "error");
     runAudit(
-      `Basado en el historial de inventario: ${JSON.stringify(inventoryHistory)}. Estima autonomía y recomienda compras.`,
+      `Basado en el historial de inventario: ${JSON.stringify(inventoryHistory)}. Estima autonomia y recomienda compras.`,
     );
   }
 
@@ -442,32 +442,32 @@ export default function BitacoraIntegralPage() {
     if (financeHistory.length === 0)
       return showToast("No hay reportes financieros.", "error");
     runAudit(
-      `Compara la proyección vs el gasto real: ${JSON.stringify(financeHistory.slice(0, 10))}. Analiza desviaciones.`,
+      `Compara la proyeccion vs el gasto real: ${JSON.stringify(financeHistory.slice(0, 10))}. Analiza desviaciones.`,
     );
   }
 
   function exportarExcel(tipo: string) {
     const dateStr = new Date().toISOString().slice(0, 10);
     switch (tipo) {
-      case "Diseño":
+      case "Diseno":
         if (filteredDesign.length === 0)
-          return showToast("No hay datos de diseño para exportar.", "error");
+          return showToast("No hay datos de diseno para exportar.", "error");
         exportToExcel(
           filteredDesign.map((r) => ({
             Fecha: r.fecha,
             "Entidad / Planta": r.org,
             "Caudal Evaluado": r.flow,
-            Optimización: r.opt,
+            Optimizacion: r.opt,
             "Horas Op.": r.cost,
           })),
-          "Diseño Técnico",
+          "Diseno Tecnico",
           `Bitacora_Diseno_${dateStr}`,
         );
         break;
-      case "Operación":
+      case "Operacion":
         if (filteredOps.length === 0)
           return showToast(
-            "No hay registros de operación para exportar.",
+            "No hay registros de operacion para exportar.",
             "error",
           );
         exportToExcel(
@@ -477,11 +477,11 @@ export default function BitacoraIntegralPage() {
             "Caudal (L/s)": r.flow,
             "Volumen (m³)": r.vol,
             "pH/Color/Turb": r.phct,
-            Químicos: r.chem,
+            Quimicos: r.chem,
             "% Cumplimiento": r.compliance,
             Observaciones: r.obs,
           })),
-          "Operación Turnos",
+          "Operacion Turnos",
           `Bitacora_Operacion_${dateStr}`,
         );
         break;
@@ -493,7 +493,7 @@ export default function BitacoraIntegralPage() {
             Fecha: r.fecha,
             Producto: r.item,
             "Consumo Real": r.consumed,
-            Autonomía: r.auto,
+            Autonomia: r.auto,
             "Saldo Bodega": r.saldo,
           })),
           "Control Insumos",
@@ -521,7 +521,7 @@ export default function BitacoraIntegralPage() {
       case "Auditoria":
         if (filteredAudit.length === 0)
           return showToast(
-            "No hay eventos de auditoría para exportar.",
+            "No hay eventos de auditoria para exportar.",
             "error",
           );
         exportToExcel(
@@ -529,11 +529,11 @@ export default function BitacoraIntegralPage() {
           filteredAudit.map((e: any) => ({
             Fecha: e.date,
             Fuente: e.source,
-            Categoría: e.category,
+            Categoria: e.category,
             Operador: e.operatorName ?? "—",
             Resumen: e.summary,
           })),
-          "Auditoría",
+          "Auditoria",
           `Bitacora_Auditoria_${dateStr}`,
         );
         break;
@@ -547,9 +547,9 @@ export default function BitacoraIntegralPage() {
     let headers = "";
 
     switch (tipo) {
-      case "Diseño":
+      case "Diseno":
         headers =
-          "<th>Fecha</th><th>Entidad</th><th>Caudal</th><th>Optimización</th><th>Horas</th>";
+          "<th>Fecha</th><th>Entidad</th><th>Caudal</th><th>Optimizacion</th><th>Horas</th>";
         rows = filteredDesign
           .map(
             (r) =>
@@ -557,9 +557,9 @@ export default function BitacoraIntegralPage() {
           )
           .join("");
         break;
-      case "Operación":
+      case "Operacion":
         headers =
-          "<th>Fecha</th><th>Operador</th><th>Caudal</th><th>pH/Color/Turb</th><th>Químicos</th><th>%Cumpl.</th><th>Obs.</th>";
+          "<th>Fecha</th><th>Operador</th><th>Caudal</th><th>pH/Color/Turb</th><th>Quimicos</th><th>%Cumpl.</th><th>Obs.</th>";
         rows = filteredOps
           .map(
             (r) =>
@@ -569,7 +569,7 @@ export default function BitacoraIntegralPage() {
         break;
       case "Insumos":
         headers =
-          "<th>Fecha</th><th>Producto</th><th>Consumo</th><th>Autonomía</th><th>Saldo</th>";
+          "<th>Fecha</th><th>Producto</th><th>Consumo</th><th>Autonomia</th><th>Saldo</th>";
         rows = filteredInventory
           .map(
             (r) =>
@@ -590,11 +590,11 @@ export default function BitacoraIntegralPage() {
       case "Auditoria": {
         if (filteredAudit.length === 0)
           return showToast(
-            "No hay eventos de auditoría para exportar.",
+            "No hay eventos de auditoria para exportar.",
             "error",
           );
         headers =
-          "<th>Fecha</th><th>Fuente</th><th>Categoría</th><th>Operador</th><th style='text-align:left'>Resumen</th>";
+          "<th>Fecha</th><th>Fuente</th><th>Categoria</th><th>Operador</th><th style='text-align:left'>Resumen</th>";
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rows = filteredAudit
           .map(
@@ -619,7 +619,7 @@ export default function BitacoraIntegralPage() {
     if (w) {
       setTimeout(() => URL.revokeObjectURL(url), 1500);
     } else {
-      showToast("No se pudo abrir el informe en una nueva pestaña.", "error");
+      showToast("No se pudo abrir el informe en una nueva pestana.", "error");
     }
   }
 
@@ -676,8 +676,8 @@ export default function BitacoraIntegralPage() {
     const dateStr = new Date().toLocaleDateString("es-EC");
     const html = `<html><head><meta charset="utf-8"><title>Informe Insumo — ${r.item}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>Informe de Insumo — ${r.item}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
-      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Fecha de registro</td><td>${r.fecha}</td></tr><tr><td>Producto</td><td>${r.item}</td></tr><tr><td>Consumo Real</td><td>${r.consumed}</td></tr><tr><td>Autonomía</td><td>${r.auto}</td></tr><tr><td>Saldo Bodega</td><td>${r.saldo}</td></tr></table>
-      <div class="footer">TeraH2O — Documento válido digitalmente</div>
+      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Fecha de registro</td><td>${r.fecha}</td></tr><tr><td>Producto</td><td>${r.item}</td></tr><tr><td>Consumo Real</td><td>${r.consumed}</td></tr><tr><td>Autonomia</td><td>${r.auto}</td></tr><tr><td>Saldo Bodega</td><td>${r.saldo}</td></tr></table>
+      <div class="footer">TeraH2O — Documento valido digitalmente</div>
     </body></html>`;
     openHtmlInNewTab(html);
   }
@@ -686,16 +686,16 @@ export default function BitacoraIntegralPage() {
     const dateStr = new Date().toLocaleDateString("es-EC");
     const html = `<html><head><meta charset="utf-8"><title>Informe Financiero — ${r.mes}</title><style>body{font-family:Arial,sans-serif;padding:40px;color:#0a192f;font-size:12px}h1{font-size:18px}table{width:100%;border-collapse:collapse}th{background:#0a192f;color:#fff;padding:10px;text-align:left}td{border:1px solid #e2e8f0;padding:10px}.notice{background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:10px 14px;font-size:11px;color:#854d0e;margin-bottom:20px}.footer{margin-top:30px;text-align:center;border-top:1px solid #eee;padding-top:12px;color:#64748b}</style></head><body>
       <h1>Reporte Financiero — ${r.mes}</h1><p style="color:#64748b">TeraH2O · Emitido: ${dateStr}</p>
-      <div class="notice">Registro guardado — Los valores reflejan el estado de la proyección al momento de su guardado. Para ver los datos actuales, consulte la sección Finanzas.</div>
-      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Período</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>
-      <div class="footer">TeraH2O — Documento válido digitalmente</div>
+      <div class="notice">Registro guardado — Los valores reflejan el estado de la proyeccion al momento de su guardado. Para ver los datos actuales, consulte la seccion Finanzas.</div>
+      <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Periodo</td><td>${r.mes}</td></tr><tr><td>Proyectado (USD)</td><td>$${r.proy.toLocaleString()}</td></tr><tr><td>Real (USD)</td><td>$${r.real.toLocaleString()}</td></tr><tr><td>% Cumplimiento</td><td>${r.comp}%</td></tr><tr><td>Diferencia</td><td>${r.diff > 0 ? "+" : ""}${r.diff}</td></tr></table>
+      <div class="footer">TeraH2O — Documento valido digitalmente</div>
     </body></html>`;
     openHtmlInNewTab(html);
   }
 
   /* ── Render ────────────────────────────────────────────── */
   return (
-    <AuthGuard permissionKey="canAccessBitacora" moduleName="Bitácora Maestra">
+    <AuthGuard permissionKey="canAccessBitacora" moduleName="Bitacora Maestra">
     <div
       className="min-h-screen flex flex-col"
       style={{ background: "var(--navy-solid)", color: "#e2e8f0" }}
@@ -737,7 +737,7 @@ export default function BitacoraIntegralPage() {
               {aiLoading ? (
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
-                  <span>Procesando análisis avanzado...</span>
+                  <span>Procesando analisis avanzado...</span>
                 </div>
               ) : (
                 aiResponse
@@ -748,7 +748,7 @@ export default function BitacoraIntegralPage() {
                 onClick={() => setAiModalOpen(false)}
                 className="bg-white/5 hover:bg-white/10 text-white px-6 py-2 rounded-xl text-xs font-bold uppercase transition-all"
               >
-                Cerrar Auditoría
+                Cerrar Auditoria
               </button>
             </div>
           </div>
@@ -774,10 +774,10 @@ export default function BitacoraIntegralPage() {
             </Link>
             <div className="text-center md:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 bg-sky-500/10 text-sky-400 rounded-lg text-[9px] font-black uppercase tracking-[0.2em] mb-1 border border-sky-500/20">
-                SISTEMA DE AUDITORÍA Y ARCHIVO INTEGRAL
+                SISTEMA DE AUDITORIA Y ARCHIVO INTEGRAL
               </div>
               <h1 className="text-2xl font-black italic uppercase tracking-tighter text-white">
-                Bitácora <span className="text-sky-500">INTEGRAL</span>
+                Bitacora <span className="text-sky-500">INTEGRAL</span>
               </h1>
             </div>
           </div>
@@ -833,7 +833,7 @@ export default function BitacoraIntegralPage() {
             type="text"
             value={searchText}
             onChange={(e) => setSearchText(e.target.value)}
-            placeholder="Buscar registros históricos..."
+            placeholder="Buscar registros historicos..."
             className="w-full rounded-2xl py-3.5 pl-12 pr-6 text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-all"
             style={{
               background: "#112240",
@@ -843,23 +843,23 @@ export default function BitacoraIntegralPage() {
         </div>
 
         {/* ════════════════════════════════════════════════════
-            SECTION 01: DISEÑO TÉCNICO
+            SECTION 01: DISENO TECNICO
            ════════════════════════════════════════════════════ */}
         {activeTab === "design" && (
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <h2 className="text-sm font-black uppercase text-white tracking-widest">
-                Memorias de Tratabilidad y Optimización
+                Memorias de Tratabilidad y Optimizacion
               </h2>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => exportarExcel("Diseño")}
+                  onClick={() => exportarExcel("Diseno")}
                   className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
                 >
                   <Download className="w-4 h-4" /> Excel
                 </button>
                 <button
-                  onClick={() => exportarPDF("Diseño")}
+                  onClick={() => exportarPDF("Diseno")}
                   className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
                 >
                   <FileText className="w-4 h-4" /> PDF
@@ -875,8 +875,8 @@ export default function BitacoraIntegralPage() {
             >
               {filteredDesign.length === 0 ? (
                 <div className="p-10 text-center text-slate-500 italic text-sm">
-                  No hay informes de diseño archivados. Los registros se crean
-                  en la Consola Técnica.
+                  No hay informes de diseno archivados. Los registros se crean
+                  en la Consola Tecnica.
                 </div>
               ) : (
                 <table className="w-full border-collapse">
@@ -892,13 +892,13 @@ export default function BitacoraIntegralPage() {
                         Caudal Evaluado
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Optimización
+                        Optimizacion
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                         Horas Op.
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Acción
+                        Accion
                       </th>
                     </tr>
                   </thead>
@@ -943,14 +943,14 @@ export default function BitacoraIntegralPage() {
         )}
 
         {/* ════════════════════════════════════════════════════
-            SECTION 02: OPERACIÓN TURNOS
+            SECTION 02: OPERACION TURNOS
            ════════════════════════════════════════════════════ */}
         {activeTab === "ops" && (
           <section className="space-y-6 fade-in">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <h2 className="text-sm font-black uppercase text-white tracking-widest">
-                  Consola de Operación Real
+                  Consola de Operacion Real
                 </h2>
                 <button
                   onClick={runOpsAI}
@@ -960,18 +960,18 @@ export default function BitacoraIntegralPage() {
                     boxShadow: "0 4px 15px rgba(168,85,247,0.3)",
                   }}
                 >
-                  <Zap className="w-3.5 h-3.5" /> Diagnóstico Calidad
+                  <Zap className="w-3.5 h-3.5" /> Diagnostico Calidad
                 </button>
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => exportarExcel("Operación")}
+                  onClick={() => exportarExcel("Operacion")}
                   className="flex items-center gap-2 text-emerald-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-all"
                 >
                   <Download className="w-4 h-4" /> Excel
                 </button>
                 <button
-                  onClick={() => exportarPDF("Operación")}
+                  onClick={() => exportarPDF("Operacion")}
                   className="flex items-center gap-2 text-pink-400 text-[10px] font-black uppercase px-4 py-2 rounded-xl border border-pink-500/20 bg-pink-500/10 hover:bg-pink-500/20 transition-all"
                 >
                   <FileText className="w-4 h-4" /> PDF
@@ -989,7 +989,7 @@ export default function BitacoraIntegralPage() {
                 }}
               >
                 <h4 className="text-[10px] font-black uppercase text-sky-400 mb-4 tracking-widest">
-                  Producción Real Mensual (m³/Mes)
+                  Produccion Real Mensual (m³/Mes)
                 </h4>
                 <div className="h-[180px]">
                   {isLoading ? (
@@ -997,7 +997,7 @@ export default function BitacoraIntegralPage() {
                   ) : monthlyProductionData.length === 0 ? (
                     <EmptyChart
                       height={180}
-                      message="Sin registros de producción. Crea turnos en la Hoja Operativa."
+                      message="Sin registros de produccion. Crea turnos en la Hoja Operativa."
                     />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -1046,7 +1046,7 @@ export default function BitacoraIntegralPage() {
                   ) : complianceData.every((d) => d.value === 0) ? (
                     <EmptyChart
                       height={180}
-                      message="Sin parámetros registrados. Crea turnos en la Hoja Operativa."
+                      message="Sin parametros registrados. Crea turnos en la Hoja Operativa."
                     />
                   ) : (
                     <ResponsiveContainer width="100%" height="100%">
@@ -1089,7 +1089,7 @@ export default function BitacoraIntegralPage() {
             >
               <div className="p-4 border-b border-white/5 bg-black/10">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-sky-400">
-                  01. Historial de Producción Mensual Acumulada
+                  01. Historial de Produccion Mensual Acumulada
                 </h3>
               </div>
               {monthlyOpsData.length === 0 ? (
@@ -1101,7 +1101,7 @@ export default function BitacoraIntegralPage() {
                   <thead>
                     <tr>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Mes / Año
+                        Mes / Ano
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                         Registros Turno
@@ -1182,7 +1182,7 @@ export default function BitacoraIntegralPage() {
                           pH / Color / Turb
                         </th>
                         <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                          Químicos
+                          Quimicos
                         </th>
                         <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                           % Cumpl.
@@ -1287,7 +1287,7 @@ export default function BitacoraIntegralPage() {
                 ) : inventoryChartData.length === 0 ? (
                   <EmptyChart
                     height={250}
-                    message="Sin insumos registrados. Añade productos en el módulo de Stock."
+                    message="Sin insumos registrados. Anade productos en el modulo de Stock."
                   />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1343,7 +1343,7 @@ export default function BitacoraIntegralPage() {
             >
               <div className="p-4 border-b border-white/5 bg-black/10">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                  Informes de Inventario y Autonomía
+                  Informes de Inventario y Autonomia
                 </h3>
               </div>
               {filteredInventory.length === 0 ? (
@@ -1364,7 +1364,7 @@ export default function BitacoraIntegralPage() {
                         Consumo Real
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Autonomía
+                        Autonomia
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                         Saldo Bodega
@@ -1422,14 +1422,14 @@ export default function BitacoraIntegralPage() {
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-4">
                 <h2 className="text-sm font-black uppercase text-white tracking-widest">
-                  Auditoría Financiera PTAP
+                  Auditoria Financiera PTAP
                 </h2>
                 {/* <button
                   onClick={runFinanceAI}
                   className="flex items-center gap-2 text-white px-3 py-1.5 rounded-xl text-[10px] font-black uppercase"
                   style={{ background: "linear-gradient(135deg, #6366f1, #a855f7)", boxShadow: "0 4px 15px rgba(168,85,247,0.3)" }}
                 >
-                  <Zap className="w-3.5 h-3.5" /> Auditoría Económica
+                  <Zap className="w-3.5 h-3.5" /> Auditoria Economica
                 </button> */}
               </div>
               <div className="flex items-center gap-2">
@@ -1465,7 +1465,7 @@ export default function BitacoraIntegralPage() {
                 ) : financeChartData.length === 0 ? (
                   <EmptyChart
                     height={250}
-                    message="Sin proyecciones guardadas. Genera informes en el módulo de Finanzas."
+                    message="Sin proyecciones guardadas. Genera informes en el modulo de Finanzas."
                   />
                 ) : (
                   <ResponsiveContainer width="100%" height="100%">
@@ -1521,7 +1521,7 @@ export default function BitacoraIntegralPage() {
             >
               <div className="p-4 border-b border-white/5 bg-black/10">
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
-                  Informes de Análisis de Cumplimiento Económico
+                  Informes de Analisis de Cumplimiento Economico
                 </h3>
               </div>
               {filteredFinance.length === 0 ? (
@@ -1536,10 +1536,10 @@ export default function BitacoraIntegralPage() {
                         Periodo
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Análisis Proyectado
+                        Analisis Proyectado
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
-                        Análisis Real
+                        Analisis Real
                       </th>
                       <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                         % Cumplimiento
@@ -1593,7 +1593,7 @@ export default function BitacoraIntegralPage() {
           </section>
         )}
         {/* ════════════════════════════════════════════════════
-            SECTION 05: AUDITORÍA — timeline unificado
+            SECTION 05: AUDITORIA — timeline unificado
            ════════════════════════════════════════════════════ */}
         {activeTab === "audit" && (
           <section className="space-y-6 fade-in">
@@ -1625,7 +1625,7 @@ export default function BitacoraIntegralPage() {
             {/* Filter chips */}
             {auditEntries && auditEntries.length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {["Turno", "Inventario", "Diseño", "Finanzas", "Stock"].map(
+                {["Turno", "Inventario", "Diseno", "Finanzas", "Stock"].map(
                   (cat) => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const count = auditEntries.filter(
@@ -1659,7 +1659,7 @@ export default function BitacoraIntegralPage() {
               ) : !auditEntries || auditEntries.length === 0 ? (
                 <div className="p-10 text-center text-slate-500 italic text-sm">
                   No hay eventos registrados. Los eventos se generan al guardar
-                  turnos, ajustar stock o registrar diseños.
+                  turnos, ajustar stock o registrar disenos.
                 </div>
               ) : (
                 <div className="divide-y divide-white/[0.04]">
@@ -1668,7 +1668,7 @@ export default function BitacoraIntegralPage() {
                     const categoryColors: Record<string, string> = {
                       Turno: "text-sky-400 bg-sky-500/15",
                       Inventario: "text-amber-400 bg-amber-500/15",
-                      Diseño: "text-purple-400 bg-purple-500/15",
+                      Diseno: "text-purple-400 bg-purple-500/15",
                       Finanzas: "text-emerald-400 bg-emerald-500/15",
                       Stock: "text-pink-400 bg-pink-500/15",
                     };

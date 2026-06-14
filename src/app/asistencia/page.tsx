@@ -70,15 +70,15 @@ export default function AsistenciaPage() {
     exportToExcel(
       filteredCartera.map((v: NonNullable<typeof allVisitas>[number]) => ({
         Fecha: new Date(v._creationTime).toLocaleDateString("es-EC"),
-        Institución: v.org,
-        Ubicación: `${v.provincia ?? ""} - ${v.canton ?? ""}`,
-        Teléfono: v.telefono,
+        Institucion: v.org,
+        Ubicacion: `${v.provincia ?? ""} - ${v.canton ?? ""}`,
+        Telefono: v.telefono,
         "Cumplimiento %": v.compliance ?? "—",
       })),
-      "Cartera Técnica",
+      "Cartera Tecnica",
       `Cartera_Tecnica_${new Date().toISOString().slice(0, 10)}`
     );
-    showToast("Excel de Cartera Técnica descargado.", "info");
+    showToast("Excel de Cartera Tecnica descargado.", "info");
   }
 
   function exportProspectosExcel() {
@@ -129,7 +129,7 @@ export default function AsistenciaPage() {
   // Commercial
   const [comProveedor, setComProveedor] = useState("");
   const [comAdquisicion, setComAdquisicion] = useState("Compra Directa");
-  const [comContratacion, setComContratacion] = useState("Ínfima Cuantía");
+  const [comContratacion, setComContratacion] = useState("Infima Cuantia");
   const [comFechaCompra, setComFechaCompra] = useState("");
   const [comComentarios, setComComentarios] = useState("");
   const [marketProducts, setMarketProducts] = useState<string[]>([]);
@@ -207,20 +207,20 @@ export default function AsistenciaPage() {
       dose: getDoseResult(r).dose,
     }));
     const prompt = `Analiza los siguientes datos de una planta de tratamiento:
-Parámetros (Norma INEN 1108): ${JSON.stringify(paramsData)}
-Régimen de dosificación actual: ${JSON.stringify(doses)}
+Parametros (Norma INEN 1108): ${JSON.stringify(paramsData)}
+Regimen de dosificacion actual: ${JSON.stringify(doses)}
 Nivel de cumplimiento global: ${compliance}%
 
-Por favor, proporciona un diagnóstico técnico corto (máximo 120 palabras) y sugiere ajustes específicos en la dosificación si hay desviaciones.`;
+Por favor, proporciona un diagnostico tecnico corto (maximo 120 palabras) y sugiere ajustes especificos en la dosificacion si hay desviaciones.`;
 
     const result = await generateTech(prompt);
     if (result) {
       setObservaciones((prev) =>
         prev
-          ? `${prev}\n\n--- ANÁLISIS INTELIGENTE ---\n${result}`
-          : `--- ANÁLISIS INTELIGENTE ---\n${result}`
+          ? `${prev}\n\n--- ANALISIS INTELIGENTE ---\n${result}`
+          : `--- ANALISIS INTELIGENTE ---\n${result}`
       );
-      showToast("Análisis completado con éxito.", "success");
+      showToast("Analisis completado con exito.", "success");
     }
   };
 
@@ -231,16 +231,16 @@ Modalidad de compra: ${comContratacion}
 Productos que consumen: ${marketProducts.join(", ")}
 Contexto adicional: ${comComentarios}
 
-Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agregado profesional. Máximo 100 palabras.`;
+Genera 3 puntos clave de negociacion resaltando eficiencia tecnica y valor agregado profesional. Maximo 100 palabras.`;
 
     const result = await generateCom(prompt);
     if (result) {
       setComComentarios((prev) =>
         prev
-          ? `${prev}\n\n--- ANÁLISIS INTELIGENTE ---\n${result}`
-          : `--- ANÁLISIS INTELIGENTE ---\n${result}`
+          ? `${prev}\n\n--- ANALISIS INTELIGENTE ---\n${result}`
+          : `--- ANALISIS INTELIGENTE ---\n${result}`
       );
-      showToast("Análisis completado con éxito.", "success");
+      showToast("Analisis completado con exito.", "success");
     }
   };
 
@@ -249,7 +249,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
 
   const handleFinalize = async () => {
     if (!org || !telefono) {
-      showToast("Nombre del Cliente y Teléfono son obligatorios.", "error");
+      showToast("Nombre del Cliente y Telefono son obligatorios.", "error");
       return;
     }
 
@@ -300,11 +300,11 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
       });
       await createBitacora({
         date: today,
-        source: "Asistencia Técnica",
+        source: "Asistencia Tecnica",
         category: "Asistencia",
         summary: `Visita ${tipoCliente} — ${org} — Cumplimiento: ${compliance}%`,
       });
-      showToast("Gestión finalizada con éxito.", "success");
+      showToast("Gestion finalizada con exito.", "success");
     } catch (err) {
       console.error("Error al guardar visita:", err);
       showToast("Error al guardar en base de datos", "error");
@@ -312,13 +312,13 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
   };
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: "recoleccion", label: "Captura Técnica" },
-    { key: "comercial", label: "Gestión Comercial" },
+    { key: "recoleccion", label: "Captura Tecnica" },
+    { key: "comercial", label: "Gestion Comercial" },
     { key: "historial", label: "Archivo Central" },
   ];
 
   return (
-    <AuthGuard permissionKey="canAccessAsistencia" moduleName="Asistencia Técnica">
+    <AuthGuard permissionKey="canAccessAsistencia" moduleName="Asistencia Tecnica">
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-36">
       <Toast {...toast} />
 
@@ -337,10 +337,10 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
             <NavbarUser />
           </div>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
-            Sistema Inteligente de Asistencia Técnica Multicliente
+            Sistema Inteligente de Asistencia Tecnica Multicliente
           </h1>
           <p className="text-blue-200 mt-3 text-lg font-light italic opacity-70">
-            Gestión Potabilización y Suministros.
+            Gestion Potabilizacion y Suministros.
           </p>
         </div>
       </header>
@@ -363,12 +363,12 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
       </nav>
 
       <main className="max-w-7xl mx-auto p-6 md:p-10">
-        {/* CAPTURA TÉCNICA */}
+        {/* CAPTURA TECNICA */}
         {activeTab === "recoleccion" && (
           <div className="space-y-10 fade-in">
-            {/* 01. Identificación */}
+            {/* 01. Identificacion */}
             <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="01" title="Identificación del Cliente">
+              <SectionHeader number="01" title="Identificacion del Cliente">
                 <select
                   value={tipoCliente}
                   onChange={(e) => setTipoCliente(e.target.value as "CARTERA" | "POTENCIAL")}
@@ -380,34 +380,34 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
               </SectionHeader>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="md:col-span-3">
-                  <InputField label="Institución / Empresa / GAD" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Nombre completo" />
+                  <InputField label="Institucion / Empresa / GAD" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Nombre completo" />
                 </div>
-                <InputField label="Teléfono / WhatsApp" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 0998887766" />
+                <InputField label="Telefono / WhatsApp" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 0998887766" />
                 <div className="md:col-span-2">
-                  <InputField label="Correo Electrónico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="cliente@entidad.com" />
+                  <InputField label="Correo Electronico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="cliente@entidad.com" />
                 </div>
                 <InputField label="Gerente / Responsable" value={autoridad} onChange={(e) => setAutoridad(e.target.value)} />
-                <InputField label="Técnico en Planta" value={tecnicoPlanta} onChange={(e) => setTecnicoPlanta(e.target.value)} />
+                <InputField label="Tecnico en Planta" value={tecnicoPlanta} onChange={(e) => setTecnicoPlanta(e.target.value)} />
                 <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-100 mt-2">
                   <InputField label="Provincia" value={provincia} onChange={(e) => setProvincia(e.target.value)} />
-                  <InputField label="Cantón / Ciudad" value={canton} onChange={(e) => setCanton(e.target.value)} />
+                  <InputField label="Canton / Ciudad" value={canton} onChange={(e) => setCanton(e.target.value)} />
                   <InputField label="Caudal (L/s)" type="number" step="0.01" value={caudal} onChange={(e) => setCaudal(e.target.value)} className="font-black text-navy-blue" />
-                  <InputField label="Horas Op/Día" type="number" step="0.5" value={horasOp} onChange={(e) => setHorasOp(e.target.value)} className="font-black" />
+                  <InputField label="Horas Op/Dia" type="number" step="0.5" value={horasOp} onChange={(e) => setHorasOp(e.target.value)} className="font-black" />
                 </div>
               </div>
             </section>
 
             {/* 02. Protocolo INEN 1108 */}
             <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="02" title="Protocolo Analítico INEN 1108" />
+              <SectionHeader number="02" title="Protocolo Analitico INEN 1108" />
               <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[720px]">
                   <thead className="sticky top-14 z-10">
                     <tr className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
-                      <th className="p-6 text-left min-w-[200px]">Parámetro Técnico</th>
+                      <th className="p-6 text-left min-w-[200px]">Parametro Tecnico</th>
                       <th className="p-6 text-center min-w-[150px]">Agua Cruda</th>
                       <th className="p-6 text-center min-w-[150px]">Agua Tratada</th>
-                      <th className="p-6 text-left min-w-[180px]">Validación Norma</th>
+                      <th className="p-6 text-left min-w-[180px]">Validacion Norma</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -477,7 +477,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                     Indicador de Cumplimiento Global
                   </h4>
                   <p className="text-xs text-slate-500 font-medium italic">
-                    Evaluación porcentual instantánea contra límites máximos
+                    Evaluacion porcentual instantanea contra limites maximos
                     permitidos.
                   </p>
                 </div>
@@ -485,9 +485,9 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
               </div>
             </section>
 
-            {/* 03. Dosificación */}
+            {/* 03. Dosificacion */}
             <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="03" title="Ingeniería de Procesos y Stock" />
+              <SectionHeader number="03" title="Ingenieria de Procesos y Stock" />
               <div className="space-y-4">
                 {dosageRows.map((row, idx) => {
                   const result = getDoseResult(row);
@@ -511,7 +511,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                       )}
                       <div className="md:col-span-2">
                         <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block ml-1">
-                          Insumo Químico
+                          Insumo Quimico
                         </label>
                         <select
                           className="w-full p-4 rounded-xl text-xs font-black border border-slate-200 uppercase bg-white text-slate-900"
@@ -585,7 +585,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                           {result.dose}
                         </p>
                         <p className="text-[10px] text-cyan-400 font-black uppercase mt-2">
-                          Días: {result.days}
+                          Dias: {result.days}
                         </p>
                       </div>
                     </div>
@@ -620,19 +620,19 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                     04
                   </div>
                   <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest">
-                    Observaciones de Ingeniería
+                    Observaciones de Ingenieria
                   </h3>
                 </div>
                 <AiButton
                   onClick={handleAiTech}
                   loading={loadingTech}
-                  label="Diagnóstico"
+                  label="Diagnostico"
                 />
               </div>
               <textarea
                 rows={4}
                 className="w-full p-6 rounded-2xl text-sm border border-slate-200 bg-white text-slate-900 focus:border-navy-blue focus:outline-none focus:ring-4 focus:ring-navy-blue/[0.08]"
-                placeholder="Hallazgos técnicos y recomendaciones de operación..."
+                placeholder="Hallazgos tecnicos y recomendaciones de operacion..."
                 value={observaciones}
                 onChange={(e) => setObservaciones(e.target.value)}
               />
@@ -640,13 +640,13 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
           </div>
         )}
 
-        {/* GESTIÓN COMERCIAL */}
+        {/* GESTION COMERCIAL */}
         {activeTab === "comercial" && (
           <div className="space-y-10 fade-in">
             <section className="bg-white p-10 rounded-[2.5rem] border-l-[15px] border-gold-comercial card-shadow">
               <div className="border-b border-slate-100 pb-6 mb-8 flex justify-between items-center">
                 <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest text-gold-comercial">
-                  Análisis de Mercado
+                  Analisis de Mercado
                 </h3>
                 <AiButton
                   onClick={handleAiCom}
@@ -677,7 +677,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                             : prod === "Desinfectantes"
                               ? "Desinfectantes (Cloro/Hipoclorito)"
                               : prod === "Floculantes"
-                                ? "Polímeros / Floculantes"
+                                ? "Polimeros / Floculantes"
                                 : "Ajuste de pH (Cal/Soda)"}
                         </span>
                         <input
@@ -709,7 +709,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                   />
                   <div>
                     <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">
-                      Modalidad de Adquisición
+                      Modalidad de Adquisicion
                     </label>
                     <select
                       className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900"
@@ -718,31 +718,31 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                     >
                       <option value="Compra Directa">Compra Directa</option>
                       <option value="Portal Compras">
-                        Portal de Compras Públicas (SERCOP)
+                        Portal de Compras Publicas (SERCOP)
                       </option>
-                      <option value="Licitación">
-                        Licitación de Suministros
+                      <option value="Licitacion">
+                        Licitacion de Suministros
                       </option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">
-                      Tipo de Contratación
+                      Tipo de Contratacion
                     </label>
                     <select
                       className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900"
                       value={comContratacion}
                       onChange={(e) => setComContratacion(e.target.value)}
                     >
-                      <option value="Ínfima Cuantía">Ínfima Cuantía</option>
+                      <option value="Infima Cuantia">Infima Cuantia</option>
                       <option value="Subasta Inversa">
-                        Subasta Inversa Electrónica
+                        Subasta Inversa Electronica
                       </option>
-                      <option value="Menor Cuantía">Menor Cuantía</option>
+                      <option value="Menor Cuantia">Menor Cuantia</option>
                     </select>
                   </div>
                   <InputField
-                    label="Fecha Próxima Compra"
+                    label="Fecha Proxima Compra"
                     type="date"
                     value={comFechaCompra}
                     onChange={(e) => setComFechaCompra(e.target.value)}
@@ -756,7 +756,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                   <textarea
                     rows={3}
                     className="w-full p-5 rounded-2xl text-sm border border-gold-comercial/30 font-medium bg-white text-slate-900"
-                    placeholder="Estrategia de negociación..."
+                    placeholder="Estrategia de negociacion..."
                     value={comComentarios}
                     onChange={(e) => setComComentarios(e.target.value)}
                   />
@@ -769,14 +769,14 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
               <section className="bg-white p-10 rounded-[2.5rem] border-l-[15px] border-success-green card-shadow">
                 <div className="border-b border-slate-100 pb-6 mb-8">
                   <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest text-success-green">
-                    Generador de Propuesta Económica
+                    Generador de Propuesta Economica
                   </h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="text-slate-400 uppercase font-black border-b text-left">
-                        <th className="p-4">Descripción del Insumo</th>
+                        <th className="p-4">Descripcion del Insumo</th>
                         <th className="p-4 text-center">Cant. Propuesta</th>
                         <th className="p-4 text-center">P. Unitario ($)</th>
                         <th className="p-4 text-right">Subtotal</th>
@@ -893,12 +893,12 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                   Archivo Central
                 </h2>
                 <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] mt-3">
-                  Base de datos de gestión técnica y prospectos.
+                  Base de datos de gestion tecnica y prospectos.
                 </p>
               </div>
               <div className="flex gap-4">
                 <button onClick={exportCarteraExcel} className="bg-blue-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition shadow-xl tracking-widest">
-                  Excel Cartera Técnica
+                  Excel Cartera Tecnica
                 </button>
                 <button onClick={exportProspectosExcel} className="bg-amber-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-amber-600 transition shadow-xl tracking-widest">
                   Excel Prospectos
@@ -913,7 +913,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                 type="text"
                 value={archiveSearch}
                 onChange={(e) => setArchiveSearch(e.target.value)}
-                placeholder="Buscar por institución, provincia..."
+                placeholder="Buscar por institucion, provincia..."
                 className="w-full rounded-2xl py-3.5 pl-12 pr-6 text-slate-900 placeholder-slate-400 border border-slate-200 focus:outline-none focus:border-blue-500 transition-all bg-white shadow-sm"
               />
             </div>
@@ -922,17 +922,17 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
               <div>
                 <h3 className="text-[11px] font-black text-slate-400 uppercase mb-6 border-b pb-4 flex items-center gap-3">
                   <span className="w-4 h-4 bg-blue-500 rounded-full shadow-lg" />
-                  Cartera de Clientes (Seguimiento Técnico)
+                  Cartera de Clientes (Seguimiento Tecnico)
                 </h3>
                 <div className="bg-white rounded-[3rem] shadow-xl border border-slate-200 overflow-hidden overflow-x-auto">
                   <table className="w-full text-left min-w-[900px]">
                     <thead className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
                       <tr>
                         <th className="p-8">Fecha</th>
-                        <th className="p-8">Institución</th>
-                        <th className="p-8">Ubicación</th>
+                        <th className="p-8">Institucion</th>
+                        <th className="p-8">Ubicacion</th>
                         <th className="p-8 text-center">Cumplimiento %</th>
-                        <th className="p-8 text-center">Gestión</th>
+                        <th className="p-8 text-center">Gestion</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-slate-100">
@@ -977,7 +977,7 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
                         <th className="p-8">Prospecto</th>
                         <th className="p-8">Provincia</th>
                         <th className="p-8 text-center">Total Ofertado</th>
-                        <th className="p-8 text-center">Gestión</th>
+                        <th className="p-8 text-center">Gestion</th>
                       </tr>
                     </thead>
                     <tbody className="text-sm divide-y divide-slate-100">
@@ -1022,10 +1022,10 @@ Genera 3 puntos clave de negociación resaltando eficiencia técnica y valor agr
               <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${tipoCliente === "POTENCIAL" ? "text-gold-comercial" : "text-navy-blue opacity-60"}`}>
                 {tipoCliente === "POTENCIAL"
                   ? "Prospecto Comercial: Oferta de Suministros"
-                  : "Cliente Cartera: Ingeniería Aplicada"}
+                  : "Cliente Cartera: Ingenieria Aplicada"}
               </p>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                Seguimiento de Ingeniería Terminado.
+                Seguimiento de Ingenieria Terminado.
               </p>
             </div>
           </div>

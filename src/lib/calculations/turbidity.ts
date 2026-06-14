@@ -1,6 +1,6 @@
 /**
- * Modelo de predicción de turbiedad a 7 días.
- * Basado en HIDROMETEOROLOGIA.HTML líneas 440-457.
+ * Modelo de prediccion de turbiedad a 7 dias.
+ * Basado en HIDROMETEOROLOGIA.HTML lineas 440-457.
  */
 export interface TurbidityPrediction {
   labels: string[];
@@ -19,7 +19,7 @@ export function predictTurbidity(
   let maxNTU = ntuBase;
 
   for (let i = 1; i <= 7; i++) {
-    labels.push(`Día ${i}`);
+    labels.push(`Dia ${i}`);
     let nextValue: number;
 
     if (i <= durationDays) {
@@ -40,7 +40,7 @@ export function predictTurbidity(
 
 /**
  * Calcula la dosis pico proyectada basada en turbiedad y tipo de coagulante.
- * Basado en HIDROMETEOROLOGIA.HTML líneas 459-464.
+ * Basado en HIDROMETEOROLOGIA.HTML lineas 459-464.
  */
 export function calculatePeakDose(
   maxNTU: number,
@@ -62,8 +62,8 @@ export function calculatePeakDose(
 }
 
 /**
- * Calcula el aforo de bomba para el motor hidrometeorológico.
- * Fórmula: mlmin = (lps * 3.6 * dose) / (conc * 0.6)
+ * Calcula el aforo de bomba para el motor hidrometeorologico.
+ * Formula: mlmin = (lps * 3.6 * dose) / (conc * 0.6)
  */
 export function calculateMeteoFlowRate(
   lps: number,
@@ -75,7 +75,7 @@ export function calculateMeteoFlowRate(
 }
 
 /**
- * Calcula consumo diario en kg/d para el motor hidrometeorológico.
+ * Calcula consumo diario en kg/d para el motor hidrometeorologico.
  */
 export function calculateMeteoDailyConsumption(
   lps: number,
@@ -85,7 +85,7 @@ export function calculateMeteoDailyConsumption(
 }
 
 /**
- * Calcula autonomía química en días según stock y consumo diario.
+ * Calcula autonomia quimica en dias segun stock y consumo diario.
  */
 export function calculateAutonomy(
   stockKg: number,

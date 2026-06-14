@@ -112,7 +112,7 @@ export default function StockPage() {
       e.preventDefault();
       const val = parseFloat(entryForm.newAmount);
       if (isNaN(val) || val <= 0)
-        return showToast("Ingrese una cantidad válida", "error");
+        return showToast("Ingrese una cantidad valida", "error");
 
       const item = stock.find((s) => s.itemId === entryForm.productId);
       const newAmount = (item?.amount ?? 0) + val;
@@ -167,7 +167,7 @@ export default function StockPage() {
           summary: `Carga de ${val} ${item?.unit || "kg"} de ${item?.itemName || entryForm.productId}${invoiceNote}`,
         });
       } catch {
-        /* bitácora es secundaria */
+        /* bitacora es secundaria */
       }
 
       setEntryForm({ ...entryForm, newAmount: "", invoiceNumber: "" });
@@ -191,7 +191,7 @@ export default function StockPage() {
       if (!newItemForm.name.trim())
         return showToast("Nombre del insumo requerido", "error");
       const val = parseFloat(newItemForm.amount);
-      if (isNaN(val) || val < 0) return showToast("Cantidad inválida", "error");
+      if (isNaN(val) || val < 0) return showToast("Cantidad invalida", "error");
 
       const itemId = newItemForm.name
         .trim()
@@ -297,7 +297,7 @@ export default function StockPage() {
     setStock(nextStock);
 
     if (updates.length === 0) {
-      showToast("No hay dosificación válida en el último turno", "info");
+      showToast("No hay dosificacion valida en el ultimo turno", "info");
       return;
     }
 
@@ -314,7 +314,7 @@ export default function StockPage() {
         ),
       );
       setLastSync(new Date().toLocaleString("es-ES"));
-      showToast("Sincronización con Hoja Operativa exitosa", "success");
+      showToast("Sincronizacion con Hoja Operativa exitosa", "success");
     } catch {
       showToast("Error al sincronizar consumo diario", "error");
     }
@@ -331,9 +331,9 @@ export default function StockPage() {
       <tr>
         <td style="text-align:left;font-weight:bold;padding:8px;border-bottom:1px solid #e2e8f0">${item.itemName}</td>
         <td style="padding:8px;border-bottom:1px solid #e2e8f0">${item.amount.toLocaleString("es-ES")} ${item.unit}</td>
-        <td style="padding:8px;border-bottom:1px solid #e2e8f0">${item.dailyConsumption > 0 ? item.dailyConsumption + " kg/día" : "N/D"}</td>
+        <td style="padding:8px;border-bottom:1px solid #e2e8f0">${item.dailyConsumption > 0 ? item.dailyConsumption + " kg/dia" : "N/D"}</td>
         <td style="font-weight:bold;color:${item.amount <= 0 ? "#e11d48" : "#0f172a"};padding:8px;border-bottom:1px solid #e2e8f0">
-          ${item.amount > 0 && item.dailyConsumption > 0 ? calculateAutonomy(item.amount, item.dailyConsumption).toFixed(1) + " Días" : "--"}
+          ${item.amount > 0 && item.dailyConsumption > 0 ? calculateAutonomy(item.amount, item.dailyConsumption).toFixed(1) + " Dias" : "--"}
         </td>
       </tr>`,
       )
@@ -345,8 +345,8 @@ export default function StockPage() {
       th{background:#0a192f;color:white;padding:10px;font-size:11px;text-transform:uppercase}
       td{text-align:center;font-size:12px}</style></head><body>
       <div class="header"><div><h1>TERA<span style="color:#f472b6">H20</span></h1><p>Control de Inventario Planta</p></div>
-      <div><p>Emisión: ${dateStr}</p></div></div>
-      <table><thead><tr><th>Insumo</th><th>Stock</th><th>Consumo</th><th>Autonomía</th></tr></thead>
+      <div><p>Emision: ${dateStr}</p></div></div>
+      <table><thead><tr><th>Insumo</th><th>Stock</th><th>Consumo</th><th>Autonomia</th></tr></thead>
       <tbody>${rows}</tbody></table>
       <script>window.onload=function(){window.print()}<\/script></body></html>`);
     w.document.close();
@@ -370,12 +370,12 @@ export default function StockPage() {
             </div>
             <div>
               <h1 className="text-xl font-black italic tracking-tighter uppercase leading-none">
-                Autonomía y <span className="text-fuchsia-400">Stock PTAP</span>
+                Autonomia y <span className="text-fuchsia-400">Stock PTAP</span>
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <Clock className="w-3 h-3 text-fuchsia-400" />
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                  Última Act: <span className="text-white">{lastSync}</span>
+                  Ultima Act: <span className="text-white">{lastSync}</span>
                 </span>
               </div>
             </div>
@@ -450,10 +450,10 @@ export default function StockPage() {
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
               <p className="text-[9px] font-black text-slate-500 uppercase mb-2 flex items-center gap-2">
                 <AlertTriangle className="w-3 h-3 text-amber-500" />
-                Conexión de Datos
+                Conexion de Datos
               </p>
               <p className="text-[10px] text-slate-400 leading-relaxed font-medium italic">
-                La autonomía se actualiza automáticamente al cerrar turno desde
+                La autonomia se actualiza automaticamente al cerrar turno desde
                 la Hoja Operativa.
               </p>
             </div>
@@ -524,7 +524,7 @@ export default function StockPage() {
                       </div>
                       <div className="text-right">
                         <p className="text-[8px] font-bold text-slate-400 uppercase mb-1 italic">
-                          Días Autonomía
+                          Dias Autonomia
                         </p>
                         <p
                           className={`text-xl font-black font-mono leading-none ${
@@ -538,7 +538,7 @@ export default function StockPage() {
 
                     {item.dailyConsumption > 0 && (
                       <p className="text-[9px] text-slate-400 font-medium mt-2">
-                        Consumo: {item.dailyConsumption} kg/día
+                        Consumo: {item.dailyConsumption} kg/dia
                       </p>
                     )}
                   </div>

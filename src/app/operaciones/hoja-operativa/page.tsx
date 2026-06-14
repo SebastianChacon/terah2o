@@ -78,7 +78,7 @@ export default function HojaOperativaPage() {
     | InvItem[]
     | undefined;
 
-  /* S02 — Dosificación */
+  /* S02 — Dosificacion */
   const [plantFlow, setPlantFlow] = useState("");
   const [opHours, setOpHours] = useState("8");
   const [dosRows, setDosRows] = useState<DosRow[]>([
@@ -165,7 +165,7 @@ export default function HojaOperativaPage() {
         next[idx].status = hasAny
           ? phOk && cloroOk && colorOk && turbOk
             ? "CUMPLE"
-            : "CRÍTICO"
+            : "CRITICO"
           : undefined;
       }
       return next;
@@ -214,7 +214,7 @@ export default function HojaOperativaPage() {
 
   const handleAiConsult = useCallback(async () => {
     if (!aiQuery.trim())
-      return showToast("Escriba la consulta técnica", "error");
+      return showToast("Escriba la consulta tecnica", "error");
     const result = await generateAi(aiQuery);
     if (result) setAiResponse(result);
   }, [aiQuery, generateAi, showToast]);
@@ -276,7 +276,7 @@ export default function HojaOperativaPage() {
           date: today,
           source: "Hoja Operativa",
           category: "Turno",
-          summary: `Turno cerrado por ${operatorName}. Caudal prom: ${stats.avgFlow} L/s. Vol: ${stats.volumeTurno} m³. Cumplimiento: ${stats.compliancePercent}%. Químicos: ${dosProducts}.`,
+          summary: `Turno cerrado por ${operatorName}. Caudal prom: ${stats.avgFlow} L/s. Vol: ${stats.volumeTurno} m³. Cumplimiento: ${stats.compliancePercent}%. Quimicos: ${dosProducts}.`,
           ...(user?._id ? { operatorId: user._id as never } : {}),
           ...(operatorName ? { operatorName } : {}),
         });
@@ -311,7 +311,7 @@ export default function HojaOperativaPage() {
                 date: today,
                 source: "Hoja Operativa",
                 category: "Inventario",
-                summary: `Descuento automático: ${entry.product} −${Math.round(dailyCons * 100) / 100} ${invItem.unit}. Saldo: ${Math.round(newAmount * 100) / 100} ${invItem.unit}.`,
+                summary: `Descuento automatico: ${entry.product} −${Math.round(dailyCons * 100) / 100} ${invItem.unit}. Saldo: ${Math.round(newAmount * 100) / 100} ${invItem.unit}.`,
                 ...(user?._id ? { operatorId: user._id as never } : {}),
                 ...(operatorName ? { operatorName } : {}),
               });
@@ -345,18 +345,18 @@ export default function HojaOperativaPage() {
           </style></head><body>
           <h1>Reporte Operativo PTAP — ${today}</h1>
           <p><strong>Operador:</strong> ${operatorName}</p>
-          <h2>Estadísticas</h2>
+          <h2>Estadisticas</h2>
           <div class="stat"><div class="stat-val">${stats.avgFlow} L/s</div><div class="stat-label">Caudal Promedio</div></div>
           <div class="stat"><div class="stat-val">${stats.volumeTurno} m³</div><div class="stat-label">Volumen Turno</div></div>
-          <div class="stat"><div class="stat-val">${stats.projection24h} m³</div><div class="stat-label">Proyección 24h</div></div>
+          <div class="stat"><div class="stat-val">${stats.projection24h} m³</div><div class="stat-label">Proyeccion 24h</div></div>
           <div class="stat"><div class="stat-val">${stats.compliancePercent}%</div><div class="stat-label">Cumplimiento</div></div>
           <h2>Monitoreo Horario — Barreras Sanitarias</h2>
           <table><thead><tr><th rowspan="2">Hora</th><th rowspan="2">Caudal</th><th colspan="3" style="background:#92400e;color:#fff">Agua Cruda</th><th colspan="4" style="background:#065f46;color:#fff">Agua Tratada</th><th rowspan="2">Estado</th></tr><tr><th>pH</th><th>Color</th><th>Turb.</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th></tr></thead><tbody>
           ${readings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.rawPh ?? "-"}</td><td>${r.rawColor ?? "-"}</td><td>${r.rawTurbiedad ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
           </tbody></table>
-          <h2>Dosificación</h2>
-          <table><thead><tr><th>Producto</th><th>ml/min</th><th>Conc %</th><th>Dosis mg/L</th><th>Autonomía</th></tr></thead><tbody>
-          ${dosRows.map((row, i) => `<tr><td>${row.product}</td><td>${row.mlMin}</td><td>${row.concentration}</td><td>${doseResults[i]?.dose}</td><td>${doseResults[i]?.autonomy !== null ? doseResults[i]?.autonomy + " días" : "--"}</td></tr>`).join("")}
+          <h2>Dosificacion</h2>
+          <table><thead><tr><th>Producto</th><th>ml/min</th><th>Conc %</th><th>Dosis mg/L</th><th>Autonomia</th></tr></thead><tbody>
+          ${dosRows.map((row, i) => `<tr><td>${row.product}</td><td>${row.mlMin}</td><td>${row.concentration}</td><td>${doseResults[i]?.dose}</td><td>${doseResults[i]?.autonomy !== null ? doseResults[i]?.autonomy + " dias" : "--"}</td></tr>`).join("")}
           </tbody></table>
           ${notes ? `<h2>Novedades</h2><p>${notes}</p>` : ""}
           ${aiResponse ? `<h2>Consulta IA</h2><p>${aiResponse.replace(/\n/g, "<br>")}</p>` : ""}
@@ -405,7 +405,7 @@ export default function HojaOperativaPage() {
               Hoja Operativa
             </h1>
             <p className="text-[10px] text-sky-400 font-bold uppercase tracking-widest">
-              Control Técnico de Procesos
+              Control Tecnico de Procesos
             </p>
           </div>
         </div>
@@ -430,7 +430,7 @@ export default function HojaOperativaPage() {
               className="text-lg py-4"
             />
             <p className="text-[10px] text-slate-400 mt-2 italic font-medium">
-              Validación de cumplimiento bajo norma INEN 1108.
+              Validacion de cumplimiento bajo norma INEN 1108.
             </p>
           </div>
 
@@ -460,10 +460,10 @@ export default function HojaOperativaPage() {
           </div>
         </section>
 
-        {/* S02 — Dosificación */}
+        {/* S02 — Dosificacion */}
         <section className="bg-white rounded-2xl border-t-8 border-sky-500 p-6 shadow-md">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-            <SectionHeader number="02" title="Dosificación y Aforo Real" />
+            <SectionHeader number="02" title="Dosificacion y Aforo Real" />
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="flex-1 min-w-[150px]">
                 <InputField
@@ -477,7 +477,7 @@ export default function HojaOperativaPage() {
               </div>
               <div className="min-w-[120px]">
                 <InputField
-                  label="Horas Operación"
+                  label="Horas Operacion"
                   type="number"
                   value={opHours}
                   onChange={(e) => setOpHours(e.target.value)}
@@ -540,7 +540,7 @@ export default function HojaOperativaPage() {
                       className="text-center"
                     />
                     <InputField
-                      label="% Preparación"
+                      label="% Preparacion"
                       type="number"
                       value={row.concentration}
                       onChange={(e) =>
@@ -567,12 +567,12 @@ export default function HojaOperativaPage() {
                     </div>
                     <div className="relative z-10 text-right">
                       <span className="text-[7px] uppercase block font-black text-slate-400 tracking-[0.2em] mb-1">
-                        Autonomía
+                        Autonomia
                       </span>
                       <span className="font-black text-sm text-sky-200">
                         {res?.autonomy !== null && res?.autonomy
-                          ? `${res.autonomy} días`
-                          : "-- días"}
+                          ? `${res.autonomy} dias`
+                          : "-- dias"}
                       </span>
                     </div>
                   </div>
@@ -595,7 +595,7 @@ export default function HojaOperativaPage() {
             </div>
             <div className="bg-white border-b-4 border-slate-300 p-4 rounded-xl text-center shadow-sm">
               <span className="text-[9px] uppercase block font-black text-slate-400 mb-1">
-                Tiempo Operación
+                Tiempo Operacion
               </span>
               <span className="font-black text-2xl text-navy-deep">
                 {opHours || "0"} hrs
@@ -611,7 +611,7 @@ export default function HojaOperativaPage() {
             </div>
             <div className="bg-white border-b-4 border-sky-500 p-4 rounded-xl text-center shadow-sm">
               <span className="text-[9px] uppercase block font-black text-slate-400 mb-1">
-                Proyección 24h
+                Proyeccion 24h
               </span>
               <span className="font-black text-2xl text-sky-600">
                 {stats.projection24h.toFixed(0)} m³
@@ -690,7 +690,7 @@ export default function HojaOperativaPage() {
                         }
                       />
                     </td>
-                    {/* Agua Cruda — sin columna Cloro (no aplicable en etapa de captación) */}
+                    {/* Agua Cruda — sin columna Cloro (no aplicable en etapa de captacion) */}
                     <td className="p-1 bg-amber-50/50">
                       <input
                         type="number"
@@ -777,7 +777,7 @@ export default function HojaOperativaPage() {
                         <span className="bg-green-100 text-green-800 font-black rounded-md px-2 py-1 text-[10px]">
                           CUMPLE
                         </span>
-                      ) : r.status === "CRÍTICO" ? (
+                      ) : r.status === "CRITICO" ? (
                         <span className="bg-red-100 text-red-800 font-black rounded-md px-2 py-1 text-[10px]">
                           NO CUMPLE
                         </span>
@@ -799,7 +799,7 @@ export default function HojaOperativaPage() {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            placeholder="Detalle eventos relevantes (limpieza, fallas, recepción de insumos...)"
+            placeholder="Detalle eventos relevantes (limpieza, fallas, recepcion de insumos...)"
             className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900 focus:border-navy-blue focus:outline-none focus:ring-4 focus:ring-navy-blue/[0.08] transition-all"
           />
         </section>
@@ -812,13 +812,13 @@ export default function HojaOperativaPage() {
               value={aiQuery}
               onChange={(e) => setAiQuery(e.target.value)}
               rows={2}
-              placeholder="Describa la anomalía técnica para recibir asistencia experta..."
+              placeholder="Describa la anomalia tecnica para recibir asistencia experta..."
               className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900 focus:border-amber-400 focus:outline-none focus:ring-4 focus:ring-amber-400/[0.08] transition-all"
             />
             <AiButton
               onClick={handleAiConsult}
               loading={aiLoading}
-              label="Solicitar Dictamen Técnico"
+              label="Solicitar Dictamen Tecnico"
               loadingLabel="Consultando IA..."
               variant="amber"
             />
@@ -826,7 +826,7 @@ export default function HojaOperativaPage() {
               <div className="bg-white border-2 border-sky-200 p-6 rounded-xl shadow-sm fade-in">
                 <div className="flex items-center gap-2 mb-3 border-b border-sky-100 pb-2">
                   <span className="bg-sky-500 text-white text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest">
-                    Dictamen Técnico
+                    Dictamen Tecnico
                   </span>
                   <span className="text-[10px] font-bold text-sky-600 uppercase">
                     Tera IA Engine
@@ -836,8 +836,8 @@ export default function HojaOperativaPage() {
                   className="font-medium text-slate-700 text-sm leading-relaxed whitespace-pre-wrap"
                   dangerouslySetInnerHTML={{
                     __html: aiResponse
-                      .replace(/\[ANÁLISIS\]/g, "<b>ANÁLISIS:</b>")
-                      .replace(/\[ACCIÓN\]/g, "<br><br><b>ACCIÓN:</b>")
+                      .replace(/\[ANALISIS\]/g, "<b>ANALISIS:</b>")
+                      .replace(/\[ACCION\]/g, "<br><br><b>ACCION:</b>")
                       .replace(/\[CONTROL\]/g, "<br><br><b>CONTROL:</b>"),
                   }}
                 />
@@ -852,8 +852,8 @@ export default function HojaOperativaPage() {
             <div className="bg-amber-50 border-2 border-amber-200 p-4 rounded-xl text-amber-800 text-sm font-bold flex items-center gap-3 fade-in">
               <ClipboardCheck className="w-6 h-6 flex-shrink-0" />
               <span>
-                ¡Alerta! Desviación detectada en barreras sanitarias. Revise
-                dosificación.
+                ¡Alerta! Desviacion detectada en barreras sanitarias. Revise
+                dosificacion.
               </span>
             </div>
           )}

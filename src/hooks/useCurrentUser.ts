@@ -12,10 +12,10 @@ export interface UseCurrentUserResult {
 }
 
 /**
- * Hook principal de autenticación.
- * - isLoading: true mientras se resuelve la sesión o el perfil
- * - isAuthenticated: true si hay sesión activa de Convex Auth
- * - user: perfil del usuario (null si no está autenticado, undefined mientras carga)
+ * Hook principal de autenticacion.
+ * - isLoading: true mientras se resuelve la sesion o el perfil
+ * - isAuthenticated: true si hay sesion activa de Convex Auth
+ * - user: perfil del usuario (null si no esta autenticado, undefined mientras carga)
  */
 export function useCurrentUser(): UseCurrentUserResult {
   const { isAuthenticated, isLoading: authLoading } = useConvexAuth();
