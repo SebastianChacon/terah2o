@@ -201,6 +201,19 @@ export default defineSchema({
     ),
     observations: v.optional(v.string()),
     aiDiagnosis: v.optional(v.string()),
+    // Datos necesarios para reproducir la Memoria Técnica completa (paridad
+    // con la Consola). Opcionales → compatibles con filas previas.
+    targetDoses: v.optional(
+      v.object({
+        coag: v.number(),
+        ph: v.number(),
+        helper: v.number(),
+        oxid: v.number(),
+      })
+    ),
+    baselineAforos: v.optional(
+      v.array(v.object({ name: v.string(), aforo: v.number() }))
+    ),
     organizationId: v.optional(v.id("organizations")),
   }).index("by_organizationId", ["organizationId"]),
 

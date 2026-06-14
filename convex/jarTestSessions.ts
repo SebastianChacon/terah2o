@@ -25,6 +25,17 @@ export const create = mutation({
     ),
     observations: v.optional(v.string()),
     aiDiagnosis: v.optional(v.string()),
+    targetDoses: v.optional(
+      v.object({
+        coag: v.number(),
+        ph: v.number(),
+        helper: v.number(),
+        oxid: v.number(),
+      })
+    ),
+    baselineAforos: v.optional(
+      v.array(v.object({ name: v.string(), aforo: v.number() }))
+    ),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthenticatedUserId(ctx);
