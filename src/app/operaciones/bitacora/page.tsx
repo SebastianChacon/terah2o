@@ -56,6 +56,40 @@ interface DesignRecord {
   session: any;
 }
 
+interface ShiftFull {
+  operatorName: string;
+  date: string;
+  operationHours: number;
+  plantFlowRef?: number;
+  hourlyReadings: Array<{
+    hora: string;
+    caudal?: number;
+    ph?: number;
+    cloro?: number;
+    color?: number;
+    turbiedad?: number;
+    rawPh?: number;
+    rawColor?: number;
+    rawTurbiedad?: number;
+    status?: string;
+  }>;
+  dosificationEntries: Array<{
+    product: string;
+    mlMin: number;
+    concentration: number;
+    doseResult: number;
+    autonomyDays?: number;
+  }>;
+  stats: {
+    avgFlow: number;
+    volumeTurno: number;
+    projection24h: number;
+    compliancePercent: number;
+  };
+  notes?: string;
+  aiConsultation?: string;
+}
+
 interface OpsRecord {
   fecha: string;
   op: string;
@@ -65,6 +99,7 @@ interface OpsRecord {
   chem: string;
   compliance: number;
   obs: string;
+  record: ShiftFull;
 }
 
 interface InventoryRecord {
@@ -268,6 +303,7 @@ export default function BitacoraIntegralPage() {
           .join(", ") || "—",
       compliance: r.stats.compliancePercent,
       obs: r.notes || "",
+      record: r as ShiftFull,
     }));
   }, [shiftRecords]);
 
@@ -685,6 +721,44 @@ export default function BitacoraIntegralPage() {
       <table><tr><th>Campo</th><th>Valor</th></tr><tr><td>Fecha de registro</td><td>${r.fecha}</td></tr><tr><td>Producto</td><td>${r.item}</td></tr><tr><td>Consumo Real</td><td>${r.consumed}</td></tr><tr><td>Autonomia</td><td>${r.auto}</td></tr><tr><td>Saldo Bodega</td><td>${r.saldo}</td></tr></table>
       <div class="footer">TeraH2O — Documento valido digitalmente</div>
     </body></html>`;
+    openHtmlInNewTab(html);
+  }
+
+  function openOpsRowPDF(rec: OpsRecord) {
+    // Mismo Reporte Operativo que genera la Hoja Operativa al cerrar turno.
+    const s = rec.record;
+    const html = `
+      <html><head><meta charset="utf-8"><title>Reporte Operativo PTAP - ${s.date}</title>
+      <style>
+        body{font-family:'Inter',sans-serif;padding:40px;color:#0a192f}
+        h1{font-size:18px;text-transform:uppercase;border-bottom:3px solid #0a192f;padding-bottom:8px}
+        h2{font-size:14px;margin-top:24px;color:#0ea5e9;text-transform:uppercase}
+        table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+        th{background:#0a192f;color:white;padding:8px;text-transform:uppercase;font-size:10px}
+        td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:center}
+        .stat{display:inline-block;margin-right:30px;text-align:center}
+        .stat-val{font-size:24px;font-weight:900}
+        .stat-label{font-size:9px;text-transform:uppercase;color:#64748b}
+        .ok{color:#16a34a;font-weight:900} .fail{color:#dc2626;font-weight:900}
+      </style></head><body>
+      <h1>Reporte Operativo PTAP — ${s.date}</h1>
+      <p><strong>Operador:</strong> ${s.operatorName}</p>
+      <h2>Estadisticas</h2>
+      <div class="stat"><div class="stat-val">${s.stats.avgFlow} L/s</div><div class="stat-label">Caudal Promedio</div></div>
+      <div class="stat"><div class="stat-val">${s.stats.volumeTurno} m³</div><div class="stat-label">Volumen Turno</div></div>
+      <div class="stat"><div class="stat-val">${s.stats.projection24h} m³</div><div class="stat-label">Proyeccion 24h</div></div>
+      <div class="stat"><div class="stat-val">${s.stats.compliancePercent}%</div><div class="stat-label">Cumplimiento</div></div>
+      <h2>Monitoreo Horario — Barreras Sanitarias</h2>
+      <table><thead><tr><th rowspan="2">Hora</th><th rowspan="2">Caudal</th><th colspan="3" style="background:#92400e;color:#fff">Agua Cruda</th><th colspan="4" style="background:#065f46;color:#fff">Agua Tratada</th><th rowspan="2">Estado</th></tr><tr><th>pH</th><th>Color</th><th>Turb.</th><th>pH</th><th>Cloro</th><th>Color</th><th>Turb.</th></tr></thead><tbody>
+      ${s.hourlyReadings.map((r) => `<tr><td>${r.hora}</td><td>${r.caudal ?? "-"}</td><td>${r.rawPh ?? "-"}</td><td>${r.rawColor ?? "-"}</td><td>${r.rawTurbiedad ?? "-"}</td><td>${r.ph ?? "-"}</td><td>${r.cloro ?? "-"}</td><td>${r.color ?? "-"}</td><td>${r.turbiedad ?? "-"}</td><td class="${r.status === "CUMPLE" ? "ok" : "fail"}">${r.status ?? "-"}</td></tr>`).join("")}
+      </tbody></table>
+      <h2>Dosificacion</h2>
+      <table><thead><tr><th>Producto</th><th>ml/min</th><th>Conc %</th><th>Dosis mg/L</th><th>Autonomia</th></tr></thead><tbody>
+      ${s.dosificationEntries.map((d) => `<tr><td>${d.product}</td><td>${d.mlMin}</td><td>${d.concentration}</td><td>${d.doseResult}</td><td>${d.autonomyDays != null ? d.autonomyDays + " dias" : "--"}</td></tr>`).join("")}
+      </tbody></table>
+      ${s.notes ? `<h2>Novedades</h2><p>${s.notes}</p>` : ""}
+      ${s.aiConsultation ? `<h2>Consulta IA</h2><p>${s.aiConsultation.replace(/\n/g, "<br>")}</p>` : ""}
+      </body></html>`;
     openHtmlInNewTab(html);
   }
 
@@ -1241,6 +1315,9 @@ export default function BitacoraIntegralPage() {
                         <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
                           Obs.
                         </th>
+                        <th className="bg-black/20 p-3.5 text-[9px] font-black uppercase text-sky-400 text-center border-b border-white/10">
+                          Reporte
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1273,6 +1350,14 @@ export default function BitacoraIntegralPage() {
                           </td>
                           <td className="p-3.5 text-[9px] text-center italic text-slate-500 max-w-[150px] truncate">
                             {r.obs}
+                          </td>
+                          <td className="p-3.5 text-center">
+                            <button
+                              onClick={() => openOpsRowPDF(r)}
+                              className="inline-flex items-center gap-1 text-sky-400 hover:text-sky-300 text-[10px] font-black uppercase"
+                            >
+                              <FileText className="w-3 h-3" /> PDF
+                            </button>
                           </td>
                         </tr>
                       ))}
