@@ -20,6 +20,28 @@ async function resolveClerkUserId(
 }
 
 /**
+ * Limpieza best-effort de la cuenta Clerk asociada. NUNCA lanza: el borrado en
+ * Convex ya es la fuente de verdad, así que un fallo de Clerk (rate-limit, red,
+ * key inválida, usuario inexistente) no debe convertir un borrado exitoso en
+ * error. Devuelve true si la cuenta Clerk se borró o no existía; false si la
+ * limpieza falló y quedó una cuenta Clerk huérfana.
+ */
+async function cleanupClerkAccount(
+  clerkId: string | null,
+  email: string | null
+): Promise<boolean> {
+  try {
+    const clerkUserId = await resolveClerkUserId(clerkId, email);
+    if (!clerkUserId) return true; // nunca inició sesión → nada que borrar
+    const clerk = await clerkClient();
+    await clerk.users.deleteUser(clerkUserId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * DELETE /api/owner/delete-user
  * Body: { userId: string }
  *
@@ -62,12 +84,19 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status });
   }
 
-  // Borrar también la cuenta Clerk (si la cuenta ya inició sesión alguna vez)
-  const clerkUserId = await resolveClerkUserId(deleted.clerkId, deleted.email);
-  if (clerkUserId) {
-    const clerk = await clerkClient();
-    await clerk.users.deleteUser(clerkUserId).catch(() => null);
-  }
+  // Borrar también la cuenta Clerk (si la cuenta ya inició sesión alguna vez).
+  // Best-effort: el borrado en Convex ya tuvo éxito, así que un fallo de Clerk
+  // no debe devolver error. Se reporta como warning para no esconder el residuo.
+  const clerkCleaned = await cleanupClerkAccount(deleted.clerkId, deleted.email);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    clerkCleaned,
+    ...(clerkCleaned
+      ? {}
+      : {
+          warning:
+            "La cuenta se eliminó de la base de datos, pero no se pudo borrar la cuenta de inicio de sesión (Clerk). Bórrala manualmente si es necesario.",
+        }),
+  });
 }

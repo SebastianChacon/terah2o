@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { loginWithClerkTicket } from "./helpers/clerk-login";
-import { seedTestData } from "./helpers/seed-test-data";
+import { seedTestData, seedDisposableOperator } from "./helpers/seed-test-data";
 
 // SUPER_ADMIN_EMAIL debe coincidir con el correo de este admin de prueba.
 // Configurar en el deployment de Convex: `npx convex env set SUPER_ADMIN_EMAIL carlos.test.777@ptap.ec`
@@ -119,7 +119,44 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await expect(page.locator("text=/actualizada/i")).toBeVisible({ timeout: 8000 });
   });
 
-  // ── 6. Crear cliente y eliminarlo (aislado, limpia tras sí) ────────────────
+  // ── 6. Eliminar una cuenta individual (el bug reportado) ──────────────────
+  // Crea un operador desechable (solo en Convex, sin Clerk) y lo elimina vía la
+  // UI. Verifica el camino feliz del flujo de borrado de cuenta: confirma el
+  // diálogo → toast de éxito → la fila desaparece de la lista.
+  test("owner elimina una cuenta de operador y desaparece de la lista", async ({ page, context }) => {
+    const operatorEmail = await seedDisposableOperator(OWNER_EMAIL);
+
+    await context.clearCookies();
+    await loginWithClerkTicket(page, OWNER_EMAIL);
+    await page.goto("/owner");
+    await waitConvex(page);
+    await goToView(page, "Cuentas");
+
+    // Buscar para aislar la fila del operador desechable
+    await page.getByPlaceholder(/Buscar/i).fill(operatorEmail);
+    await page.waitForTimeout(500);
+
+    const row = page.locator("div.rounded-xl").filter({ hasText: operatorEmail }).first();
+    await expect(row).toBeVisible({ timeout: 8000 });
+
+    // Botón eliminar (por title; en filas de operador hay también toggles de
+    // permisos, así que NO sirve .last()). Habilitado: no es dueño de org.
+    const deleteBtn = row.getByTitle("Eliminar cuenta");
+    await expect(deleteBtn).toBeEnabled();
+    await deleteBtn.click();
+
+    // Confirmar en el diálogo
+    await expect(page.getByRole("dialog")).toBeVisible();
+    await page.getByRole("button", { name: "Eliminar", exact: true }).click();
+
+    // Toast de éxito y la cuenta deja de existir
+    await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
+    await expect(
+      page.locator("div.rounded-xl").filter({ hasText: operatorEmail })
+    ).toHaveCount(0, { timeout: 8000 });
+  });
+
+  // ── 7. Crear cliente y eliminarlo (aislado, limpia tras sí) ────────────────
   test("owner crea un cliente nuevo y luego elimina la org", async ({ page, context }) => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);

@@ -86,9 +86,11 @@ export function AccountsView({ showToast }: AccountsViewProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; warning?: string };
       if (!res.ok) throw new Error(data.error ?? "Error al eliminar cuenta");
-      showToast(`Cuenta de ${name} eliminada`, "success");
+      // El borrado en Convex tuvo éxito; `warning` solo indica residuo en Clerk.
+      if (data.warning) showToast(data.warning, "error");
+      else showToast(`Cuenta de ${name} eliminada`, "success");
       setDeleteTarget(null);
     } catch (err: unknown) {
       showToast(

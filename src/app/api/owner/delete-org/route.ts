@@ -20,6 +20,26 @@ async function resolveClerkUserId(
 }
 
 /**
+ * Limpieza best-effort de una cuenta Clerk. NUNCA lanza: el borrado en Convex
+ * ya es la fuente de verdad. Devuelve true si se borró o no existía; false si
+ * falló y quedó una cuenta Clerk huérfana.
+ */
+async function cleanupClerkAccount(
+  clerkId: string | null,
+  email: string | null
+): Promise<boolean> {
+  try {
+    const clerkUserId = await resolveClerkUserId(clerkId, email);
+    if (!clerkUserId) return true;
+    const clerk = await clerkClient();
+    await clerk.users.deleteUser(clerkUserId);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * DELETE /api/owner/delete-org
  * Body: { organizationId: string }
  *
@@ -66,13 +86,21 @@ export async function DELETE(req: NextRequest) {
   }
 
   // Borrar las cuentas Clerk de los miembros (las que ya iniciaron sesión).
+  // Best-effort: la cascada en Convex ya tuvo éxito; un fallo de Clerk no debe
+  // devolver error. Se cuentan los residuos para reportarlos como warning.
+  let clerkFailures = 0;
   for (const member of result.clerkIds) {
-    const clerkUserId = await resolveClerkUserId(member.clerkId, member.email);
-    if (clerkUserId) {
-      const clerk = await clerkClient();
-      await clerk.users.deleteUser(clerkUserId).catch(() => null);
-    }
+    const cleaned = await cleanupClerkAccount(member.clerkId, member.email);
+    if (!cleaned) clerkFailures++;
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    clerkFailures,
+    ...(clerkFailures === 0
+      ? {}
+      : {
+          warning: `La organización se eliminó, pero ${clerkFailures} cuenta(s) de inicio de sesión (Clerk) no se pudieron borrar. Bórralas manualmente si es necesario.`,
+        }),
+  });
 }
