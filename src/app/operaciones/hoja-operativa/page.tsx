@@ -48,6 +48,16 @@ type InvItem = {
   unit: string;
 };
 
+type ShiftSummary = {
+  date: string;
+  operatorName: string;
+  stats: {
+    avgFlow: number;
+    volumeTurno: number;
+    compliancePercent: number;
+  };
+};
+
 /* ── Page ──────────────────────────────────────────────────── */
 export default function HojaOperativaPage() {
   const { toast, showToast } = useToast();
@@ -77,6 +87,16 @@ export default function HojaOperativaPage() {
   const inventoryItems = useSafeQuery(api.inventoryItems.getAll) as
     | InvItem[]
     | undefined;
+  const allShifts = useSafeQuery(api.shiftRecords.getAll) as
+    | ShiftSummary[]
+    | undefined;
+
+  /* Turnos ya cerrados HOY (para confirmar doble cierre) */
+  const todayShifts = useMemo(
+    () => (allShifts ?? []).filter((s) => s.date === today),
+    [allShifts, today],
+  );
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   /* S02 — Dosificacion */
   const [plantFlow, setPlantFlow] = useState("");
@@ -220,7 +240,8 @@ export default function HojaOperativaPage() {
   }, [aiQuery, generateAi, showToast]);
 
   /* S06 — Finalizar Turno */
-  const handleFinalize = useCallback(async () => {
+  const doFinalize = useCallback(async () => {
+    setConfirmOpen(false);
     if (!operatorName.trim())
       return showToast("Nombre del operador requerido", "error");
 
@@ -387,6 +408,17 @@ export default function HojaOperativaPage() {
     inventoryItems,
     showToast,
   ]);
+
+  /* Gate: si ya se cerro turno hoy, pedir confirmacion antes de cerrar otro */
+  const handleFinalize = useCallback(() => {
+    if (!operatorName.trim())
+      return showToast("Nombre del operador requerido", "error");
+    if (todayShifts.length > 0) {
+      setConfirmOpen(true);
+      return;
+    }
+    void doFinalize();
+  }, [operatorName, todayShifts, doFinalize, showToast]);
 
   return (
     <AuthGuard permissionKey={["canAccessOperaciones", "canAccessHojaOperativa"]} moduleName="Hoja Operativa">
@@ -866,6 +898,73 @@ export default function HojaOperativaPage() {
           </button>
         </section>
       </main>
+
+      {/* Modal confirmacion — doble cierre de turno el mismo dia */}
+      {confirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-100 text-amber-700 rounded-full p-2 flex-shrink-0">
+                <ClipboardCheck className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-navy-deep uppercase">
+                  ¿Cerrar otro turno hoy?
+                </h3>
+                <p className="text-sm text-slate-500 mt-1">
+                  Ya hay{" "}
+                  <strong>
+                    {todayShifts.length} turno
+                    {todayShifts.length > 1 ? "s" : ""}
+                  </strong>{" "}
+                  registrado{todayShifts.length > 1 ? "s" : ""} hoy ({today}).
+                  ¿Seguro que quieres archivar uno nuevo?
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-xl border border-slate-200 divide-y divide-slate-200 max-h-52 overflow-y-auto">
+              {todayShifts.map((s, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between px-4 py-2.5 text-xs"
+                >
+                  <span className="font-bold text-navy-deep uppercase">
+                    {s.operatorName}
+                  </span>
+                  <span className="text-slate-500 font-mono">
+                    {s.stats.avgFlow} L/s · {s.stats.volumeTurno} m³ ·{" "}
+                    <span
+                      className={
+                        s.stats.compliancePercent === 100
+                          ? "text-emerald-600 font-black"
+                          : "text-amber-600 font-black"
+                      }
+                    >
+                      {s.stats.compliancePercent}%
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 pt-1">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 py-3 rounded-xl font-black uppercase text-sm border-2 border-slate-200 text-slate-600 hover:bg-slate-50 transition-all active:scale-95"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => void doFinalize()}
+                className="flex-1 py-3 rounded-xl font-black uppercase text-sm bg-navy-deep text-white hover:bg-blue-900 transition-all active:scale-95"
+              >
+                Si, archivar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
       <Toast {...toast} />
