@@ -48,9 +48,10 @@ function DeleteOrgModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ organizationId: org._id }),
       });
-      const data = (await res.json()) as { error?: string };
+      const data = (await res.json()) as { error?: string; warning?: string };
       if (!res.ok) throw new Error(data.error ?? "Error al eliminar organización");
-      showToast(`Organización "${org.name}" eliminada`, "success");
+      if (data.warning) showToast(data.warning, "error");
+      else showToast(`Organización "${org.name}" eliminada`, "success");
       onDeleted();
     } catch (err: unknown) {
       showToast(
