@@ -50,9 +50,15 @@ export const proxy = clerkMiddleware(async (auth, request) => {
     return NextResponse.next();
   }
 
-  // Verificar suscripción (cookie escrita por useSubscription en el cliente)
+  // Verificar suscripción (cookie escrita por useSubscription en el cliente).
+  // Solo "active"/"trialing" tienen acceso. Un usuario recién registrado sin
+  // plan ("none", "past_due", "canceled") se envía a /pricing — debe contratar
+  // un plan antes de usar cualquier módulo.
+  // `undefined` (cookie aún no escrita en la primerísima carga) se permite una
+  // vez; el cliente fija la cookie en el primer render y las navegaciones
+  // siguientes ya quedan bloqueadas si no hay plan.
   const subStatus = request.cookies.get("__convexSubStatus")?.value;
-  if (subStatus && subStatus !== "none" && subStatus !== "active" && subStatus !== "trialing") {
+  if (subStatus && subStatus !== "active" && subStatus !== "trialing") {
     return NextResponse.redirect(new URL("/pricing", request.url));
   }
 
