@@ -21,8 +21,9 @@ import { useSubscription } from "@/hooks/useSubscription";
 
 function isGatedPath(path: string): boolean {
   if (path === "/") return false;
-  // Públicas + /owner (exento del gate de plan, igual que en el proxy)
-  const exemptPrefixes = ["/login", "/pricing", "/motor-inteligencia", "/owner"];
+  // Públicas + /owner (exento del gate de plan, igual que en el proxy).
+  // /motor-inteligencia NO está exento: requiere suscripción activa.
+  const exemptPrefixes = ["/login", "/pricing", "/owner"];
   for (const p of exemptPrefixes) {
     if (path === p || path.startsWith(`${p}/`)) return false;
   }

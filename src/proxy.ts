@@ -5,7 +5,9 @@ const isPublicRoute = createRouteMatcher([
   "/",
   "/login(.*)",
   "/pricing",
-  "/motor-inteligencia(.*)",
+  // /motor-inteligencia ya NO es público: requiere login + suscripción activa,
+  // igual que el resto de módulos. El gate (proxy por cookie + SubscriptionGate)
+  // lo bloquea y redirige a /pricing si no hay plan.
   "/api/gemini(.*)",
   "/api/weather(.*)",
   "/api/gemini-tts(.*)",
