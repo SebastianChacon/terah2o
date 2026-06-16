@@ -6,6 +6,7 @@ import { useSignIn, useSignUp } from "@clerk/nextjs/legacy";
 import { useAuth } from "@clerk/nextjs";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
+import { useSubscription } from "@/hooks/useSubscription";
 import Link from "next/link";
 
 type FlowMode = "signIn" | "signUp";
@@ -59,17 +60,38 @@ export default function LoginContent() {
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [subWaitTimedOut, setSubWaitTimedOut] = useState(false);
+
+  // Estado de suscripcion del usuario recien autenticado. useSubscription tambien
+  // fija la cookie __convexSubStatus que lee el proxy.
+  const { isActive, isLoading: subLoading } = useSubscription();
 
   const clerkTicket = searchParams.get("__clerk_ticket");
   // E2E tests pass email via URL so upsert can merge old records when JWT lacks email claim
   const emailFromParam = searchParams.get("__email") ?? undefined;
 
-  // Unico punto de navegacion post-login (evita doble router.replace)
+  // Fallback: si la consulta de suscripcion tarda demasiado (Convex lento/caido),
+  // no atrapar al usuario en el spinner — continuar al destino y dejar que el
+  // proxy aplique el gate por cookie.
   useEffect(() => {
-    if (isSignedIn) {
-      router.replace(nextPath);
+    if (!isSignedIn) return;
+    const t = setTimeout(() => setSubWaitTimedOut(true), 6000);
+    return () => clearTimeout(t);
+  }, [isSignedIn]);
+
+  // Unico punto de navegacion post-login (evita doble router.replace).
+  // Espera a conocer el estado de suscripcion para enrutar: con plan activo va al
+  // destino; sin plan va a /pricing (un usuario recien registrado no debe acceder
+  // a la app hasta contratar un plan).
+  useEffect(() => {
+    if (!isSignedIn) return;
+    if (subLoading) {
+      if (!subWaitTimedOut) return; // esperar el estado real de la suscripcion
+      router.replace(nextPath); // fallback por timeout: no bloquear por outage
+      return;
     }
-  }, [isSignedIn, nextPath, router]);
+    router.replace(isActive ? nextPath : "/pricing");
+  }, [isSignedIn, subLoading, subWaitTimedOut, isActive, nextPath, router]);
 
   // Sign-in con ticket (__clerk_ticket) — usado en E2E y enlaces magicos de Clerk
   useEffect(() => {
