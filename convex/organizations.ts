@@ -31,15 +31,10 @@ export const createOrganization = mutation({
     // Vincular el admin a la organización
     await ctx.db.patch(user._id, { organizationId: orgId });
 
-    // Crear suscripción de prueba automáticamente
-    await ctx.db.insert("subscriptions", {
-      organizationId: orgId,
-      status: "trialing",
-      plan: "starter",
-      trialEndsAt: Date.now() + 14 * 24 * 60 * 60 * 1000, // 14 días
-      createdAt: Date.now(),
-    });
-
+    // NO se crea suscripción aquí: un usuario recién registrado queda SIN plan
+    // y debe elegir uno en /pricing (createTrialSubscription) antes de acceder a
+    // cualquier módulo. El gate de suscripción (proxy + SubscriptionGate) lo
+    // redirige a /pricing mientras no tenga una suscripción activa/trial.
     return orgId;
   },
 });
