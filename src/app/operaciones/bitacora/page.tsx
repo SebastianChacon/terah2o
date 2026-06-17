@@ -257,6 +257,13 @@ export default function BitacoraIntegralPage() {
   const [aiResponse, setAiResponse] = useState("");
 
   /* ── Pull Convex data ──────────────────────────────────── */
+  type AuditEntry = {
+    date: string;
+    source: string;
+    category: string;
+    summary: string;
+    operatorName?: string;
+  };
   const shiftRecords = useSafeQuery(api.shiftRecords.getAll);
   const inventoryItems = useSafeQuery(api.inventoryItems.getAll);
   const financialProjs = useSafeQuery(api.financialProjections.getAll);
@@ -435,9 +442,8 @@ export default function BitacoraIntegralPage() {
   const filteredFinance = financeHistory.filter(
     (r) => !q || `${r.mes}`.toLowerCase().includes(q),
   );
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const filteredAudit = ((auditEntries ?? []) as any[]).filter(
-    (e: any) =>
+  const filteredAudit = ((auditEntries ?? []) as AuditEntry[]).filter(
+    (e) =>
       !q ||
       `${e.date} ${e.source} ${e.category} ${e.summary} ${e.operatorName ?? ""}`
         .toLowerCase()
@@ -637,10 +643,9 @@ export default function BitacoraIntegralPage() {
           );
         headers =
           "<th>Fecha</th><th>Fuente</th><th>Categoria</th><th>Operador</th><th style='text-align:left'>Resumen</th>";
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         rows = filteredAudit
           .map(
-            (e: any) =>
+            (e) =>
               `<tr><td>${e.date}</td><td>${e.source}</td><td>${e.category}</td><td>${e.operatorName ?? "—"}</td><td style='text-align:left'>${e.summary}</td></tr>`,
           )
           .join("");
@@ -1763,9 +1768,8 @@ export default function BitacoraIntegralPage() {
               <div className="flex flex-wrap gap-2">
                 {["Turno", "Inventario", "Diseno", "Finanzas", "Stock"].map(
                   (cat) => {
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const count = auditEntries.filter(
-                      (e: any) => e.category === cat,
+                    const count = (auditEntries as AuditEntry[]).filter(
+                      (e) => e.category === cat,
                     ).length;
                     if (count === 0) return null;
                     return (

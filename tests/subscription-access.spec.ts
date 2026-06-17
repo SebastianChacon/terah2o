@@ -134,4 +134,21 @@ test.describe("gate de suscripción — con plan hay acceso", () => {
     );
     await expect(page).not.toHaveURL(/\/login/);
   });
+
+  // ── 7. Usuario con plan que visita /pricing es redirigido (no ve los planes) ─
+  test("con plan activo, visitar /pricing redirige a la app", async ({
+    page,
+  }) => {
+    await loginWithClerkTicket(page, TEST_EMAIL);
+    // Esperar a aterrizar dentro de la app tras el login.
+    await expect(page).toHaveURL(
+      /\/(operaciones|asistencia|academia|dashboard)/,
+      { timeout: 12000 }
+    );
+
+    await page.goto("/pricing");
+    // La página de planes detecta la suscripción activa y reenvía a la app.
+    await expect(page).toHaveURL(/\/operaciones/, { timeout: 10000 });
+    await expect(page).not.toHaveURL(/\/pricing/);
+  });
 });

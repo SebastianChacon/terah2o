@@ -70,3 +70,31 @@ test.describe("Pricing — soporte WhatsApp", () => {
     expect(href).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
   });
 });
+
+test.describe("Pricing — CTA de contacto (sin prueba gratuita)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/pricing");
+  });
+
+  test("ya no existe el botón de prueba gratuita de 14 días", async ({ page }) => {
+    await expect(page.getByText(/prueba gratis/i)).toHaveCount(0);
+    await expect(page.getByText(/14 d[ií]as de prueba/i)).toHaveCount(0);
+  });
+
+  for (const plan of ["starter", "pro"] as const) {
+    test(`el CTA del plan ${plan} dice 'Ponerse en contacto' y abre WhatsApp`, async ({
+      page,
+    }) => {
+      const cta = page.getByTestId(`plan-cta-${plan}`);
+      await expect(cta).toBeVisible({ timeout: 10000 });
+      await expect(cta).toHaveText(/ponerse en contacto/i);
+
+      const href = await cta.getAttribute("href");
+      expect(href).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
+      expect(href).toContain("?text=");
+
+      await expect(cta).toHaveAttribute("target", "_blank");
+      await expect(cta).toHaveAttribute("rel", /noopener/);
+    });
+  }
+});
