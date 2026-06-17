@@ -1,13 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useMutation, useQuery } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useSubscription } from "@/hooks/useSubscription";
 import Link from "next/link";
-import { Check, Zap, Shield, Star, ArrowLeft } from "lucide-react";
-import { WHATSAPP_LINK } from "@/lib/constants";
+import { Check, Zap, Shield, Star, ArrowLeft, MessageCircle } from "lucide-react";
+import { WHATSAPP_LINK, WHATSAPP_NUMBER } from "@/lib/constants";
+
+/** Enlace de WhatsApp con mensaje pre-llenado para contratar un plan específico. */
+function planWhatsappLink(planName: string, price: string): string {
+  const msg = `Hola TeraH2O, quiero contratar el plan ${planName} (${price}/mes). ¿Me ayudan con la activación?`;
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
 
 const PLANS = [
   {
@@ -52,42 +57,25 @@ const PLANS = [
 
 export default function PricingPage() {
   const router = useRouter();
-  const { user, isLoading: userLoading } = useCurrentUser();
-  const myOrg = useQuery(api.organizations.getMyOrganization);
-  const createOrg = useMutation(api.organizations.createOrganization);
-  const createTrial = useMutation(api.subscriptions.createTrialSubscription);
+  const { isAuthenticated } = useCurrentUser();
+  const { isActive, isLoading: subLoading } = useSubscription();
 
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSelectPlan(planId: "starter" | "pro") {
-    if (!user) {
-      router.push("/login?next=/pricing");
-      return;
+  // Si el usuario ya tiene un plan activo/trial, no debe ver los planes:
+  // se le envía directo a la aplicación.
+  useEffect(() => {
+    if (isAuthenticated && !subLoading && isActive) {
+      router.replace("/operaciones");
     }
+  }, [isAuthenticated, subLoading, isActive, router]);
 
-    setLoading(planId);
-    setError(null);
-
-    try {
-      // Crear organizacion si no existe
-      let orgId = myOrg?._id;
-      if (!orgId) {
-        orgId = await createOrg({ name: `Organizacion de ${user.name ?? user.email}` });
-      }
-
-      // Activar trial
-      await createTrial({ organizationId: orgId, plan: planId });
-
-      // Escribir cookie de estado para el middleware
-      document.cookie = `__convexSubStatus=trialing;path=/;max-age=${60 * 60};SameSite=Lax`;
-
-      router.push("/operaciones");
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Error al activar el plan");
-    } finally {
-      setLoading(null);
-    }
+  // Mientras se resuelve la suscripción de un usuario autenticado, evitar el
+  // parpadeo de los planes antes del posible redirect.
+  if (isAuthenticated && subLoading) {
+    return (
+      <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -118,16 +106,9 @@ export default function PricingPage() {
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold text-white mb-3">Planes y Precios</h1>
           <p className="text-white/40 text-sm leading-relaxed max-w-md mx-auto">
-            14 dias de prueba gratuita en cualquier plan. Sin tarjeta de credito requerida.
+            Escribenos por WhatsApp y un asesor activa tu plan. Sin compromiso, cancela cuando quieras.
           </p>
         </div>
-
-        {/* Error */}
-        {error && (
-          <div className="mb-6 bg-red-500/10 border border-red-500/20 rounded-xl px-5 py-4 max-w-md mx-auto">
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          </div>
-        )}
 
         {/* Plans */}
         <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
@@ -175,15 +156,16 @@ export default function PricingPage() {
               </ul>
 
               {/* CTA */}
-              <button
-                onClick={() => handleSelectPlan(plan.id)}
-                disabled={loading !== null || userLoading}
-                className="w-full py-3 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 hover:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed text-blue-400 font-bold text-[0.72rem] uppercase tracking-[0.18em] rounded-lg transition-all"
+              <a
+                href={planWhatsappLink(plan.name, plan.price)}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid={`plan-cta-${plan.id}`}
+                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 hover:border-blue-500/50 text-blue-400 font-bold text-[0.72rem] uppercase tracking-[0.18em] rounded-lg transition-all"
               >
-                {loading === plan.id
-                  ? "Activando..."
-                  : "Iniciar prueba gratis — 14 dias"}
-              </button>
+                <MessageCircle className="w-3.5 h-3.5" />
+                Ponerse en contacto
+              </a>
             </div>
           ))}
         </div>
