@@ -18,10 +18,25 @@ import type { Id } from "../../../../convex/_generated/dataModel";
 import type { AccountRow, OrgRow } from "../types";
 import { formatDate } from "../types";
 import { SubBadge, RoleBadge, OwnerBadge } from "./shared";
+import type { OperatorPermissions, PermissionKey } from "@/types/auth";
 
 interface OrganizationsViewProps {
   showToast: (msg: string, type: "success" | "error") => void;
 }
+
+// Páginas habilitadas a nivel organización (controladas por el Owner).
+const ENT_MAIN: { key: PermissionKey; label: string }[] = [
+  { key: "canAccessOperaciones", label: "Operaciones (hub)" },
+  { key: "canAccessAsistencia", label: "Asistencia" },
+  { key: "canAccessAcademia", label: "Academia" },
+];
+const ENT_SUB: { key: PermissionKey; label: string }[] = [
+  { key: "canAccessConsolaTecnica", label: "Consola Técnica" },
+  { key: "canAccessHojaOperativa", label: "Hoja Operativa" },
+  { key: "canAccessStock", label: "Stock & Kardex" },
+  { key: "canAccessFinanzas", label: "Finanzas" },
+  { key: "canAccessBitacora", label: "Bitácora" },
+];
 
 // ── Modal de borrado de org con confirmación por tipeo ────────────────────
 function DeleteOrgModal({
@@ -135,14 +150,21 @@ function OrgCard({
 }) {
   const rename = useMutation(api.superAdmin.renameOrganizationGlobal);
   const setSeats = useMutation(api.superAdmin.setMaxOperators);
+  const setAdminSeats = useMutation(api.superAdmin.setMaxAdmins);
+  const setEntitlements = useMutation(api.superAdmin.setOrgEntitlements);
   const transfer = useMutation(api.superAdmin.transferOrgOwnership);
 
   const [expanded, setExpanded] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(org.name);
   const [seatsDraft, setSeatsDraft] = useState(String(org.maxOperators));
+  const [adminSeatsDraft, setAdminSeatsDraft] = useState(String(org.maxAdmins));
+  const [localEnt, setLocalEnt] = useState<OperatorPermissions | null>(null);
+  const [savingEnt, setSavingEnt] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+
+  const ent = localEnt ?? org.entitlements;
 
   const otherAdmins = members.filter(
     (m) => m.role === "admin" && m._id !== org.adminUserId
@@ -178,6 +200,42 @@ function OrgCard({
       showToast(err instanceof Error ? err.message : "Error", "error");
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveAdminSeats() {
+    const n = parseInt(adminSeatsDraft, 10);
+    if (Number.isNaN(n) || n === org.maxAdmins) return;
+    setBusy(true);
+    try {
+      await setAdminSeats({ organizationId: org._id, maxAdmins: n });
+      showToast("Cupo de administradores actualizado", "success");
+    } catch (err: unknown) {
+      setAdminSeatsDraft(String(org.maxAdmins));
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleEnt(key: PermissionKey, current: boolean) {
+    const updated: OperatorPermissions = { ...ent, [key]: !current };
+    // Si Operaciones se apaga, apagar los 4 sub-módulos en el optimista.
+    if (key === "canAccessOperaciones" && current) {
+      updated.canAccessConsolaTecnica = false;
+      updated.canAccessHojaOperativa = false;
+      updated.canAccessStock = false;
+      updated.canAccessFinanzas = false;
+    }
+    setLocalEnt(updated);
+    setSavingEnt(true);
+    try {
+      await setEntitlements({ organizationId: org._id, ...updated });
+    } catch (err: unknown) {
+      setLocalEnt(ent);
+      showToast(err instanceof Error ? err.message : "Error al guardar páginas", "error");
+    } finally {
+      setSavingEnt(false);
     }
   }
 
@@ -295,6 +353,28 @@ function OrgCard({
           </div>
           <div>
             <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+              Cupo de administradores
+            </label>
+            <div className="flex items-center gap-1.5">
+              <input
+                type="number"
+                min={1}
+                value={adminSeatsDraft}
+                onChange={(e) => setAdminSeatsDraft(e.target.value)}
+                disabled={busy}
+                className="w-20 px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm focus:border-amber-500/40 focus:outline-none"
+              />
+              <button
+                onClick={saveAdminSeats}
+                disabled={busy || adminSeatsDraft === String(org.maxAdmins)}
+                className="px-2.5 py-1.5 rounded-lg border border-white/10 text-white/50 text-xs hover:border-white/30 disabled:opacity-30 transition-all"
+              >
+                Guardar
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
               Transferir propiedad
             </label>
             <select
@@ -314,6 +394,63 @@ function OrgCard({
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Páginas habilitadas (entitlements de la org) */}
+        <div className="mt-4 p-3 bg-white/[0.02] border border-white/6 rounded-xl">
+          <p className="text-white/40 text-[0.62rem] font-mono uppercase tracking-widest mb-2">
+            Páginas habilitadas · topa al admin y a sus operadores
+          </p>
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {ENT_MAIN.map(({ key, label }) => {
+              const val = ent[key];
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleEnt(key, val)}
+                  disabled={savingEnt}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                    val
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                  }`}
+                >
+                  {val ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+            {ENT_SUB.map(({ key, label }) => {
+              const val = ent[key];
+              // Los 4 sub-módulos de Operaciones requieren el hub; Bitácora no.
+              const opsBlocked =
+                key !== "canAccessBitacora" && !ent.canAccessOperaciones;
+              return (
+                <button
+                  key={key}
+                  onClick={() => toggleEnt(key, val)}
+                  disabled={savingEnt || opsBlocked}
+                  title={opsBlocked ? "Requiere Operaciones (hub)" : undefined}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                    opsBlocked
+                      ? "opacity-40 cursor-not-allowed bg-white/3 border-white/8 text-white/20"
+                      : val
+                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                      : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                  }`}
+                >
+                  {val && !opsBlocked ? (
+                    <Check className="w-3 h-3" />
+                  ) : (
+                    <X className="w-3 h-3" />
+                  )}
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
 

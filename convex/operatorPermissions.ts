@@ -1,6 +1,24 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import { getAuthenticatedUserId } from "./lib/auth";
+import { clampPerms, normalizePerms, readPerms } from "./lib/permissions";
+
+const EMPTY_PERMS = readPerms(null);
+
+/**
+ * Entitlements efectivos de una organización (8 flags, normalizados).
+ * Fuente de verdad de "qué páginas tiene la org". Ausente ⇒ todo false.
+ */
+async function getOrgEntitlements(
+  ctx: QueryCtx | MutationCtx,
+  organizationId: Id<"organizations"> | undefined | null
+) {
+  if (!organizationId) return EMPTY_PERMS;
+  const org = await ctx.db.get(organizationId);
+  return normalizePerms(readPerms(org));
+}
 
 // ── Obtener permisos del operador actual ──────────────────────────────────
 export const getMyPermissions = query({
@@ -12,51 +30,21 @@ export const getMyPermissions = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    // Los admins tienen todos los permisos siempre
+    // Entitlements de la org: techo para admin y operador.
+    const orgEnt = await getOrgEntitlements(ctx, user.organizationId);
+
+    // Los admins ven exactamente lo que la org tiene habilitado.
     if (user.role === "admin") {
-      return {
-        canAccessOperaciones: true,
-        canAccessAsistencia: true,
-        canAccessAcademia: true,
-        canAccessBitacora: true,
-        canAccessConsolaTecnica: true,
-        canAccessHojaOperativa: true,
-        canAccessStock: true,
-        canAccessFinanzas: true,
-      };
+      return orgEnt;
     }
 
-    // Para operadores: buscar en la tabla de permisos
+    // Para operadores: efectivo = entitlements de la org AND permisos del operador.
     const perms = await ctx.db
       .query("operatorPermissions")
       .withIndex("by_operatorId", (q) => q.eq("operatorId", user._id))
       .unique();
 
-    if (!perms) {
-      return {
-        canAccessOperaciones: false,
-        canAccessAsistencia: false,
-        canAccessAcademia: false,
-        canAccessBitacora: false,
-        canAccessConsolaTecnica: false,
-        canAccessHojaOperativa: false,
-        canAccessStock: false,
-        canAccessFinanzas: false,
-      };
-    }
-
-    // Si canAccessOperaciones=false, todos los sub-módulos también bloqueados
-    const canOps = perms.canAccessOperaciones;
-    return {
-      canAccessOperaciones: canOps,
-      canAccessAsistencia: perms.canAccessAsistencia,
-      canAccessAcademia: perms.canAccessAcademia,
-      canAccessBitacora: perms.canAccessBitacora,
-      canAccessConsolaTecnica: canOps && (perms.canAccessConsolaTecnica ?? false),
-      canAccessHojaOperativa: canOps && (perms.canAccessHojaOperativa ?? false),
-      canAccessStock: canOps && (perms.canAccessStock ?? false),
-      canAccessFinanzas: canOps && (perms.canAccessFinanzas ?? false),
-    };
+    return clampPerms(readPerms(perms), orgEnt);
   },
 });
 
@@ -102,17 +90,15 @@ export const upsertPermissions = mutation({
       .withIndex("by_operatorId", (q) => q.eq("operatorId", args.operatorId))
       .unique();
 
+    // Un admin no puede otorgar a un operador un permiso que su organización no
+    // tiene: topamos lo solicitado contra los entitlements de la org.
+    const orgEnt = await getOrgEntitlements(ctx, caller.organizationId);
+    const clamped = clampPerms(readPerms(args), orgEnt);
+
     const permsData = {
       operatorId: args.operatorId,
       organizationId: caller.organizationId!,
-      canAccessOperaciones: args.canAccessOperaciones,
-      canAccessAsistencia: args.canAccessAsistencia,
-      canAccessAcademia: args.canAccessAcademia,
-      canAccessBitacora: args.canAccessBitacora,
-      canAccessConsolaTecnica: args.canAccessConsolaTecnica ?? false,
-      canAccessHojaOperativa: args.canAccessHojaOperativa ?? false,
-      canAccessStock: args.canAccessStock ?? false,
-      canAccessFinanzas: args.canAccessFinanzas ?? false,
+      ...clamped,
     };
 
     if (existing) {

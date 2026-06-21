@@ -1,8 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { loginWithClerkTicket } from "./helpers/clerk-login";
+import { seedTestData } from "./helpers/seed-test-data";
 
 const ADMIN_EMAIL = process.env.TEST_EMAIL ?? "carlos.test.777@ptap.ec";
 const OPERATOR_EMAIL = process.env.TEST_OPERATOR_EMAIL ?? "trelles@gmail.com";
+
+// La org de prueba debe tener todas las páginas habilitadas (entitlements
+// default = OFF) para que el admin pueda otorgar permisos a sus operadores.
+test.beforeAll(async () => {
+  await seedTestData(ADMIN_EMAIL);
+});
 
 // ── Helper: check if page shows the lock overlay ─────────────────────────────
 async function expectLocked(page: import("@playwright/test").Page, moduleName: string) {

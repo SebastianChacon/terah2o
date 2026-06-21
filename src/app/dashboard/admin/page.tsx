@@ -53,7 +53,7 @@ const EMPTY_PERMS: OperatorPermissions = {
   canAccessFinanzas: false,
 };
 
-const MAX_ADMINS = 2;
+const DEFAULT_MAX_ADMINS = 2;
 
 interface DeleteTarget {
   operatorId: Id<"users">;
@@ -289,9 +289,22 @@ export default function AdminDashboardPage() {
 
   const operatorCount = operators.length;
   const maxOperators = myOrg?.maxOperators ?? 5;
+  const maxAdmins = myOrg?.maxAdmins ?? DEFAULT_MAX_ADMINS;
   const adminCount = admins.length;
-  const canInviteAdmin = adminCount < MAX_ADMINS;
+  const canInviteAdmin = adminCount < maxAdmins;
   const coAdmins = admins.filter((a) => a._id !== user?._id);
+
+  // Entitlements de la org: techo de lo que el admin puede otorgar a operadores.
+  const orgEnt: OperatorPermissions = {
+    canAccessOperaciones: myOrg?.canAccessOperaciones ?? false,
+    canAccessAsistencia: myOrg?.canAccessAsistencia ?? false,
+    canAccessAcademia: myOrg?.canAccessAcademia ?? false,
+    canAccessBitacora: myOrg?.canAccessBitacora ?? false,
+    canAccessConsolaTecnica: myOrg?.canAccessConsolaTecnica ?? false,
+    canAccessHojaOperativa: myOrg?.canAccessHojaOperativa ?? false,
+    canAccessStock: myOrg?.canAccessStock ?? false,
+    canAccessFinanzas: myOrg?.canAccessFinanzas ?? false,
+  };
 
   return (
     <div className="min-h-screen bg-[#05051a] text-white">
@@ -334,7 +347,7 @@ export default function AdminDashboardPage() {
             {myOrg?.name ?? "Mi Organizacion"} ·{" "}
             <span className="text-blue-400/70">{operatorCount}/{maxOperators} operadores</span>
             {" · "}
-            <span className="text-violet-400/70">{adminCount}/{MAX_ADMINS} administradores</span>
+            <span className="text-violet-400/70">{adminCount}/{maxAdmins} administradores</span>
           </p>
         </div>
 
@@ -357,7 +370,7 @@ export default function AdminDashboardPage() {
               </button>
             ) : (
               <span className="text-[0.65rem] font-mono text-amber-400/60 uppercase tracking-widest">
-                Limite de admins ({adminCount}/{MAX_ADMINS})
+                Limite de admins ({adminCount}/{maxAdmins})
               </span>
             )}
           </div>
@@ -582,20 +595,28 @@ export default function AdminDashboardPage() {
                       <div className="grid grid-cols-3 gap-2">
                         {MAIN_PERMISSION_TOGGLES.map(({ key, label }) => {
                           const val = perms[key];
+                          const orgBlocked = !orgEnt[key];
                           return (
                             <button
                               key={key}
                               onClick={() =>
                                 handleTogglePermission(op._id as Id<"users">, key, val)
                               }
-                              disabled={isSaving}
+                              disabled={isSaving || orgBlocked}
+                              title={orgBlocked ? "Tu organizacion no tiene esta pagina" : undefined}
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
-                                val
+                                orgBlocked
+                                  ? "opacity-40 cursor-not-allowed bg-white/3 border-white/8 text-white/20"
+                                  : val
                                   ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                                   : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
                               }`}
                             >
-                              {val ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              {val && !orgBlocked ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <X className="w-3 h-3" />
+                              )}
                               {label}
                             </button>
                           );
@@ -610,7 +631,11 @@ export default function AdminDashboardPage() {
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                         {SUBMODULE_PERMISSION_TOGGLES.map(({ key, label }) => {
                           const val = perms[key];
-                          const opsBlocked = !perms.canAccessOperaciones;
+                          const orgBlocked = !orgEnt[key];
+                          // Bitacora no es sub-modulo de Operaciones; el resto si.
+                          const opsBlocked =
+                            orgBlocked ||
+                            (key !== "canAccessBitacora" && !perms.canAccessOperaciones);
                           return (
                             <button
                               key={key}
@@ -618,7 +643,13 @@ export default function AdminDashboardPage() {
                                 handleTogglePermission(op._id as Id<"users">, key, val)
                               }
                               disabled={isSaving || opsBlocked}
-                              title={opsBlocked ? "Requiere permiso de Operaciones (hub)" : undefined}
+                              title={
+                                orgBlocked
+                                  ? "Tu organizacion no tiene esta pagina"
+                                  : opsBlocked
+                                  ? "Requiere permiso de Operaciones (hub)"
+                                  : undefined
+                              }
                               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
                                 opsBlocked
                                   ? "opacity-40 cursor-not-allowed bg-white/3 border-white/8 text-white/20"

@@ -26,6 +26,8 @@ export interface OrgRow {
   name: string;
   createdAt: number;
   maxOperators: number;
+  maxAdmins: number;
+  entitlements: OperatorPermissions;
   adminUserId: Id<"users">;
   ownerName: string | null;
   ownerEmail: string | null;

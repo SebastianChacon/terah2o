@@ -61,17 +61,7 @@ test.describe("WhatsApp FAB — global", () => {
   });
 });
 
-test.describe("Pricing — soporte WhatsApp", () => {
-  test("el feature 'Soporte prioritario WhatsApp' enlaza a WhatsApp", async ({ page }) => {
-    await page.goto("/pricing");
-    const supportLink = page.getByRole("link", { name: /soporte prioritario whatsapp/i });
-    await expect(supportLink).toBeVisible({ timeout: 10000 });
-    const href = await supportLink.getAttribute("href");
-    expect(href).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
-  });
-});
-
-test.describe("Pricing — CTA de contacto (sin prueba gratuita)", () => {
+test.describe("Pricing — CTA de contacto (sin planes ni precios)", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/pricing");
   });
@@ -81,20 +71,22 @@ test.describe("Pricing — CTA de contacto (sin prueba gratuita)", () => {
     await expect(page.getByText(/14 d[ií]as de prueba/i)).toHaveCount(0);
   });
 
-  for (const plan of ["starter", "pro"] as const) {
-    test(`el CTA del plan ${plan} dice 'Ponerse en contacto' y abre WhatsApp`, async ({
-      page,
-    }) => {
-      const cta = page.getByTestId(`plan-cta-${plan}`);
-      await expect(cta).toBeVisible({ timeout: 10000 });
-      await expect(cta).toHaveText(/ponerse en contacto/i);
+  test("ya no se muestran precios de planes ($49 / $89 / mes)", async ({ page }) => {
+    await expect(page.getByText(/\$49|\$89/)).toHaveCount(0);
+    await expect(page.getByText(/\/mes/i)).toHaveCount(0);
+  });
 
-      const href = await cta.getAttribute("href");
-      expect(href).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
-      expect(href).toContain("?text=");
+  test("el CTA único dice 'Contactar por WhatsApp' y abre WhatsApp", async ({
+    page,
+  }) => {
+    const cta = page.getByTestId("pricing-cta");
+    await expect(cta).toBeVisible({ timeout: 10000 });
+    await expect(cta).toHaveText(/contactar por whatsapp/i);
 
-      await expect(cta).toHaveAttribute("target", "_blank");
-      await expect(cta).toHaveAttribute("rel", /noopener/);
-    });
-  }
+    const href = await cta.getAttribute("href");
+    expect(href).toContain(`https://wa.me/${WHATSAPP_NUMBER}`);
+
+    await expect(cta).toHaveAttribute("target", "_blank");
+    await expect(cta).toHaveAttribute("rel", /noopener/);
+  });
 });

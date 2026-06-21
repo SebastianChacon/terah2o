@@ -39,6 +39,21 @@ export const setupTestUser = internalMutation({
       }
     }
 
+    // La org de prueba tiene TODAS las páginas habilitadas y cupo de admins,
+    // para que el admin conserve acceso total y la cadena admin→operador siga
+    // funcionando (el default de entitlements es OFF). Idempotente.
+    await ctx.db.patch(orgId!, {
+      maxAdmins: 2,
+      canAccessOperaciones: true,
+      canAccessAsistencia: true,
+      canAccessAcademia: true,
+      canAccessBitacora: true,
+      canAccessConsolaTecnica: true,
+      canAccessHojaOperativa: true,
+      canAccessStock: true,
+      canAccessFinanzas: true,
+    });
+
     const existing = await ctx.db
       .query("subscriptions")
       .withIndex("by_organizationId", (q) => q.eq("organizationId", orgId!))

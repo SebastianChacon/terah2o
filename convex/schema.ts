@@ -252,6 +252,18 @@ export default defineSchema({
     name: v.string(),
     adminUserId: v.id("users"),
     maxOperators: v.number(), // default 5
+    maxAdmins: v.optional(v.number()), // default lógico 2
+    // Entitlements de organización (qué páginas tiene la org). Controlados por
+    // el Owner desde /owner. Ausente ⇒ false (default-OFF). Topan al admin y,
+    // por transitividad, a sus operadores.
+    canAccessOperaciones: v.optional(v.boolean()),
+    canAccessAsistencia: v.optional(v.boolean()),
+    canAccessAcademia: v.optional(v.boolean()),
+    canAccessBitacora: v.optional(v.boolean()),
+    canAccessConsolaTecnica: v.optional(v.boolean()),
+    canAccessHojaOperativa: v.optional(v.boolean()),
+    canAccessStock: v.optional(v.boolean()),
+    canAccessFinanzas: v.optional(v.boolean()),
     createdAt: v.number(),
   }),
 
