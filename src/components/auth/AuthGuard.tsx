@@ -13,17 +13,17 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ permissionKey, moduleName, children }: AuthGuardProps) {
-  const { user, isLoading } = useCurrentUser();
+  const { isLoading } = useCurrentUser();
   const { can, isLoading: permsLoading } = usePermissions();
 
   if (isLoading || permsLoading) {
     return <>{children}</>;
   }
 
-  if (user?.role === "admin") {
-    return <>{children}</>;
-  }
-
+  // Sin bypass de admin: admin y operador se gatean por los permisos efectivos
+  // (para el admin estos equivalen a los entitlements de su organización, que
+  // define el Owner). El panel /dashboard/admin y /owner no usan AuthGuard con
+  // llaves de módulo, así que la gestión sigue accesible.
   const keys = Array.isArray(permissionKey) ? permissionKey : [permissionKey];
   const isLocked = keys.some((k) => !can(k));
 

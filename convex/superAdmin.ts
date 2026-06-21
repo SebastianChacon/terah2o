@@ -7,6 +7,12 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import { getAuthenticatedUser } from "./lib/auth";
+import {
+  clampPerms,
+  normalizePerms,
+  readPerms,
+  MODULE_PERMISSION_KEYS,
+} from "./lib/permissions";
 
 type AnyCtx = QueryCtx | MutationCtx;
 
@@ -143,17 +149,15 @@ export const setPermissionsGlobal = mutation({
       .withIndex("by_operatorId", (q) => q.eq("operatorId", args.operatorId))
       .unique();
 
+    // Topar contra los entitlements de la org del operador (regla de subconjunto).
+    const org = await ctx.db.get(operator.organizationId);
+    const orgEnt = normalizePerms(readPerms(org));
+    const clamped = clampPerms(readPerms(args), orgEnt);
+
     const permsData = {
       operatorId: args.operatorId,
       organizationId: operator.organizationId,
-      canAccessOperaciones: args.canAccessOperaciones,
-      canAccessAsistencia: args.canAccessAsistencia,
-      canAccessAcademia: args.canAccessAcademia,
-      canAccessBitacora: args.canAccessBitacora,
-      canAccessConsolaTecnica: args.canAccessConsolaTecnica ?? false,
-      canAccessHojaOperativa: args.canAccessHojaOperativa ?? false,
-      canAccessStock: args.canAccessStock ?? false,
-      canAccessFinanzas: args.canAccessFinanzas ?? false,
+      ...clamped,
     };
 
     if (existing) {
@@ -306,6 +310,8 @@ export const listOrganizations = query({
           name: o.name,
           createdAt: o.createdAt,
           maxOperators: o.maxOperators,
+          maxAdmins: o.maxAdmins ?? 2,
+          entitlements: normalizePerms(readPerms(o)),
           adminUserId: o.adminUserId,
           ownerName: owner?.name ?? null,
           ownerEmail: owner?.email ?? null,
@@ -474,6 +480,82 @@ export const setMaxOperators = mutation({
       );
 
     await ctx.db.patch(args.organizationId, { maxOperators: args.maxOperators });
+    return args.organizationId;
+  },
+});
+
+// ── Cambiar cupo de administradores de una org ────────────────────────────
+export const setMaxAdmins = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    maxAdmins: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    if (!Number.isInteger(args.maxAdmins) || args.maxAdmins < 1)
+      throw new Error("El cupo debe ser un entero ≥ 1");
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    const admins = await ctx.db
+      .query("users")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .filter((q) => q.eq(q.field("role"), "admin"))
+      .collect();
+
+    if (args.maxAdmins < admins.length)
+      throw new Error(
+        `La org ya tiene ${admins.length} administradores; el cupo no puede ser menor`
+      );
+
+    await ctx.db.patch(args.organizationId, { maxAdmins: args.maxAdmins });
+    return args.organizationId;
+  },
+});
+
+// ── Fijar entitlements (páginas habilitadas) de una org ───────────────────
+// Define QUÉ páginas tiene la org. Topa al admin y a sus operadores.
+export const setOrgEntitlements = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    canAccessOperaciones: v.boolean(),
+    canAccessAsistencia: v.boolean(),
+    canAccessAcademia: v.boolean(),
+    canAccessBitacora: v.boolean(),
+    canAccessConsolaTecnica: v.boolean(),
+    canAccessHojaOperativa: v.boolean(),
+    canAccessStock: v.boolean(),
+    canAccessFinanzas: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    // Normalizar: si Operaciones está off, los sub-módulos también.
+    const ent = normalizePerms(readPerms(args));
+
+    await ctx.db.patch(args.organizationId, ent);
+
+    // Si la org pierde una página, ningún operador debe conservarla: topamos
+    // las filas de permisos de sus operadores contra los nuevos entitlements.
+    const perms = await ctx.db
+      .query("operatorPermissions")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .collect();
+    for (const p of perms) {
+      const clamped = clampPerms(readPerms(p), ent);
+      const changed = MODULE_PERMISSION_KEYS.some((k) => clamped[k] !== readPerms(p)[k]);
+      if (changed) await ctx.db.patch(p._id, clamped);
+    }
+
     return args.organizationId;
   },
 });

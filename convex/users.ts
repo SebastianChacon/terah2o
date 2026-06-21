@@ -186,7 +186,7 @@ export const deleteOperator = mutation({
   },
 });
 
-const MAX_ADMINS_PER_ORG = 2;
+const DEFAULT_MAX_ADMINS = 2;
 
 // ── Invitar co-admin (pre-registro; se vincula en primer login con Clerk) ───
 export const inviteAdmin = mutation({
@@ -202,6 +202,10 @@ export const inviteAdmin = mutation({
     if (caller.organizationId !== args.organizationId)
       throw new Error("No perteneces a esta organización");
 
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+    const maxAdmins = org.maxAdmins ?? DEFAULT_MAX_ADMINS;
+
     const admins = await ctx.db
       .query("users")
       .withIndex("by_organizationId", (q) =>
@@ -210,10 +214,8 @@ export const inviteAdmin = mutation({
       .filter((q) => q.eq(q.field("role"), "admin"))
       .collect();
 
-    if (admins.length >= MAX_ADMINS_PER_ORG) {
-      throw new Error(
-        `Límite de administradores alcanzado (${MAX_ADMINS_PER_ORG}).`
-      );
+    if (admins.length >= maxAdmins) {
+      throw new Error(`Límite de administradores alcanzado (${maxAdmins}).`);
     }
 
     const email = args.email.trim().toLowerCase();

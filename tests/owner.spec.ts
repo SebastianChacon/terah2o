@@ -192,6 +192,73 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await page.getByRole("button", { name: "Eliminar org", exact: true }).click();
     await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
   });
+
+  // ── 8. Páginas habilitadas (entitlements) + cupo de admins ────────────────
+  // Crea una org desechable (entitlements default = OFF), habilita una página y
+  // cambia el cupo de admins; verifica persistencia; limpia al final.
+  test("owner habilita una página y cambia el cupo de admins de una org", async ({ page, context }) => {
+    await context.clearCookies();
+    await loginWithClerkTicket(page, OWNER_EMAIL);
+    await page.goto("/owner");
+    await waitConvex(page);
+
+    await goToView(page, "Organizaciones");
+    await deleteTestOrgs(page);
+
+    const stamp = Date.now();
+    const orgName = `E2E Test Org Ent ${stamp}`;
+    const adminEmail = `e2e.ent.${stamp}@ptap.ec`;
+
+    // Crear cliente desechable
+    await page.getByRole("button", { name: "Nuevo cliente" }).first().click();
+    await page.getByPlaceholder("PTAP Ejemplo").fill(orgName);
+    await page.getByPlaceholder("Juan Pérez").fill(`Admin ${stamp}`);
+    await page.getByPlaceholder("admin@ptap.ec").fill(adminEmail);
+    await page.getByRole("button", { name: "Crear cliente" }).click();
+    await expect(page.locator("text=/creado/i")).toBeVisible({ timeout: 12000 });
+
+    await goToView(page, "Organizaciones");
+    const card = page.locator("div.rounded-xl").filter({ hasText: orgName }).first();
+    await expect(card).toBeVisible({ timeout: 8000 });
+
+    // Default OFF: habilitar "Operaciones (hub)"
+    const opsToggle = card.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
+    await expect(opsToggle).toBeVisible();
+    expect((await opsToggle.getAttribute("class"))?.includes("emerald") ?? false).toBe(false);
+    await opsToggle.click();
+    await page.waitForTimeout(1500);
+
+    // Cambiar cupo de administradores a 3
+    const adminSeats = card
+      .locator('label:has-text("Cupo de administradores") + div input[type="number"]')
+      .first();
+    await adminSeats.fill("3");
+    await card
+      .locator('label:has-text("Cupo de administradores") + div button')
+      .first()
+      .click();
+    await expect(page.locator("text=/administradores actualizado/i")).toBeVisible({ timeout: 8000 });
+
+    // Recargar y verificar persistencia
+    await page.reload();
+    await waitConvex(page);
+    await goToView(page, "Organizaciones");
+    const cardAfter = page.locator("div.rounded-xl").filter({ hasText: orgName }).first();
+    const opsAfter = cardAfter.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
+    expect((await opsAfter.getAttribute("class"))?.includes("emerald") ?? false).toBe(true);
+    const adminSeatsAfter = cardAfter
+      .locator('label:has-text("Cupo de administradores") + div input[type="number"]')
+      .first();
+    await expect(adminSeatsAfter).toHaveValue("3");
+
+    // Limpieza: eliminar la org de prueba
+    await cardAfter
+      .getByRole("button", { name: "Eliminar organización completa" })
+      .click();
+    await page.getByPlaceholder(orgName).fill(orgName);
+    await page.getByRole("button", { name: "Eliminar org", exact: true }).click();
+    await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
+  });
 });
 
 // Borra todas las org-cards cuyo nombre empieza con "E2E Test Org".

@@ -5,62 +5,15 @@ import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useSubscription } from "@/hooks/useSubscription";
 import Link from "next/link";
-import { Check, Zap, Shield, Star, ArrowLeft, MessageCircle } from "lucide-react";
-import { WHATSAPP_LINK, WHATSAPP_NUMBER } from "@/lib/constants";
-
-/** Enlace de WhatsApp con mensaje pre-llenado para contratar un plan específico. */
-function planWhatsappLink(planName: string, price: string): string {
-  const msg = `Hola TeraH2O, quiero contratar el plan ${planName} (${price}/mes). ¿Me ayudan con la activación?`;
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
-}
-
-const PLANS = [
-  {
-    id: "starter" as const,
-    name: "Starter",
-    price: "$49",
-    period: "/mes",
-    description: "Ideal para plantas pequenas y medianas",
-    color: "border-white/10",
-    accentColor: "text-blue-400",
-    badgeColor: "bg-blue-500/10 border-blue-500/20 text-blue-400",
-    features: [
-      "1 Admin + hasta 3 Operadores",
-      "Operaciones: Consola, Hoja, Stock",
-      "Finanzas PTAP basica",
-      "Motor IA Hidrometeorologica",
-      "Academia (Modulos I-II)",
-      "Soporte por email",
-    ],
-  },
-  {
-    id: "pro" as const,
-    name: "Pro",
-    price: "$89",
-    period: "/mes",
-    description: "Para plantas con operacion intensiva",
-    color: "border-blue-500/30",
-    accentColor: "text-blue-400",
-    badgeColor: "bg-blue-500/20 border-blue-500/40 text-blue-300",
-    badge: "MAS POPULAR",
-    features: [
-      "1 Admin + hasta 5 Operadores",
-      "Acceso completo a Operaciones",
-      "Asistencia Tecnica multicliente",
-      "Bitacora Maestra + Auditoria",
-      "Academia completa (I-IV)",
-      "Motor IA + prediccion avanzada",
-      "Soporte prioritario WhatsApp",
-    ],
-  },
-];
+import { ArrowLeft, MessageCircle } from "lucide-react";
+import { WHATSAPP_LINK } from "@/lib/constants";
 
 export default function PricingPage() {
   const router = useRouter();
   const { isAuthenticated } = useCurrentUser();
   const { isActive, isLoading: subLoading } = useSubscription();
 
-  // Si el usuario ya tiene un plan activo/trial, no debe ver los planes:
+  // Si el usuario ya tiene un plan activo/trial, no debe ver esta página:
   // se le envía directo a la aplicación.
   useEffect(() => {
     if (isAuthenticated && !subLoading && isActive) {
@@ -69,7 +22,7 @@ export default function PricingPage() {
   }, [isAuthenticated, subLoading, isActive, router]);
 
   // Mientras se resuelve la suscripción de un usuario autenticado, evitar el
-  // parpadeo de los planes antes del posible redirect.
+  // parpadeo del contenido antes del posible redirect.
   if (isAuthenticated && subLoading) {
     return (
       <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
@@ -102,93 +55,30 @@ export default function PricingPage() {
           <div className="w-16" />
         </div>
 
-        {/* Title */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl font-bold text-white mb-3">Planes y Precios</h1>
-          <p className="text-white/40 text-sm leading-relaxed max-w-md mx-auto">
-            Escribenos por WhatsApp y un asesor activa tu plan. Sin compromiso, cancela cuando quieras.
+        {/* Contenido */}
+        <div className="max-w-md mx-auto text-center mt-10">
+          <h1 className="text-3xl font-bold text-white mb-3">
+            Activa tu plataforma
+          </h1>
+          <p className="text-white/40 text-sm leading-relaxed mb-8">
+            Escríbenos por WhatsApp y un asesor activa tu cuenta TeraH2O a la
+            medida de tu planta. Sin compromiso, cancela cuando quieras.
           </p>
-        </div>
 
-        {/* Plans */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-          {PLANS.map((plan) => (
-            <div
-              key={plan.id}
-              className={`bg-[#0a1120] border ${plan.color} rounded-2xl p-6 flex flex-col`}
-            >
-              {/* Badge */}
-              {plan.badge && (
-                <div className={`self-start mb-4 px-3 py-1 border rounded-full text-[0.6rem] font-bold uppercase tracking-widest ${plan.badgeColor}`}>
-                  {plan.badge}
-                </div>
-              )}
-
-              {/* Plan header */}
-              <div className="mb-5">
-                <h2 className="text-white font-bold text-xl mb-1">{plan.name}</h2>
-                <p className="text-white/30 text-xs">{plan.description}</p>
-                <div className="flex items-baseline gap-1 mt-3">
-                  <span className={`text-3xl font-bold ${plan.accentColor}`}>{plan.price}</span>
-                  <span className="text-white/30 text-sm">{plan.period}</span>
-                </div>
-              </div>
-
-              {/* Features */}
-              <ul className="space-y-2.5 mb-6 flex-1">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5">
-                    <Check className="w-3.5 h-3.5 text-blue-400 flex-shrink-0 mt-0.5" />
-                    {feature.includes("WhatsApp") ? (
-                      <a
-                        href={WHATSAPP_LINK}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-400 text-xs leading-relaxed hover:underline"
-                      >
-                        {feature}
-                      </a>
-                    ) : (
-                      <span className="text-white/60 text-xs leading-relaxed">{feature}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-
-              {/* CTA */}
-              <a
-                href={planWhatsappLink(plan.name, plan.price)}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid={`plan-cta-${plan.id}`}
-                className="w-full flex items-center justify-center gap-2 py-3 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 hover:border-blue-500/50 text-blue-400 font-bold text-[0.72rem] uppercase tracking-[0.18em] rounded-lg transition-all"
-              >
-                <MessageCircle className="w-3.5 h-3.5" />
-                Ponerse en contacto
-              </a>
-            </div>
-          ))}
-        </div>
-
-        {/* Features grid */}
-        <div className="mt-16 grid grid-cols-3 gap-6 max-w-2xl mx-auto">
-          {[
-            { icon: Zap, title: "Activacion instantanea", desc: "Empieza a usar la plataforma en segundos" },
-            { icon: Shield, title: "Sin compromiso", desc: "Cancela en cualquier momento sin penalizaciones" },
-            { icon: Star, title: "Soporte tecnico", desc: "Asesoria de ingenieros especializados en PTAP" },
-          ].map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="text-center">
-              <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Icon className="w-5 h-5 text-blue-400" />
-              </div>
-              <p className="text-white/70 text-xs font-semibold mb-1">{title}</p>
-              <p className="text-white/30 text-[0.68rem] leading-relaxed">{desc}</p>
-            </div>
-          ))}
+          <a
+            href={WHATSAPP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="pricing-cta"
+            className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-blue-500/15 border border-blue-500/30 hover:bg-blue-500/25 hover:border-blue-500/50 text-blue-400 font-bold text-[0.72rem] uppercase tracking-[0.18em] rounded-lg transition-all"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Contactar por WhatsApp
+          </a>
         </div>
 
         {/* Footer */}
-        <p className="text-center text-white/15 text-[0.62rem] font-mono mt-12 tracking-wide">
+        <p className="text-center text-white/15 text-[0.62rem] font-mono mt-16 tracking-wide">
           © 2026 Servicios Profesionales Tera · Ecuador
         </p>
       </div>

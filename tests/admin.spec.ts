@@ -1,10 +1,17 @@
 import { test, expect } from "@playwright/test";
 import { loginWithClerkTicket } from "./helpers/clerk-login";
+import { seedTestData } from "./helpers/seed-test-data";
 
 const ADMIN_EMAIL = process.env.TEST_EMAIL ?? "carlos.test.777@ptap.ec";
 const RUN_ID = Date.now();
 const OPERATOR_EMAIL = `op.e2e.${RUN_ID}@ptap-test.ec`;
 const OPERATOR_NAME = "Operador E2E Test";
+
+// Entitlements de la org de prueba en ON (default global = OFF), para que los
+// toggles de permisos de operador estén habilitados.
+test.beforeAll(async () => {
+  await seedTestData(ADMIN_EMAIL);
+});
 
 test.describe.serial("Admin Dashboard — gestión de operadores", () => {
   test("admin puede acceder a /dashboard/admin", async ({ page, context }) => {
