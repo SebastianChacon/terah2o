@@ -19,6 +19,8 @@ import type * as lib_permissions from "../lib/permissions.js";
 import type * as migrations from "../migrations.js";
 import type * as operatorPermissions from "../operatorPermissions.js";
 import type * as organizations from "../organizations.js";
+import type * as paymentSettings from "../paymentSettings.js";
+import type * as plans from "../plans.js";
 import type * as plantSettings from "../plantSettings.js";
 import type * as shiftRecords from "../shiftRecords.js";
 import type * as subscriptions from "../subscriptions.js";
@@ -45,6 +47,8 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   operatorPermissions: typeof operatorPermissions;
   organizations: typeof organizations;
+  paymentSettings: typeof paymentSettings;
+  plans: typeof plans;
   plantSettings: typeof plantSettings;
   shiftRecords: typeof shiftRecords;
   subscriptions: typeof subscriptions;

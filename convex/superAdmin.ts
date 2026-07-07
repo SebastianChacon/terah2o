@@ -29,10 +29,37 @@ const ORG_DATA_TABLES = [
   "financialProjections",
   "jarTestSessions",
   "bitacoraEntries",
+  "ownerAuditLog",
 ] as const;
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
+}
+
+// Mapeo del plan nuevo (tabla `plans`) al enum legado `starter`|`pro` que
+// `subscriptions.plan` todavía exige (campo deprecated, ver schema.ts).
+// Un plan de tier bajo se guarda como "starter", cualquier tier superior u
+// "academia" como "pro" — solo importa para no romper el campo legado hasta
+// que se elimine en la siguiente fase.
+function legacyPlanFor(planKey: string): "starter" | "pro" {
+  return planKey === "esencial" ? "starter" : "pro";
+}
+
+// Punto único de auditoría: cada mutation que cambia algo de un cliente lo
+// llama. Append-only — nunca editar/borrar filas de ownerAuditLog salvo el
+// borrado en cascada de la organización completa.
+async function logOwnerAction(
+  ctx: MutationCtx,
+  organizationId: import("./_generated/dataModel").Id<"organizations">,
+  text: string
+): Promise<void> {
+  const me = await getAuthenticatedUser(ctx);
+  await ctx.db.insert("ownerAuditLog", {
+    organizationId,
+    text,
+    actorEmail: normalizeEmail(me?.email) || superAdminEmail(),
+    createdAt: Date.now(),
+  });
 }
 
 /**
@@ -60,8 +87,10 @@ async function isSuperAdmin(ctx: AnyCtx): Promise<boolean> {
 
 /**
  * Lanza si el usuario autenticado no es el super-admin.
+ * Exportado para que otros módulos del backend (p.ej. paymentSettings.ts)
+ * puedan gatear sus propias mutations/queries sin duplicar esta lógica.
  */
-async function requireSuperAdmin(ctx: AnyCtx): Promise<void> {
+export async function requireSuperAdmin(ctx: AnyCtx): Promise<void> {
   if (!(await isSuperAdmin(ctx))) throw new Error("No autorizado");
 }
 
@@ -215,6 +244,8 @@ export const getOwnerDashboard = query({
     const users = await ctx.db.query("users").collect();
     const orgs = await ctx.db.query("organizations").collect();
     const subs = await ctx.db.query("subscriptions").collect();
+    const plans = await ctx.db.query("plans").collect();
+    const planById = new Map(plans.map((p) => [p._id, p]));
 
     let totalAdmins = 0;
     let totalOperators = 0;
@@ -246,7 +277,10 @@ export const getOwnerDashboard = query({
     for (const s of currentSubs) {
       subsByStatus[s.status]++;
       subsByPlan[s.plan]++;
-      if (s.status === "active") mrr += PLAN_PRICES[s.plan];
+      if (s.status === "active") {
+        const plan = s.planId ? planById.get(s.planId) : undefined;
+        mrr += plan ? plan.price : PLAN_PRICES[s.plan];
+      }
       if (
         s.status === "trialing" &&
         s.trialEndsAt &&
@@ -317,10 +351,15 @@ export const listOrganizations = query({
           ownerEmail: owner?.email ?? null,
           adminCount: adminCount.get(o._id) ?? 0,
           operatorCount: operatorCount.get(o._id) ?? 0,
+          contractType: o.contractType ?? null,
+          contractNumber: o.contractNumber ?? null,
+          contractMonths: o.contractMonths ?? null,
+          plantProfile: o.plantProfile ?? null,
           subscription: sub
             ? {
                 status: sub.status,
                 plan: sub.plan,
+                planId: sub.planId ?? null,
                 trialEndsAt: sub.trialEndsAt ?? null,
                 expiresAt: sub.expiresAt ?? null,
               }
@@ -366,15 +405,297 @@ export const setSubscriptionGlobal = mutation({
       expiresAt: args.expiresAt,
     };
 
+    let result;
     if (existing) {
       await ctx.db.patch(existing._id, patch);
+      result = existing._id;
+    } else {
+      result = await ctx.db.insert("subscriptions", {
+        organizationId: args.organizationId,
+        createdAt: Date.now(),
+        ...patch,
+      });
+    }
+
+    await logOwnerAction(
+      ctx,
+      args.organizationId,
+      `Suscripción fijada: ${args.status} · ${args.plan}`
+    );
+    return result;
+  },
+});
+
+// ── Fijar el plan (tabla `plans`, por caudal) de la suscripción de una org ─
+export const setOrgPlan = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    planId: v.id("plans"),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    const plan = await ctx.db.get(args.planId);
+    if (!plan) throw new Error("Plan no encontrado");
+
+    const existing = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .order("desc")
+      .first();
+
+    const legacyPlan = legacyPlanFor(plan.key);
+
+    let result;
+    if (existing) {
+      await ctx.db.patch(existing._id, { planId: args.planId, plan: legacyPlan });
+      result = existing._id;
+    } else {
+      result = await ctx.db.insert("subscriptions", {
+        organizationId: args.organizationId,
+        status: "trialing",
+        plan: legacyPlan,
+        planId: args.planId,
+        createdAt: Date.now(),
+      });
+    }
+
+    await logOwnerAction(ctx, args.organizationId, `Plan cambiado a "${plan.name}"`);
+    return result;
+  },
+});
+
+// ── Datos de contrato (metadata comercial, sin efecto operativo) ──────────
+export const setOrgContract = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    contractType: v.optional(v.union(v.literal("directa"), v.literal("sercop"))),
+    contractNumber: v.optional(v.string()),
+    contractMonths: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    await ctx.db.patch(args.organizationId, {
+      contractType: args.contractType,
+      contractNumber: args.contractNumber?.trim() || undefined,
+      contractMonths: args.contractMonths,
+    });
+
+    await logOwnerAction(ctx, args.organizationId, "Datos de contrato actualizados");
+    return args.organizationId;
+  },
+});
+
+// ── Perfil de planta (metadata comercial — NO usar para cálculos operativos,
+// esos viven en `plantSettings`) ──────────────────────────────────────────
+export const setOrgPlantProfile = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    caudalLs: v.number(),
+    coagType: v.string(),
+    kgMonth: v.number(),
+    habitantes: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    if (args.caudalLs < 0 || args.kgMonth < 0 || args.habitantes < 0)
+      throw new Error("Los valores del perfil de planta no pueden ser negativos");
+
+    await ctx.db.patch(args.organizationId, {
+      plantProfile: {
+        caudalLs: args.caudalLs,
+        coagType: args.coagType.trim(),
+        kgMonth: args.kgMonth,
+        habitantes: args.habitantes,
+      },
+    });
+
+    await logOwnerAction(ctx, args.organizationId, "Perfil de planta actualizado");
+    return args.organizationId;
+  },
+});
+
+// ── Bitácora de auditoría del Owner, por organización ─────────────────────
+export const listOwnerAuditLog = query({
+  args: { organizationId: v.id("organizations") },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+    const rows = await ctx.db
+      .query("ownerAuditLog")
+      .withIndex("by_organizationId", (q) =>
+        q.eq("organizationId", args.organizationId)
+      )
+      .collect();
+    return rows.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+// ── Editar un plan comercial (precio, rango de caudal, entitlements) ──────
+export const updatePlan = mutation({
+  args: {
+    planId: v.id("plans"),
+    name: v.optional(v.string()),
+    price: v.optional(v.number()),
+    caudalMin: v.optional(v.number()),
+    caudalMax: v.optional(v.number()),
+    blurb: v.optional(v.string()),
+    unlocks: v.optional(
+      v.object({
+        canAccessOperaciones: v.boolean(),
+        canAccessAsistencia: v.boolean(),
+        canAccessAcademia: v.boolean(),
+        canAccessBitacora: v.boolean(),
+        canAccessConsolaTecnica: v.boolean(),
+        canAccessHojaOperativa: v.boolean(),
+        canAccessStock: v.boolean(),
+        canAccessFinanzas: v.boolean(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const plan = await ctx.db.get(args.planId);
+    if (!plan) throw new Error("Plan no encontrado");
+
+    if (args.price !== undefined && args.price < 0)
+      throw new Error("El precio no puede ser negativo");
+
+    const nextMin = args.caudalMin ?? plan.caudalMin;
+    const nextMax = args.caudalMax ?? plan.caudalMax;
+    if (nextMin !== undefined && nextMax !== undefined && nextMin >= nextMax)
+      throw new Error("El caudal mínimo debe ser menor al máximo");
+
+    if (plan.type === "operaciones" && nextMin !== undefined && nextMax !== undefined) {
+      const others = await ctx.db
+        .query("plans")
+        .filter((q) => q.eq(q.field("type"), "operaciones"))
+        .collect();
+      const overlap = others.some(
+        (o) =>
+          o._id !== args.planId &&
+          o.caudalMin !== undefined &&
+          o.caudalMax !== undefined &&
+          nextMin < o.caudalMax &&
+          nextMax > o.caudalMin
+      );
+      if (overlap)
+        throw new Error("El rango de caudal se traslapa con otro plan existente");
+    }
+
+    await ctx.db.patch(args.planId, {
+      ...(args.name !== undefined ? { name: args.name.trim() } : {}),
+      ...(args.price !== undefined ? { price: args.price } : {}),
+      ...(args.caudalMin !== undefined ? { caudalMin: args.caudalMin } : {}),
+      ...(args.caudalMax !== undefined ? { caudalMax: args.caudalMax } : {}),
+      ...(args.blurb !== undefined ? { blurb: args.blurb } : {}),
+      ...(args.unlocks !== undefined ? { unlocks: args.unlocks } : {}),
+    });
+
+    return args.planId;
+  },
+});
+
+// ── Editar descuentos de término (6 meses / anual) ────────────────────────
+export const updatePricingConfig = mutation({
+  args: {
+    sixMonthDiscountPct: v.number(),
+    annualDiscountPct: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    if (
+      args.sixMonthDiscountPct < 0 ||
+      args.sixMonthDiscountPct > 100 ||
+      args.annualDiscountPct < 0 ||
+      args.annualDiscountPct > 100
+    )
+      throw new Error("El descuento debe estar entre 0 y 100%");
+
+    const existing = await ctx.db.query("pricingConfig").first();
+    if (existing) {
+      await ctx.db.patch(existing._id, args);
       return existing._id;
     }
-    return await ctx.db.insert("subscriptions", {
-      organizationId: args.organizationId,
-      createdAt: Date.now(),
-      ...patch,
-    });
+    return await ctx.db.insert("pricingConfig", args);
+  },
+});
+
+// ── Analítica de uso real (usageEvents) ───────────────────────────────────
+export const getUsageAnalytics = query({
+  args: {
+    organizationId: v.optional(v.id("organizations")),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const events = args.organizationId
+      ? await ctx.db
+          .query("usageEvents")
+          .withIndex("by_org_day", (q) =>
+            q.eq("organizationId", args.organizationId!)
+          )
+          .collect()
+      : await ctx.db.query("usageEvents").collect();
+
+    const orgs = await ctx.db.query("organizations").collect();
+    const orgById = new Map(orgs.map((o) => [o._id, o]));
+
+    const dailyMap = new Map<string, number>();
+    const monthlyMap = new Map<string, number>();
+    const byOrg = new Map<
+      string,
+      { orgName: string; daily: Map<string, number>; monthly: Map<string, number> }
+    >();
+
+    for (const e of events) {
+      dailyMap.set(e.day, (dailyMap.get(e.day) ?? 0) + 1);
+      const ym = e.day.slice(0, 7);
+      monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + 1);
+
+      const key = e.organizationId as unknown as string;
+      if (!byOrg.has(key)) {
+        byOrg.set(key, {
+          orgName: orgById.get(e.organizationId)?.name ?? "—",
+          daily: new Map(),
+          monthly: new Map(),
+        });
+      }
+      const bucket = byOrg.get(key)!;
+      bucket.daily.set(e.day, (bucket.daily.get(e.day) ?? 0) + 1);
+      bucket.monthly.set(ym, (bucket.monthly.get(ym) ?? 0) + 1);
+    }
+
+    const toSortedArray = <K extends string>(m: Map<K, number>, keyName: string) =>
+      Array.from(m.entries())
+        .map(([k, count]) => ({ [keyName]: k, count }))
+        .sort((a, b) => String(a[keyName]).localeCompare(String(b[keyName])));
+
+    return {
+      totalEvents: events.length,
+      daily: toSortedArray(dailyMap, "date"),
+      monthly: toSortedArray(monthlyMap, "ym"),
+      byOrg: Array.from(byOrg.entries()).map(([organizationId, v]) => ({
+        organizationId,
+        orgName: v.orgName,
+        daily: toSortedArray(v.daily, "date"),
+        monthly: toSortedArray(v.monthly, "ym"),
+      })),
+    };
   },
 });
 
@@ -447,6 +768,11 @@ export const transferOrgOwnership = mutation({
       throw new Error("El nuevo dueño debe ser administrador");
 
     await ctx.db.patch(args.organizationId, { adminUserId: args.newAdminUserId });
+    await logOwnerAction(
+      ctx,
+      args.organizationId,
+      `Propiedad transferida a ${newOwner.name ?? newOwner.email ?? newOwner._id}`
+    );
     return args.organizationId;
   },
 });
@@ -480,6 +806,11 @@ export const setMaxOperators = mutation({
       );
 
     await ctx.db.patch(args.organizationId, { maxOperators: args.maxOperators });
+    await logOwnerAction(
+      ctx,
+      args.organizationId,
+      `Cupo de operadores actualizado a ${args.maxOperators}`
+    );
     return args.organizationId;
   },
 });
@@ -513,6 +844,11 @@ export const setMaxAdmins = mutation({
       );
 
     await ctx.db.patch(args.organizationId, { maxAdmins: args.maxAdmins });
+    await logOwnerAction(
+      ctx,
+      args.organizationId,
+      `Cupo de administradores actualizado a ${args.maxAdmins}`
+    );
     return args.organizationId;
   },
 });
@@ -556,6 +892,7 @@ export const setOrgEntitlements = mutation({
       if (changed) await ctx.db.patch(p._id, clamped);
     }
 
+    await logOwnerAction(ctx, args.organizationId, "Páginas habilitadas actualizadas");
     return args.organizationId;
   },
 });
@@ -573,6 +910,7 @@ export const renameOrganizationGlobal = mutation({
     if (!org) throw new Error("Organización no encontrada");
 
     await ctx.db.patch(args.organizationId, { name });
+    await logOwnerAction(ctx, args.organizationId, `Renombrada de "${org.name}" a "${name}"`);
     return args.organizationId;
   },
 });
@@ -626,6 +964,8 @@ export const createClientOrg = mutation({
       createdAt: Date.now(),
     });
 
+    await logOwnerAction(ctx, orgId, `Cliente creado: ${orgName} (admin ${email})`);
+
     return { adminId, orgId, email, orgName };
   },
 });
@@ -668,6 +1008,13 @@ export const deleteOrganizationGlobal = mutation({
         .collect();
       for (const row of rows) await ctx.db.delete(row._id);
     }
+
+    // 1b. usageEvents (índice compuesto by_org_day, no by_organizationId)
+    const usageRows = await ctx.db
+      .query("usageEvents")
+      .withIndex("by_org_day", (q) => q.eq("organizationId", args.organizationId))
+      .collect();
+    for (const row of usageRows) await ctx.db.delete(row._id);
 
     // 2. Permisos de operadores de la org
     const perms = await ctx.db

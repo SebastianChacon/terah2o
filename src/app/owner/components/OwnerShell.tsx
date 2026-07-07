@@ -11,6 +11,9 @@ import {
   Users,
   CreditCard,
   UserPlus,
+  Layers,
+  Activity,
+  Wallet,
 } from "lucide-react";
 import type { OwnerView } from "../types";
 import { DashboardView } from "./DashboardView";
@@ -18,12 +21,18 @@ import { OrganizationsView } from "./OrganizationsView";
 import { AccountsView } from "./AccountsView";
 import { SubscriptionsView } from "./SubscriptionsView";
 import { CreateClientModal } from "./CreateClientModal";
+import { PlansView } from "./PlansView";
+import { UsageView } from "./UsageView";
+import { PaymentsView } from "./PaymentsView";
 
 const NAV: { key: OwnerView; label: string; icon: React.ReactNode }[] = [
   { key: "dashboard", label: "Resumen", icon: <LayoutDashboard className="w-4 h-4" /> },
   { key: "organizations", label: "Organizaciones", icon: <Building2 className="w-4 h-4" /> },
   { key: "accounts", label: "Cuentas", icon: <Users className="w-4 h-4" /> },
   { key: "subscriptions", label: "Suscripciones", icon: <CreditCard className="w-4 h-4" /> },
+  { key: "plans", label: "Planes", icon: <Layers className="w-4 h-4" /> },
+  { key: "usage", label: "Uso del sistema", icon: <Activity className="w-4 h-4" /> },
+  { key: "payments", label: "Pagos", icon: <Wallet className="w-4 h-4" /> },
 ];
 
 const VIEW_TITLE: Record<OwnerView, string> = {
@@ -31,6 +40,9 @@ const VIEW_TITLE: Record<OwnerView, string> = {
   organizations: "Organizaciones",
   accounts: "Control de cuentas",
   subscriptions: "Suscripciones",
+  plans: "Planes comerciales",
+  usage: "Uso del sistema",
+  payments: "Pagos",
 };
 
 export function OwnerShell() {
@@ -128,6 +140,9 @@ export function OwnerShell() {
             {view === "subscriptions" && (
               <SubscriptionsView showToast={showToast} />
             )}
+            {view === "plans" && <PlansView showToast={showToast} />}
+            {view === "usage" && <UsageView />}
+            {view === "payments" && <PaymentsView showToast={showToast} />}
           </div>
         </main>
       </div>
