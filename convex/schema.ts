@@ -264,7 +264,52 @@ export default defineSchema({
     canAccessHojaOperativa: v.optional(v.boolean()),
     canAccessStock: v.optional(v.boolean()),
     canAccessFinanzas: v.optional(v.boolean()),
+    // Metadata comercial/contractual (rellenada por el Owner). Deliberadamente
+    // separada de `plantSettings` (config operativa usada por los cálculos):
+    // editar un dato de venta aquí nunca debe alterar un cálculo en producción.
+    contractType: v.optional(v.union(v.literal("directa"), v.literal("sercop"))),
+    contractNumber: v.optional(v.string()),
+    contractMonths: v.optional(v.number()),
+    plantProfile: v.optional(
+      v.object({
+        caudalLs: v.number(),
+        coagType: v.string(),
+        kgMonth: v.number(),
+        habitantes: v.number(),
+      })
+    ),
     createdAt: v.number(),
+  }),
+
+  // Planes comerciales por caudal (reemplaza el enum fijo starter/pro).
+  // Editable desde /owner sin deploy: precio, rango de caudal y qué
+  // entitlements desbloquea cada plan.
+  plans: defineTable({
+    key: v.string(), // "esencial" | "operativo" | "avanzado" | "industrial" | "academia"
+    type: v.union(v.literal("operaciones"), v.literal("academia")),
+    name: v.string(),
+    price: v.number(), // mensual (o único, para academia)
+    caudalMin: v.optional(v.number()),
+    caudalMax: v.optional(v.number()),
+    blurb: v.optional(v.string()),
+    unlocks: v.object({
+      canAccessOperaciones: v.boolean(),
+      canAccessAsistencia: v.boolean(),
+      canAccessAcademia: v.boolean(),
+      canAccessBitacora: v.boolean(),
+      canAccessConsolaTecnica: v.boolean(),
+      canAccessHojaOperativa: v.boolean(),
+      canAccessStock: v.boolean(),
+      canAccessFinanzas: v.boolean(),
+    }),
+    order: v.number(),
+  }).index("by_key", ["key"]),
+
+  // Fila única con los descuentos de término (%) usados para derivar los
+  // precios de 6 meses / anual a partir del precio mensual de cada plan.
+  pricingConfig: defineTable({
+    sixMonthDiscountPct: v.number(),
+    annualDiscountPct: v.number(),
   }),
 
   subscriptions: defineTable({
@@ -275,11 +320,34 @@ export default defineSchema({
       v.literal("past_due"),
       v.literal("canceled")
     ),
+    // DEPRECATED: enum fijo, reemplazado por `planId`. Se conserva temporalmente
+    // durante la migración a la tabla `plans`; no usar en código nuevo.
     plan: v.union(v.literal("starter"), v.literal("pro")),
+    planId: v.optional(v.id("plans")),
     trialEndsAt: v.optional(v.number()),
     expiresAt: v.optional(v.number()),
     createdAt: v.number(),
   }).index("by_organizationId", ["organizationId"]),
+
+  // Bitácora de auditoría del Owner (acciones sobre cuentas/clientes). Distinta
+  // de `bitacoraEntries` (que es operativa, de planta). Append-only: ninguna
+  // mutation debe editar ni borrar filas de aquí, salvo el borrado en cascada
+  // de la organización completa.
+  ownerAuditLog: defineTable({
+    organizationId: v.id("organizations"),
+    text: v.string(),
+    actorEmail: v.string(),
+    createdAt: v.number(),
+  }).index("by_organizationId", ["organizationId"]),
+
+  // Un evento por sesión iniciada (no por request) — instrumentado en
+  // upsertCurrentUser. Agregado por getUsageAnalytics para la vista de uso.
+  usageEvents: defineTable({
+    organizationId: v.id("organizations"),
+    userId: v.id("users"),
+    day: v.string(), // "YYYY-MM-DD"
+    createdAt: v.number(),
+  }).index("by_org_day", ["organizationId", "day"]),
 
   operatorPermissions: defineTable({
     operatorId: v.id("users"),
