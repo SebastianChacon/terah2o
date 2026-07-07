@@ -31,10 +31,11 @@ export const createOrganization = mutation({
     // Vincular el admin a la organización
     await ctx.db.patch(user._id, { organizationId: orgId });
 
-    // NO se crea suscripción aquí: un usuario recién registrado queda SIN plan
-    // y debe elegir uno en /pricing (createTrialSubscription) antes de acceder a
-    // cualquier módulo. El gate de suscripción (proxy + SubscriptionGate) lo
-    // redirige a /pricing mientras no tenga una suscripción activa/trial.
+    // NO se crea suscripción aquí: un usuario recién registrado queda SIN plan.
+    // La activación es manual: el cliente contacta por WhatsApp desde /pricing
+    // y el Owner activa la suscripción desde el panel (superAdmin.setSubscriptionGlobal).
+    // El gate de suscripción (proxy + SubscriptionGate) redirige a /pricing
+    // mientras no tenga una suscripción activa/trial.
     return orgId;
   },
 });

@@ -107,16 +107,14 @@ export interface OwnerMetrics {
     orgName: string | null;
     trialEndsAt: number;
   }[];
+  activeExpiring: {
+    organizationId: string;
+    orgName: string | null;
+    expiresAt: number;
+  }[];
 }
 
-export type OwnerView =
-  | "dashboard"
-  | "organizations"
-  | "accounts"
-  | "subscriptions"
-  | "plans"
-  | "usage"
-  | "payments";
+export type OwnerView = "dashboard" | "clients" | "plans" | "usage" | "payments";
 
 export const EMPTY_PERMS: OperatorPermissions = {
   canAccessOperaciones: false,
@@ -149,4 +147,44 @@ export function formatDate(ts: number | null | undefined): string {
     month: "short",
     year: "numeric",
   });
+}
+
+export function daysLeft(ts: number | null | undefined): number | null {
+  if (!ts) return null;
+  return Math.round((ts - Date.now()) / 86_400_000);
+}
+
+export interface ClientStatus {
+  key: "active" | "expiring" | "trial" | "expired" | "none";
+  label: string;
+  className: string;
+}
+
+// ── Estado comercial derivado de la suscripción de una organización ────────
+// (misma lógica que el mockup: prueba > vencimiento del ciclo pagado > sin plan)
+export function clientStatus(sub: OrgRow["subscription"]): ClientStatus {
+  if (!sub) return { key: "none", label: "Sin plan", className: "bg-[#eef2f6] text-[#627d98]" };
+
+  if (sub.status === "trialing") {
+    const d = daysLeft(sub.trialEndsAt);
+    if (d !== null && d < 0)
+      return { key: "expired", label: "Prueba vencida", className: "bg-[#fee2e2] text-[#b91c1c]" };
+    return {
+      key: "trial",
+      label: d !== null ? `Prueba · ${d}d` : "Prueba",
+      className: "bg-[#fef3c7] text-[#b45309]",
+    };
+  }
+
+  if (sub.status === "canceled")
+    return { key: "expired", label: "Cancelada", className: "bg-[#fee2e2] text-[#b91c1c]" };
+  if (sub.status === "past_due")
+    return { key: "expired", label: "Vencida", className: "bg-[#fee2e2] text-[#b91c1c]" };
+
+  const d = daysLeft(sub.expiresAt);
+  if (d !== null && d < 0)
+    return { key: "expired", label: "Vencida", className: "bg-[#fee2e2] text-[#b91c1c]" };
+  if (d !== null && d <= 7)
+    return { key: "expiring", label: `Por vencer · ${d}d`, className: "bg-[#ffedd5] text-[#c2410c]" };
+  return { key: "active", label: "Activa", className: "bg-[#dcfce7] text-[#15803d]" };
 }
