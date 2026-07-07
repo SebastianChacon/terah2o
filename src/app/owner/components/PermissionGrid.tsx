@@ -53,7 +53,7 @@ export function PermissionGrid({ row, onError }: PermissionGridProps) {
   return (
     <div className="space-y-3">
       <div>
-        <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+        <p className="text-[#829ab1] text-[0.65rem] font-semibold uppercase tracking-wider mb-1.5">
           Módulos principales
         </p>
         <div className="grid grid-cols-3 gap-2">
@@ -64,10 +64,10 @@ export function PermissionGrid({ row, onError }: PermissionGridProps) {
                 key={key}
                 onClick={() => handleToggle(key, val)}
                 disabled={saving}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                   val
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                    : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                    : "bg-white border-[#dde4ec] text-[#829ab1] hover:border-[#c4cfda]"
                 }`}
               >
                 {val ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
@@ -78,7 +78,7 @@ export function PermissionGrid({ row, onError }: PermissionGridProps) {
         </div>
       </div>
       <div>
-        <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+        <p className="text-[#829ab1] text-[0.65rem] font-semibold uppercase tracking-wider mb-1.5">
           Sub-módulos de Operaciones
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
@@ -93,12 +93,12 @@ export function PermissionGrid({ row, onError }: PermissionGridProps) {
                 title={
                   opsBlocked ? "Requiere permiso de Operaciones (hub)" : undefined
                 }
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[0.65rem] font-mono uppercase tracking-wider transition-all ${
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                   opsBlocked
-                    ? "opacity-40 cursor-not-allowed bg-white/3 border-white/8 text-white/20"
+                    ? "opacity-40 cursor-not-allowed bg-white border-[#dde4ec] text-[#829ab1]"
                     : val
-                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                      : "bg-white/3 border-white/8 text-white/30 hover:border-white/20"
+                      ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                      : "bg-white border-[#dde4ec] text-[#829ab1] hover:border-[#c4cfda]"
                 }`}
               >
                 {val && !opsBlocked ? (

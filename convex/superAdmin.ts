@@ -272,6 +272,11 @@ export const getOwnerDashboard = query({
       orgName: string | null;
       trialEndsAt: number;
     }[] = [];
+    const activeExpiring: {
+      organizationId: string;
+      orgName: string | null;
+      expiresAt: number;
+    }[] = [];
     const orgById = new Map(orgs.map((o) => [o._id, o]));
 
     for (const s of currentSubs) {
@@ -280,6 +285,13 @@ export const getOwnerDashboard = query({
       if (s.status === "active") {
         const plan = s.planId ? planById.get(s.planId) : undefined;
         mrr += plan ? plan.price : PLAN_PRICES[s.plan];
+        if (s.expiresAt && s.expiresAt - now <= WEEK) {
+          activeExpiring.push({
+            organizationId: s.organizationId,
+            orgName: orgById.get(s.organizationId)?.name ?? null,
+            expiresAt: s.expiresAt,
+          });
+        }
       }
       if (
         s.status === "trialing" &&
@@ -294,6 +306,7 @@ export const getOwnerDashboard = query({
       }
     }
     trialsExpiring.sort((a, b) => a.trialEndsAt - b.trialEndsAt);
+    activeExpiring.sort((a, b) => a.expiresAt - b.expiresAt);
 
     return {
       totalOrgs: orgs.length,
@@ -304,6 +317,7 @@ export const getOwnerDashboard = query({
       subsByPlan,
       mrr,
       trialsExpiring,
+      activeExpiring,
     };
   },
 });
