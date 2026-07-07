@@ -33,12 +33,64 @@ export interface OrgRow {
   ownerEmail: string | null;
   adminCount: number;
   operatorCount: number;
+  contractType: "directa" | "sercop" | null;
+  contractNumber: string | null;
+  contractMonths: number | null;
+  plantProfile: {
+    caudalLs: number;
+    coagType: string;
+    kgMonth: number;
+    habitantes: number;
+  } | null;
   subscription: {
     status: SubscriptionStatus;
     plan: SubscriptionPlan;
+    planId: Id<"plans"> | null;
     trialEndsAt: number | null;
     expiresAt: number | null;
   } | null;
+}
+
+// Fila de plan devuelta por api.plans.listPlans
+export interface PlanRow {
+  _id: Id<"plans">;
+  key: string;
+  type: "operaciones" | "academia";
+  name: string;
+  price: number;
+  caudalMin?: number;
+  caudalMax?: number;
+  blurb?: string;
+  unlocks: OperatorPermissions;
+  order: number;
+}
+
+export interface PricingConfigRow {
+  _id: Id<"pricingConfig">;
+  sixMonthDiscountPct: number;
+  annualDiscountPct: number;
+}
+
+// Fila devuelta por api.superAdmin.listOwnerAuditLog
+export interface AuditLogRow {
+  _id: Id<"ownerAuditLog">;
+  organizationId: Id<"organizations">;
+  text: string;
+  actorEmail: string;
+  createdAt: number;
+}
+
+// Forma devuelta por api.superAdmin.getUsageAnalytics
+export interface UsageAnalytics {
+  totalEvents: number;
+  daily: { date: string; count: number }[];
+  monthly: { ym: string; count: number }[];
+  byOrg: {
+    organizationId: string;
+    orgName: string;
+    daily: { date: string; count: number }[];
+    monthly: { ym: string; count: number }[];
+  }[];
 }
 
 // Métricas devueltas por api.superAdmin.getOwnerDashboard
@@ -61,7 +113,10 @@ export type OwnerView =
   | "dashboard"
   | "organizations"
   | "accounts"
-  | "subscriptions";
+  | "subscriptions"
+  | "plans"
+  | "usage"
+  | "payments";
 
 export const EMPTY_PERMS: OperatorPermissions = {
   canAccessOperaciones: false,

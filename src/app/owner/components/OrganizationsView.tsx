@@ -13,12 +13,56 @@ import {
   ChevronDown,
   ChevronRight,
   X,
+  Download,
+  FileText,
+  History,
 } from "lucide-react";
 import type { Id } from "../../../../convex/_generated/dataModel";
-import type { AccountRow, OrgRow } from "../types";
+import type { AccountRow, AuditLogRow, OrgRow, PlanRow } from "../types";
 import { formatDate } from "../types";
 import { SubBadge, RoleBadge, OwnerBadge } from "./shared";
 import type { OperatorPermissions, PermissionKey } from "@/types/auth";
+
+// ── Exportar organizaciones a CSV (generado en el cliente con datos ya
+// traídos por Convex — no hace falta un endpoint de archivo para uso interno).
+function exportOrgsCSV(orgs: OrgRow[]) {
+  const headers = [
+    "Nombre",
+    "Dueño",
+    "Correo dueño",
+    "Estado suscripción",
+    "Plan",
+    "Admins",
+    "Operadores",
+    "Tipo de contrato",
+    "N° contrato",
+    "Caudal (L/s)",
+    "Creada",
+  ];
+  const rows = orgs.map((o) => [
+    o.name,
+    o.ownerName ?? "",
+    o.ownerEmail ?? "",
+    o.subscription?.status ?? "",
+    o.subscription?.plan ?? "",
+    String(o.adminCount),
+    String(o.operatorCount),
+    o.contractType ?? "",
+    o.contractNumber ?? "",
+    o.plantProfile ? String(o.plantProfile.caudalLs) : "",
+    formatDate(o.createdAt),
+  ]);
+  const csv = [headers, ...rows]
+    .map((r) => r.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `terah2o-clientes-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 interface OrganizationsViewProps {
   showToast: (msg: string, type: "success" | "error") => void;
@@ -139,6 +183,267 @@ function DeleteOrgModal({
   );
 }
 
+// ── Datos comerciales: contrato, perfil de planta y plan por caudal ───────
+function CommercialPanel({
+  org,
+  showToast,
+}: {
+  org: OrgRow;
+  showToast: (msg: string, type: "success" | "error") => void;
+}) {
+  const plans = useQuery(api.plans.listPlans) as PlanRow[] | undefined;
+  const setContract = useMutation(api.superAdmin.setOrgContract);
+  const setPlantProfile = useMutation(api.superAdmin.setOrgPlantProfile);
+  const setPlan = useMutation(api.superAdmin.setOrgPlan);
+
+  const [contractType, setContractType] = useState(org.contractType ?? "");
+  const [contractNumber, setContractNumber] = useState(org.contractNumber ?? "");
+  const [contractMonths, setContractMonths] = useState(
+    org.contractMonths ? String(org.contractMonths) : ""
+  );
+  const [caudalLs, setCaudalLs] = useState(
+    org.plantProfile ? String(org.plantProfile.caudalLs) : ""
+  );
+  const [coagType, setCoagType] = useState(org.plantProfile?.coagType ?? "");
+  const [kgMonth, setKgMonth] = useState(
+    org.plantProfile ? String(org.plantProfile.kgMonth) : ""
+  );
+  const [habitantes, setHabitantes] = useState(
+    org.plantProfile ? String(org.plantProfile.habitantes) : ""
+  );
+  const [busy, setBusy] = useState(false);
+
+  const suggested =
+    plans && caudalLs
+      ? plans
+          .filter((p) => p.type === "operaciones")
+          .find(
+            (p) =>
+              p.caudalMin !== undefined &&
+              p.caudalMax !== undefined &&
+              Number(caudalLs) >= p.caudalMin &&
+              Number(caudalLs) < p.caudalMax
+          )
+      : undefined;
+
+  async function saveContract() {
+    setBusy(true);
+    try {
+      await setContract({
+        organizationId: org._id,
+        contractType: contractType ? (contractType as "directa" | "sercop") : undefined,
+        contractNumber: contractNumber || undefined,
+        contractMonths: contractMonths ? Number(contractMonths) : undefined,
+      });
+      showToast("Datos de contrato guardados", "success");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function savePlantProfile() {
+    if (!caudalLs || !coagType || !kgMonth || !habitantes) {
+      showToast("Completa todos los campos del perfil de planta", "error");
+      return;
+    }
+    setBusy(true);
+    try {
+      await setPlantProfile({
+        organizationId: org._id,
+        caudalLs: Number(caudalLs),
+        coagType,
+        kgMonth: Number(kgMonth),
+        habitantes: Number(habitantes),
+      });
+      showToast("Perfil de planta guardado", "success");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function choosePlan(planId: string) {
+    if (!planId) return;
+    setBusy(true);
+    try {
+      await setPlan({ organizationId: org._id, planId: planId as Id<"plans"> });
+      showToast("Plan actualizado", "success");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 p-3 bg-white/[0.02] border border-white/6 rounded-xl space-y-4">
+      <p className="text-white/40 text-[0.62rem] font-mono uppercase tracking-widest">
+        Datos comerciales
+      </p>
+
+      {/* Contrato */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div>
+          <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+            Tipo de contrato
+          </label>
+          <select
+            value={contractType}
+            onChange={(e) => setContractType(e.target.value)}
+            disabled={busy}
+            className="w-full px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm focus:border-amber-500/40 focus:outline-none"
+          >
+            <option value="">—</option>
+            <option value="directa">Directa</option>
+            <option value="sercop">SERCOP</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+            N° de contrato
+          </label>
+          <input
+            value={contractNumber}
+            onChange={(e) => setContractNumber(e.target.value)}
+            disabled={busy}
+            className="w-full px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm focus:border-amber-500/40 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+            Duración (meses)
+          </label>
+          <input
+            type="number"
+            min={0}
+            value={contractMonths}
+            onChange={(e) => setContractMonths(e.target.value)}
+            disabled={busy}
+            className="w-full px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm focus:border-amber-500/40 focus:outline-none"
+          />
+        </div>
+      </div>
+      <button
+        onClick={saveContract}
+        disabled={busy}
+        className="px-3 py-1.5 rounded-lg border border-white/10 text-white/50 text-xs hover:border-white/30 disabled:opacity-30 transition-all"
+      >
+        Guardar contrato
+      </button>
+
+      {/* Perfil de planta */}
+      <div className="pt-3 border-t border-white/5">
+        <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-2">
+          Perfil de planta (metadata comercial, no afecta cálculos operativos)
+        </label>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
+          <input
+            type="number"
+            min={0}
+            placeholder="Caudal (L/s)"
+            value={caudalLs}
+            onChange={(e) => setCaudalLs(e.target.value)}
+            disabled={busy}
+            className="px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm placeholder:text-white/20 focus:border-amber-500/40 focus:outline-none"
+          />
+          <input
+            placeholder="Tipo de coagulante"
+            value={coagType}
+            onChange={(e) => setCoagType(e.target.value)}
+            disabled={busy}
+            className="px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm placeholder:text-white/20 focus:border-amber-500/40 focus:outline-none"
+          />
+          <input
+            type="number"
+            min={0}
+            placeholder="Kg/mes"
+            value={kgMonth}
+            onChange={(e) => setKgMonth(e.target.value)}
+            disabled={busy}
+            className="px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm placeholder:text-white/20 focus:border-amber-500/40 focus:outline-none"
+          />
+          <input
+            type="number"
+            min={0}
+            placeholder="Habitantes"
+            value={habitantes}
+            onChange={(e) => setHabitantes(e.target.value)}
+            disabled={busy}
+            className="px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm placeholder:text-white/20 focus:border-amber-500/40 focus:outline-none"
+          />
+        </div>
+        <button
+          onClick={savePlantProfile}
+          disabled={busy}
+          className="px-3 py-1.5 rounded-lg border border-white/10 text-white/50 text-xs hover:border-white/30 disabled:opacity-30 transition-all"
+        >
+          Guardar perfil
+        </button>
+      </div>
+
+      {/* Plan por caudal */}
+      <div className="pt-3 border-t border-white/5">
+        <label className="block text-white/30 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
+          Plan asignado
+          {suggested && (
+            <span className="text-emerald-400/80 normal-case ml-1.5">
+              · sugerido por caudal: {suggested.name}
+            </span>
+          )}
+        </label>
+        <select
+          value={org.subscription?.planId ?? ""}
+          onChange={(e) => choosePlan(e.target.value)}
+          disabled={busy || !plans}
+          className="w-full px-2 py-1.5 bg-[#05051a] border border-white/10 rounded-lg text-white text-sm focus:border-amber-500/40 focus:outline-none"
+        >
+          <option value="">Sin plan asignado</option>
+          {(plans ?? []).map((p) => (
+            <option key={p._id} value={p._id}>
+              {p.name} — ${p.price}/mes
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+}
+
+// ── Bitácora de auditoría del Owner sobre esta org ────────────────────────
+function AuditLogPanel({ org }: { org: OrgRow }) {
+  const logs = useQuery(api.superAdmin.listOwnerAuditLog, {
+    organizationId: org._id,
+  }) as AuditLogRow[] | undefined;
+
+  return (
+    <div className="mt-3 p-3 bg-white/[0.02] border border-white/6 rounded-xl">
+      <p className="text-white/40 text-[0.62rem] font-mono uppercase tracking-widest mb-2">
+        Bitácora de auditoría
+      </p>
+      {logs === undefined ? (
+        <p className="text-white/25 text-xs">Cargando…</p>
+      ) : logs.length === 0 ? (
+        <p className="text-white/25 text-xs">Sin acciones registradas.</p>
+      ) : (
+        <div className="space-y-1.5 max-h-56 overflow-y-auto">
+          {logs.map((l) => (
+            <div key={l._id} className="text-xs text-white/50 flex gap-2">
+              <span className="text-white/25 font-mono shrink-0">
+                {formatDate(l.createdAt)}
+              </span>
+              <span className="truncate">{l.text}</span>
+              <span className="text-white/20 shrink-0 ml-auto">{l.actorEmail}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OrgCard({
   org,
   members,
@@ -155,6 +460,8 @@ function OrgCard({
   const transfer = useMutation(api.superAdmin.transferOrgOwnership);
 
   const [expanded, setExpanded] = useState(false);
+  const [commercialOpen, setCommercialOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(org.name);
   const [seatsDraft, setSeatsDraft] = useState(String(org.maxOperators));
@@ -454,6 +761,36 @@ function OrgCard({
           </div>
         </div>
 
+        {/* Datos comerciales + bitácora */}
+        <div className="flex flex-wrap gap-4 mt-4">
+          <button
+            onClick={() => setCommercialOpen((e) => !e)}
+            className="flex items-center gap-1.5 text-white/40 text-xs hover:text-white/70 transition-colors"
+          >
+            {commercialOpen ? (
+              <ChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5" />
+            )}
+            <FileText className="w-3.5 h-3.5" />
+            Datos comerciales
+          </button>
+          <button
+            onClick={() => setAuditOpen((e) => !e)}
+            className="flex items-center gap-1.5 text-white/40 text-xs hover:text-white/70 transition-colors"
+          >
+            {auditOpen ? (
+              <ChevronDown className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5" />
+            )}
+            <History className="w-3.5 h-3.5" />
+            Bitácora
+          </button>
+        </div>
+        {commercialOpen && <CommercialPanel org={org} showToast={showToast} />}
+        {auditOpen && <AuditLogPanel org={org} />}
+
         {/* Miembros */}
         <button
           onClick={() => setExpanded((e) => !e)}
@@ -517,9 +854,19 @@ export function OrganizationsView({ showToast }: OrganizationsViewProps) {
 
   return (
     <div className="space-y-3">
-      <p className="text-white/25 text-xs font-mono">
-        {orgs.length} organizaciones
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-white/25 text-xs font-mono">
+          {orgs.length} organizaciones
+        </p>
+        <button
+          onClick={() => exportOrgsCSV(orgs)}
+          disabled={orgs.length === 0}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/10 text-white/50 text-xs hover:border-white/30 disabled:opacity-30 transition-all"
+        >
+          <Download className="w-3.5 h-3.5" />
+          Exportar CSV
+        </button>
+      </div>
       {orgs.length === 0 ? (
         <div className="text-center py-16 text-white/30 text-sm">
           No hay organizaciones todavía.

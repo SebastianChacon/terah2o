@@ -312,6 +312,13 @@ export default defineSchema({
     annualDiscountPct: v.number(),
   }),
 
+  // Fila única de configuración de plataforma. Las credenciales de Payphone
+  // (Store ID, token) NUNCA viven aquí — solo env vars server-side
+  // (PAYPHONE_STORE_ID, PAYPHONE_TOKEN). Esta tabla solo guarda el toggle.
+  platformSettings: defineTable({
+    payphoneEnabled: v.boolean(),
+  }),
+
   subscriptions: defineTable({
     organizationId: v.id("organizations"),
     status: v.union(

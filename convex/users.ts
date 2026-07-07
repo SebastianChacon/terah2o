@@ -1,5 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 import {
   getAuthenticatedUser,
   getAuthenticatedUserId,
@@ -16,6 +18,26 @@ export const getCurrentUser = query({
 
 // ── Upsert: crear o actualizar perfil tras el primer login con Clerk ────────
 // identity.subject del JWT de Clerk ES el clerkId — no se pasa desde el cliente.
+// Un evento por sesión (no por request): registra que `organizationId` tuvo
+// un login de `userId` en el día de hoy. Idempotente — no duplica filas si
+// ya existe un evento para (organizationId, userId, día). Se llama aquí (una
+// vez por sesión vía UserSync.tsx) y no en proxy.ts, que corre en cada
+// request y no debe escribir a la DB en cada navegación.
+async function recordUsageEvent(
+  ctx: MutationCtx,
+  organizationId: Id<"organizations">,
+  userId: Id<"users">
+): Promise<void> {
+  const day = new Date().toISOString().slice(0, 10);
+  const existing = await ctx.db
+    .query("usageEvents")
+    .withIndex("by_org_day", (q) => q.eq("organizationId", organizationId).eq("day", day))
+    .filter((q) => q.eq(q.field("userId"), userId))
+    .first();
+  if (existing) return;
+  await ctx.db.insert("usageEvents", { organizationId, userId, day, createdAt: Date.now() });
+}
+
 export const upsertCurrentUser = mutation({
   args: {
     name: v.optional(v.string()),
@@ -44,6 +66,7 @@ export const upsertCurrentUser = mutation({
         if (args.name && args.name !== byClerk.name) patches.name = args.name;
         if (email && !byClerk.email) patches.email = email;
         if (Object.keys(patches).length > 0) await ctx.db.patch(byClerk._id, patches);
+        await recordUsageEvent(ctx, byClerk.organizationId, byClerk._id);
         return byClerk._id;
       }
 
@@ -84,6 +107,8 @@ export const upsertCurrentUser = mutation({
           tokenIdentifier: clerkId,
           ...(args.name ? { name: args.name } : {}),
         });
+        if (existingByEmail.organizationId)
+          await recordUsageEvent(ctx, existingByEmail.organizationId, existingByEmail._id);
         return existingByEmail._id;
       }
     }
