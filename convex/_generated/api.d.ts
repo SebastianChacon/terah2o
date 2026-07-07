@@ -15,6 +15,8 @@ import type * as http from "../http.js";
 import type * as inventoryItems from "../inventoryItems.js";
 import type * as jarTestSessions from "../jarTestSessions.js";
 import type * as lib_auth from "../lib/auth.js";
+import type * as lib_permissions from "../lib/permissions.js";
+import type * as migrations from "../migrations.js";
 import type * as operatorPermissions from "../operatorPermissions.js";
 import type * as organizations from "../organizations.js";
 import type * as plantSettings from "../plantSettings.js";
@@ -39,6 +41,8 @@ declare const fullApi: ApiFromModules<{
   inventoryItems: typeof inventoryItems;
   jarTestSessions: typeof jarTestSessions;
   "lib/auth": typeof lib_auth;
+  "lib/permissions": typeof lib_permissions;
+  migrations: typeof migrations;
   operatorPermissions: typeof operatorPermissions;
   organizations: typeof organizations;
   plantSettings: typeof plantSettings;
