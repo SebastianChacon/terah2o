@@ -46,7 +46,7 @@ test.describe.serial("Permissions — admin + operator flow", () => {
     }
 
     // Turn OFF all main module toggles if currently on
-    const toggleLabels = ["Operaciones (hub)", "Asistencia", "Academia", "Bitácora"];
+    const toggleLabels = ["Operaciones (hub)", "Calidad de Agua", "Academia", "Bitácora"];
     for (const label of toggleLabels) {
       const toggle = page.locator("button", { hasText: label }).first();
       if (await toggle.isVisible({ timeout: 2000 }).catch(() => false)) {
@@ -75,7 +75,7 @@ test.describe.serial("Permissions — admin + operator flow", () => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OPERATOR_EMAIL);
     await page.goto("/asistencia");
-    await expectLocked(page, "Asistencia Técnica");
+    await expectLocked(page, "Consola de Calidad de Agua");
   });
 
   test("operator sees lock on /academia with canAccessAcademia=false", async ({ page, context }) => {

@@ -95,7 +95,7 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
       .first();
     await expect(row).toBeVisible({ timeout: 8000 });
 
-    const toggle = row.getByRole("button", { name: /Asistencia/i }).first();
+    const toggle = row.getByRole("button", { name: /Calidad de Agua/i }).first();
     await expect(toggle).toBeVisible();
 
     const wasOn = (await toggle.getAttribute("class"))?.includes("emerald") ?? false;
@@ -110,7 +110,7 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
       .filter({ has: page.getByTitle("Eliminar cuenta") })
       .filter({ hasText: "Operador" })
       .first();
-    const toggleAfter = rowAfter.getByRole("button", { name: /Asistencia/i }).first();
+    const toggleAfter = rowAfter.getByRole("button", { name: /Calidad de Agua/i }).first();
     const isOnAfter = (await toggleAfter.getAttribute("class"))?.includes("emerald") ?? false;
     expect(isOnAfter).toBe(!wasOn);
 

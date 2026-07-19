@@ -1811,6 +1811,7 @@ export default function BitacoraIntegralPage() {
                       Diseno: "text-purple-400 bg-purple-500/15",
                       Finanzas: "text-emerald-400 bg-emerald-500/15",
                       Stock: "text-pink-400 bg-pink-500/15",
+                      "Calidad de Agua": "text-cyan-400 bg-cyan-500/15",
                     };
                     const colorClass =
                       categoryColors[entry.category] ??

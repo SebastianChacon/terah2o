@@ -22,7 +22,8 @@ const PLAN_PRICES = { starter: 49, pro: 89 } as const;
 
 // Tablas de negocio con índice by_organizationId (para borrado en cascada).
 const ORG_DATA_TABLES = [
-  "visitas",
+  "waterQualityTests",
+  "waterQualityCapaActions",
   "plantSettings",
   "inventoryItems",
   "shiftRecords",

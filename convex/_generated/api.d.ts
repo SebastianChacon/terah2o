@@ -27,7 +27,8 @@ import type * as subscriptions from "../subscriptions.js";
 import type * as superAdmin from "../superAdmin.js";
 import type * as testHelpers from "../testHelpers.js";
 import type * as users from "../users.js";
-import type * as visitas from "../visitas.js";
+import type * as waterQualityCapa from "../waterQualityCapa.js";
+import type * as waterQualityTests from "../waterQualityTests.js";
 
 import type {
   ApiFromModules,
@@ -55,7 +56,8 @@ declare const fullApi: ApiFromModules<{
   superAdmin: typeof superAdmin;
   testHelpers: typeof testHelpers;
   users: typeof users;
-  visitas: typeof visitas;
+  waterQualityCapa: typeof waterQualityCapa;
+  waterQualityTests: typeof waterQualityTests;
 }>;
 
 /**

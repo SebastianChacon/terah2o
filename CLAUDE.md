@@ -2,7 +2,7 @@
 
 ## Descripción General
 
-TeraH2O es una plataforma SaaS de inteligencia operacional para plantas de tratamiento de agua potable (PTAP). Permite a operadores de agua gestionar dosificación química, inventario, finanzas, asistencia técnica multi-cliente y formación. Lista para entrega comercial.
+TeraH2O es una plataforma SaaS de inteligencia operacional para plantas de tratamiento de agua potable (PTAP). Permite a operadores de agua gestionar dosificación química, inventario, finanzas, vigilancia de calidad del agua (INEN 1108) y formación. Lista para entrega comercial.
 
 **Stack:** Next.js 16 (App Router) + Convex 1.32 (backend/DB tiempo real) + Tailwind CSS 4 + TypeScript
 
@@ -26,7 +26,7 @@ src/
 │   │   ├── stock/              # Inventario químico y kardex
 │   │   ├── finanzas/           # OPEX, proyecciones, costo/m³
 │   │   └── bitacora/           # Auditoría y visualización de datos
-│   ├── asistencia/             # Visitas multi-cliente, cotizaciones
+│   ├── asistencia/             # Consola de Vigilancia de Calidad del Agua (INEN 1108/TULSMA) — ruta /asistencia
 │   ├── academia/               # Módulos educativos (4 módulos)
 │   ├── dashboard/
 │   │   ├── profile/            # Perfil usuario y suscripción
@@ -59,11 +59,12 @@ src/
 │   │   ├── dosification.ts     # Dosis, consumo diario, autonomía
 │   │   ├── financial.ts        # OPEX, costo/m³, payback
 │   │   └── hydraulic.ts        # Caudales, volúmenes, presiones
-│   ├── constants.ts            # Límites INEN 1108, productos, inventario mock
+│   ├── constants.ts            # Productos, inventario mock
+│   ├── calidad-agua/           # norma.ts (INEN 1108/TULSMA), spc.ts (Shewhart/Cp/Cpk), indices.ts (LSI, NO3/NO2)
 │   ├── gemini-prompts.ts       # Prompts del sistema para IA
 │   ├── turbidity.ts            # Predicción turbidez por lluvia
 │   ├── pcm-to-wav.ts           # Conversión audio para TTS
-│   └── export/excel.ts         # Exportación a Excel (.xlsx)
+│   └── export/                 # excel.ts, memoriaFinanciera.ts, certificadoCalidadAgua.ts
 ├── types/                      # TypeScript: auth, chemical, finance, inventory, etc.
 ├── proxy.ts                    # Auth + suscripción guard (Next.js 16 — reemplaza middleware.ts)
 └── ConvexClientProvider.tsx    # Provider de Convex + Auth
@@ -73,7 +74,8 @@ convex/
 ├── auth.config.ts              # Valida JWT de Clerk (CLERK_JWT_ISSUER_DOMAIN)
 ├── lib/auth.ts                 # getAuthenticatedUser/requireAuthUser (clerkId → users)
 ├── superAdmin.ts               # Panel Owner global (gate SUPER_ADMIN_EMAIL)
-├── visitas.ts                  # CRUD visitas asistencia técnica
+├── waterQualityTests.ts        # CRUD ensayos de calidad del agua (Consola INEN 1108)
+├── waterQualityCapa.ts         # CRUD acciones CAPA (causa raíz / acción correctiva)
 ├── jarTestSessions.ts          # CRUD jar-test sessions
 ├── shiftRecords.ts             # CRUD registros de turno
 ├── financialProjections.ts     # CRUD proyecciones financieras
@@ -125,16 +127,28 @@ backend de Convex. Si solo está en `.env.local` (Next) y NO en el deployment de
 
 ## Tablas Convex (Schema)
 
-### visitas
-`idInforme` se genera automáticamente en el servidor: `TERA-${Date.now()}` — NO enviar desde cliente.
+### waterQualityTests
+Ensayos de la Consola de Vigilancia de Calidad del Agua (`/asistencia`). `results` guarda un
+valor crudo (string) por clave de parámetro — ver `src/lib/calidad-agua/norma.ts` (7 grupos,
+~26 parámetros INEN 1108:2020, con overrides TULSMA Anexo 1 Tabla 1 para punto `CRUDA`).
+`waterQualityTests.getForVerify` (usado por la verificación de certificado por QR) es la
+única query del módulo que deliberadamente NO filtra por `organizationId` — ver comentario
+en `convex/waterQualityTests.ts`.
 ```
-tipoCliente: "CARTERA" | "POTENCIAL"
-org, telefono, correo?, autoridad?, tecnicoPlanta?, provincia?, canton?
-caudal?, horasOperacion?, compliance?, observaciones?
-params: [{name, raw?, treated?, limit, ok}]
-dosages: [{product, mgL: string, days: string}]
-comercial: {proveedor?, marketProducts[], adquisicion?, contratacion?,
-            fechaCompra?, comentarios?, cotizacion:[{prod,qty,price,total}], totalQuote?}
+code: string, point: "SALIDA" | "CRUDA" | "RED"
+planta?, operador?, sector?, provincia?, canton?, caudal?
+fecha, hora?, analista?, responsable?, metodo?, calibracion?, certificado?, producto?
+diagnostico?, results: Record<string, string>, pct: number, fail: number
+organizationId?
+```
+
+### waterQualityCapaActions
+Acciones CAPA (causa raíz / acción correctiva) por no conformidad, una fila por
+`(testId, paramKey)`.
+```
+testId: Id<"waterQualityTests">, paramKey: string
+categoria6M?, porques?, accion?, responsable?
+estado: "Abierta" | "En proceso" | "Cerrada" | "Verificada"
 organizationId?
 ```
 
@@ -201,6 +215,10 @@ canAccessOperaciones, canAccessAsistencia, canAccessAcademia, canAccessBitacora
 # Sub-módulos de /operaciones (opcionales; bloqueados si canAccessOperaciones=false)
 canAccessConsolaTecnica?, canAccessHojaOperativa?, canAccessStock?, canAccessFinanzas?
 ```
+⚠️ `canAccessAsistencia` gatea la ruta `/asistencia`, que hoy es la **Consola de Vigilancia
+de Calidad del Agua** (no el antiguo módulo de visitas técnicas — eliminado). Se conservó el
+nombre de la key para no migrar datos de `operatorPermissions`/`organizations`/`plans`; las
+etiquetas visibles en Owner/Admin ya dicen "Calidad de Agua".
 
 ---
 
@@ -327,9 +345,6 @@ La llamada a `createJarTest` enviaba campos incompatibles con el schema de Conve
 - `rawWaterParams` era objeto → corregido a array `[{label, value}]`
 - Eliminados campos no existentes en schema: `jars`, `bestJarId`, `validatedDoses`, `financialSummary`
 
-### UX — `src/app/asistencia/page.tsx`
-El `showToast("éxito")` estaba fuera del try → ahora está dentro, y el catch muestra error real.
-
 ### UX — `src/app/operaciones/stock/page.tsx`
 `catch { /* silent */ }` en `updateAmountMut` → ahora muestra toast de error al usuario.
 
@@ -354,6 +369,31 @@ Flujo con bug:
 **Fix aplicado:** eliminar el `router.replace` de `handleSubmit`. En su lugar se llama
 `setRedirecting(true)` para mostrar el spinner inmediatamente. El `useEffect` es el único
 responsable de hacer la navegación cuando `isAuthenticated` flipea (siguiente render cycle).
+
+---
+
+## Migraciones Importantes
+
+### Asistencia → Consola de Vigilancia de Calidad del Agua (`/asistencia`)
+El módulo de Asistencia Técnica (visitas multi-cliente, cotizaciones comerciales) fue
+**eliminado por completo** y reemplazado por la Consola de Vigilancia de Calidad del Agua
+(NTE INEN 1108:2020 / TULSMA Anexo 1 Tabla 1), reescrita nativamente sobre Convex + Clerk a
+partir de un HTML standalone (Firebase) usado como referencia de producto.
+
+- **Ruta y permiso sin cambios:** sigue siendo `/asistencia` con el flag
+  `canAccessAsistencia` (mismo nombre técnico; las etiquetas visibles en Owner/Admin/landing
+  ahora dicen "Calidad de Agua" — ver `### operatorPermissions` arriba).
+- **Tabla `visitas` eliminada** (purgada y borrada de `convex/schema.ts`) — reemplazada por
+  `waterQualityTests` y `waterQualityCapaActions` (ver sección "Tablas Convex").
+- **Sin backup de datos históricos de `visitas`** — se eliminaron directamente por decisión
+  explícita al planear la migración.
+- **Verificación por QR requiere login** (a diferencia del HTML original, que permitía
+  verificar sin cuenta vía Firebase Auth anónimo) — consistente con el resto de la
+  plataforma, que no tiene rutas públicas para módulos operativos.
+- Lógica de norma/SPC/índices portada a `src/lib/calidad-agua/` (`norma.ts`, `spc.ts`,
+  `indices.ts`) — módulos puros, sin React, para poder verificarlos de forma aislada.
+- Certificado imprimible en `src/lib/export/certificadoCalidadAgua.ts`, mismo patrón que
+  `memoriaFinanciera.ts` (Blob + `window.open`, no `window.print()` sobre un div oculto).
 
 ---
 

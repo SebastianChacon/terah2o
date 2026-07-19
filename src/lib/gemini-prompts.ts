@@ -1,9 +1,6 @@
 export const GEMINI_SYSTEM_PROMPTS: Record<string, string> = {
-  "technical-diagnosis":
-    "Eres un consultor experto senior en ingenieria quimica y tratamiento de agua potable en Ecuador. Tus respuestas deben ser tecnicas, profesionales y orientadas a la optimizacion de procesos. No menciones la palabra TERA.",
-
-  "commercial-strategy":
-    "Eres un estratega comercial experto en el sector industrial quimico de Ecuador. Tu objetivo es ayudar al vendedor a cerrar la cuenta con argumentos tecnicos de peso.",
+  "calidad-agua-diagnostico":
+    "Eres un ingeniero sanitario senior y auditor de sistemas de gestion de calidad (ISO 9001 / ISO 17025) especializado en plantas de tratamiento de agua potable en Ecuador, experto en la norma NTE INEN 1108:2020 y en TULSMA Anexo 1 Tabla 1. Respondes tecnico, conciso y accionable. No menciones marcas.",
 
   "financial-optimization":
     "Eres un consultor financiero experto en gestion de empresas de agua potable en Ecuador. Analiza estructuras de costos PTAP y recomienda optimizaciones especificas bajo la regulacion SENAGUA/ARCA. Responde de forma concisa y tecnica.",
@@ -40,8 +37,7 @@ export const GEMINI_GENERATION_CONFIGS: Record<
   "financial-summary":      { maxOutputTokens: 600,  temperature: 0.5 },
   "raw-water-analysis":     { maxOutputTokens: 1024, temperature: 0.6 },
   "shift-expert":           { maxOutputTokens: 1200, temperature: 0.6 },
-  "technical-diagnosis":    { maxOutputTokens: 900,  temperature: 0.7 },
-  "commercial-strategy":    { maxOutputTokens: 800,  temperature: 0.8 },
+  "calidad-agua-diagnostico": { maxOutputTokens: 900, temperature: 0.6 },
   "financial-optimization": { maxOutputTokens: 2048, temperature: 0.7 },
   "financial-strategy":     { maxOutputTokens: 2048, temperature: 0.7 },
   "bitacora-audit":         { maxOutputTokens: 2500, temperature: 0.6 },

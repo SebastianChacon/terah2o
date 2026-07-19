@@ -1,1044 +1,1316 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import QRCode from "qrcode";
+import {
+  ArrowLeft,
+  QrCode,
+  FileText,
+  Trash2,
+  Search,
+  X,
+  ShieldCheck,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+  ResponsiveContainer,
+} from "recharts";
 import { NavbarUser } from "@/components/auth/NavbarUser";
 import { AuthGuard } from "@/components/auth/AuthGuard";
 import { Toast } from "@/components/ui/Toast";
-import { useToast } from "@/hooks/useToast";
-import { INEN_1108_PARAMS, IVA_RATE } from "@/lib/constants";
-import { calculateDose, calculateDailyConsumption, calculateAutonomy } from "@/lib/calculations/dosification";
-import { CHEMICAL_PRODUCTS } from "@/types/chemical";
-import { useGemini } from "@/hooks/useGemini";
-import { SectionHeader } from "@/components/ui/SectionHeader";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { InputField } from "@/components/ui/InputField";
+import { SelectField } from "@/components/ui/SelectField";
 import { ComplianceGauge } from "@/components/ui/ComplianceGauge";
 import { AiButton } from "@/components/ai/AiButton";
+import { useToast } from "@/hooks/useToast";
+import { useGemini } from "@/hooks/useGemini";
 import { useSafeMutation, useSafeQuery } from "@/hooks/useConvex";
 import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { exportToExcel } from "@/lib/export/excel";
+import {
+  ALL,
+  GROUPS,
+  PMAP,
+  POINT_LABEL,
+  evalParam,
+  limText,
+  limitsFor,
+  normName,
+  type Param,
+  type SamplePoint,
+} from "@/lib/calidad-agua/norma";
+import { computeSpc } from "@/lib/calidad-agua/spc";
+import { computeLSI, computeNIndex } from "@/lib/calidad-agua/indices";
+import { buildCertificadoHTML, buildCertificadoRows } from "@/lib/export/certificadoCalidadAgua";
 
-interface DosageRow {
-  id: number;
-  product: string;
-  mlMin: string;
-  concPct: string;
-  stockKg: string;
+interface WaterQualityTestDoc {
+  _id: Id<"waterQualityTests">;
+  _creationTime: number;
+  code: string;
+  point: SamplePoint;
+  planta?: string;
+  operador?: string;
+  sector?: string;
+  provincia?: string;
+  canton?: string;
+  caudal?: number;
+  fecha: string;
+  hora?: string;
+  analista?: string;
+  responsable?: string;
+  metodo?: string;
+  calibracion?: string;
+  certificado?: string;
+  producto?: string;
+  diagnostico?: string;
+  results: Record<string, string>;
+  pct: number;
+  fail: number;
 }
 
-interface ParamRow {
-  name: string;
-  limit: number;
-  min: number;
-  unit: string;
-  raw: string;
-  treated: string;
+interface CapaDoc {
+  _id: Id<"waterQualityCapaActions">;
+  testId: Id<"waterQualityTests">;
+  paramKey: string;
+  categoria6M?: string;
+  porques?: string;
+  accion?: string;
+  responsable?: string;
+  estado: "Abierta" | "En proceso" | "Cerrada" | "Verificada";
 }
 
-interface QuoteRow {
-  id: number;
-  prod: string;
-  qty: string;
-  price: string;
+type TabKey = "registro" | "spc" | "capa" | "archivo";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "registro", label: "01 · Registro de Ensayo" },
+  { key: "spc", label: "02 · Control Estadístico" },
+  { key: "capa", label: "03 · No Conformidades" },
+  { key: "archivo", label: "04 · Archivo & Reportes" },
+];
+
+const CAUSA_6M = [
+  "Método",
+  "Mano de obra",
+  "Material / Insumo",
+  "Maquinaria / Equipo",
+  "Medio ambiente",
+  "Medición",
+];
+const ESTADOS_CAPA = ["Abierta", "En proceso", "Cerrada", "Verificada"] as const;
+
+interface CustodyForm {
+  planta: string;
+  operador: string;
+  sector: string;
+  provincia: string;
+  canton: string;
+  caudal: string;
+  fecha: string;
+  hora: string;
+  analista: string;
+  responsable: string;
+  metodo: string;
+  calibracion: string;
+  certificado: string;
+  producto: string;
 }
 
-type TabKey = "recoleccion" | "comercial" | "historial";
+function todayCustody(): CustodyForm {
+  const now = new Date();
+  return {
+    planta: "",
+    operador: "",
+    sector: "",
+    provincia: "",
+    canton: "",
+    caudal: "",
+    fecha: now.toISOString().slice(0, 10),
+    hora: now.toTimeString().slice(0, 5),
+    analista: "",
+    responsable: "",
+    metodo: "",
+    calibracion: "Vigente",
+    certificado: "",
+    producto: "",
+  };
+}
 
-export default function AsistenciaPage() {
+function generateCode(point: SamplePoint, custody: CustodyForm): string {
+  const d = (custody.fecha || new Date().toISOString().slice(0, 10)).replace(/-/g, "");
+  const h = (custody.hora || "").replace(":", "") || new Date().toTimeString().slice(0, 5).replace(":", "");
+  const norm = (s: string) => {
+    const n = (s || "").trim().normalize("NFD").replace(/[̀-ͯ]/g, "");
+    return (n[0] || "X").toUpperCase();
+  };
+  return `${norm(custody.provincia)}${norm(custody.canton)}-${point}-${d}-${h}`;
+}
+
+function computeCompliance(results: Record<string, string>, point: SamplePoint) {
+  let evald = 0;
+  let fail = 0;
+  for (const p of ALL) {
+    const raw = results[p.k];
+    if (raw == null || raw === "") continue;
+    const st = evalParam(p, raw, point);
+    if (st === "ok" || st === "bad") evald++;
+    if (st === "bad") fail++;
+  }
+  const pct = evald > 0 ? Math.round(((evald - fail) / evald) * 100) : 100;
+  return { pct, evald, fail };
+}
+
+function numFromResults(results: Record<string, string>, key: string): number | null {
+  const v = results[key];
+  if (v == null || v === "") return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+function displayResultValue(p: Param, raw: string): string {
+  if (p.type === "micro") return raw === "0" ? "Ausencia" : "Presencia";
+  if (p.type === "org") return raw === "0" ? "No objetable" : "Objetable";
+  return raw;
+}
+
+function verifyUrl(code: string, id: string): string {
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  return `${origin}/asistencia?verify=${encodeURIComponent(code)}&id=${encodeURIComponent(id)}`;
+}
+
+function buildDiagnosisPrompt(
+  point: SamplePoint,
+  results: Record<string, string>,
+  custody: CustodyForm,
+  evalRes: { pct: number; fail: number }
+): string {
+  const detail = ALL.filter((p) => results[p.k] != null && results[p.k] !== "")
+    .map((p) => {
+      const st = evalParam(p, results[p.k], point);
+      const v = displayResultValue(p, results[p.k]);
+      const lim = limText(p, point);
+      return `${p.n}: ${v} ${p.u} (límite ${lim}) -> ${st === "bad" ? "NO CUMPLE" : st === "ok" ? "cumple" : "-"}`;
+    })
+    .join("\n");
+
+  let roleCtx: string;
+  let task: string;
+  if (point === "SALIDA") {
+    roleCtx = "La muestra es AGUA TRATADA (efluente final del tren de tratamiento), destinada al consumo humano.";
+    task =
+      "Evalúa la CONFORMIDAD frente a NTE INEN 1108:2020. Interpreta cada desviación y su causa probable en el tren (coagulación, floculación, sedimentación, filtración, desinfección) y entrega 2-3 acciones correctivas concretas. Si todo cumple, confírmalo como agua apta y sugiere acciones de verificación/control.";
+  } else if (point === "CRUDA") {
+    roleCtx = `La muestra es AGUA CRUDA (captación, antes de tratar), evaluada frente a TULSMA Anexo 1 Tabla 1 (criterios de calidad de aguas para consumo humano y doméstico que requieren tratamiento convencional). Producto/coagulante que emplea la planta: ${custody.producto || "no especificado"}.`;
+    task =
+      "Realiza un ANÁLISIS DE TRATABILIDAD: clasifica la calidad de la fuente frente a TULSMA Tabla 1 (¿es tratable por tren convencional o excede los criterios?), identifica los parámetros que condicionan el tratamiento (turbiedad, color, dureza, metales, materia orgánica) y recomienda el esquema y una dosificación aproximada usando el producto/coagulante indicado (o el más adecuado si no se especifica). NO apliques INEN 1108 como criterio de aprobación; úsala solo como meta del agua tratada de salida.";
+  } else {
+    roleCtx = "La muestra proviene de la RED DE DISTRIBUCIÓN (agua que ya consume la población).";
+    task =
+      "Evalúa la calidad del agua de consumo frente a NTE INEN 1108:2020, con énfasis en cloro residual libre (barrera de desinfección remanente en red), presencia microbiológica y estabilidad del agua. Interpreta el riesgo para la salud pública y entrega 2-3 acciones concretas (purga de red, refuerzo de cloración, investigación de contaminación/intrusión).";
+  }
+
+  return `${roleCtx}\nPunto de muestreo: ${POINT_LABEL[point]}. Norma de referencia: ${normName(point)}. Planta: ${custody.planta || "N/D"}.\nResultados analíticos:\n${detail}\nCumplimiento global: ${evalRes.pct}% (${evalRes.fail} no conformidades).\n\nComo ingeniero sanitario y responsable de un sistema de gestión de calidad, ${task} Máximo 140 palabras, técnico, conciso y accionable.`;
+}
+
+export default function CalidadAguaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50" />}>
+      <ConsolaCalidadAguaContent />
+    </Suspense>
+  );
+}
+
+function ConsolaCalidadAguaContent() {
   const { toast, showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabKey>("recoleccion");
-  const [tipoCliente, setTipoCliente] = useState<"CARTERA" | "POTENCIAL">("CARTERA");
+  const searchParams = useSearchParams();
+  const verifyCode = searchParams.get("verify");
+  const verifyId = searchParams.get("id");
 
-  /* ── Archivo Central: Convex data ──────────────────────── */
-  const allVisitas = useSafeQuery(api.visitas.getAll);
+  const [activeTab, setActiveTab] = useState<TabKey>("registro");
+  const [currentPoint, setCurrentPoint] = useState<SamplePoint>("SALIDA");
+  const [custody, setCustody] = useState<CustodyForm>(() => todayCustody());
+  const [results, setResults] = useState<Record<string, string>>({});
+  const [diagnostico, setDiagnostico] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<number>>(new Set());
   const [archiveSearch, setArchiveSearch] = useState("");
+  const [spcPoint, setSpcPoint] = useState<SamplePoint>("SALIDA");
+  const spcOptions = useMemo(() => ALL.filter((p) => p.spc || (p.max != null && !p.type)), []);
+  const [spcParamKey, setSpcParamKey] = useState<string>(spcOptions[0]?.k ?? "turb");
+  const [qrTarget, setQrTarget] = useState<{ test: WaterQualityTestDoc; dataUrl: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<WaterQualityTestDoc | null>(null);
 
-  const cartera = (allVisitas ?? []).filter((v: NonNullable<typeof allVisitas>[number]) => v.tipoCliente === "CARTERA");
-  const prospectos = (allVisitas ?? []).filter((v: NonNullable<typeof allVisitas>[number]) => v.tipoCliente === "POTENCIAL");
+  const allTestsRaw = useSafeQuery(api.waterQualityTests.getAll);
+  const allTests = useMemo(() => (allTestsRaw ?? []) as WaterQualityTestDoc[], [allTestsRaw]);
+  const capaRowsRaw = useSafeQuery(api.waterQualityCapa.getAll);
+  const capaRows = useMemo(() => (capaRowsRaw ?? []) as CapaDoc[], [capaRowsRaw]);
 
-  const aq = archiveSearch.toLowerCase();
-  const filteredCartera = cartera.filter((v: NonNullable<typeof allVisitas>[number]) =>
-    !aq || `${v.org} ${v.provincia} ${v.canton}`.toLowerCase().includes(aq)
-  );
-  const filteredProspectos = prospectos.filter((v: NonNullable<typeof allVisitas>[number]) =>
-    !aq || `${v.org} ${v.provincia} ${v.canton}`.toLowerCase().includes(aq)
-  );
-
-  function exportCarteraExcel() {
-    if (filteredCartera.length === 0) return showToast("No hay datos de cartera para exportar.", "error");
-    exportToExcel(
-      filteredCartera.map((v: NonNullable<typeof allVisitas>[number]) => ({
-        Fecha: new Date(v._creationTime).toLocaleDateString("es-EC"),
-        Institucion: v.org,
-        Ubicacion: `${v.provincia ?? ""} - ${v.canton ?? ""}`,
-        Telefono: v.telefono,
-        "Cumplimiento %": v.compliance ?? "—",
-      })),
-      "Cartera Tecnica",
-      `Cartera_Tecnica_${new Date().toISOString().slice(0, 10)}`
-    );
-    showToast("Excel de Cartera Tecnica descargado.", "info");
-  }
-
-  function exportProspectosExcel() {
-    if (filteredProspectos.length === 0) return showToast("No hay datos de prospectos para exportar.", "error");
-    exportToExcel(
-      filteredProspectos.map((v: NonNullable<typeof allVisitas>[number]) => ({
-        Fecha: new Date(v._creationTime).toLocaleDateString("es-EC"),
-        Prospecto: v.org,
-        Provincia: v.provincia ?? "—",
-        "Total Ofertado": v.comercial?.totalQuote ?? "—",
-        Contacto: v.telefono,
-      })),
-      "Pipeline Comercial",
-      `Pipeline_Comercial_${new Date().toISOString().slice(0, 10)}`
-    );
-    showToast("Excel de Prospectos descargado.", "info");
-  }
-
-  // Form state
-  const [org, setOrg] = useState("");
-  const [telefono, setTelefono] = useState("");
-  const [correo, setCorreo] = useState("");
-  const [autoridad, setAutoridad] = useState("");
-  const [tecnicoPlanta, setTecnicoPlanta] = useState("");
-  const [provincia, setProvincia] = useState("");
-  const [canton, setCanton] = useState("");
-  const [caudal, setCaudal] = useState("");
-  const [horasOp, setHorasOp] = useState("24");
-  const [observaciones, setObservaciones] = useState("");
-
-  // Params
-  const [params, setParams] = useState<ParamRow[]>(
-    INEN_1108_PARAMS.map((p) => ({
-      name: p.name,
-      limit: p.limit,
-      min: p.min ?? 0,
-      unit: p.unit,
-      raw: "",
-      treated: "",
-    }))
-  );
-
-  // Dosage rows
-  const [dosageRows, setDosageRows] = useState<DosageRow[]>([
-    { id: 1, product: "PAC", mlMin: "", concPct: "", stockKg: "" },
-  ]);
-
-  // Commercial
-  const [comProveedor, setComProveedor] = useState("");
-  const [comAdquisicion, setComAdquisicion] = useState("Compra Directa");
-  const [comContratacion, setComContratacion] = useState("Infima Cuantia");
-  const [comFechaCompra, setComFechaCompra] = useState("");
-  const [comComentarios, setComComentarios] = useState("");
-  const [marketProducts, setMarketProducts] = useState<string[]>([]);
-
-  // Quote
-  const [quoteRows, setQuoteRows] = useState<QuoteRow[]>([
-    { id: 1, prod: "", qty: "0", price: "0" },
-  ]);
-
-  // AI
-  const { generate: generateTech, loading: loadingTech } = useGemini({ context: "technical-diagnosis" });
-  const { generate: generateCom, loading: loadingCom } = useGemini({ context: "commercial-strategy" });
-
-  // Compliance calculation
-  const getCompliance = useCallback(() => {
-    const filled = params.filter((p) => p.treated !== "");
-    if (filled.length === 0) return 100;
-    const ok = filled.filter((p) => {
-      const val = parseFloat(p.treated);
-      return !isNaN(val) && val <= p.limit && val >= p.min;
-    });
-    return Math.round((ok.length / filled.length) * 100);
-  }, [params]);
-
-  const compliance = getCompliance();
-
-  // Dose calculation for each row
-  const getDoseResult = useCallback(
-    (row: DosageRow) => {
-      const flow = parseFloat(caudal) || 0;
-      const hours = parseFloat(horasOp) || 0;
-      const mlMin = parseFloat(row.mlMin) || 0;
-      const conc = parseFloat(row.concPct) || 0;
-      const stock = parseFloat(row.stockKg) || 0;
-
-      if (flow <= 0 || mlMin <= 0 || conc <= 0) return { dose: 0, days: "---" };
-      const dose = calculateDose(mlMin, conc, flow);
-      const dailyCons = calculateDailyConsumption(dose, flow, hours);
-      const autonomy = calculateAutonomy(stock, dailyCons);
-      return {
-        dose: dose.toFixed(2),
-        days: stock > 0 && dailyCons > 0 ? autonomy.toFixed(1) : "---",
-      };
-    },
-    [caudal, horasOp]
-  );
-
-  // Quote totals
-  const quoteSubtotal = quoteRows.reduce((sum, r) => {
-    return sum + (parseFloat(r.qty) || 0) * (parseFloat(r.price) || 0);
-  }, 0);
-  const quoteTax = quoteSubtotal * IVA_RATE;
-  const quoteTotal = quoteSubtotal + quoteTax;
-
-  // Param status
-  const getParamStatus = (p: ParamRow): "ok" | "fail" | "neutral" => {
-    if (p.treated === "") return "neutral";
-    const val = parseFloat(p.treated);
-    if (isNaN(val)) return "neutral";
-    return val <= p.limit && val >= p.min ? "ok" : "fail";
-  };
-
-  // AI handlers
-  const handleAiTech = async () => {
-    const paramsData = params
-      .filter((p) => p.treated !== "")
-      .map((p) => ({
-        name: p.name,
-        raw: p.raw,
-        treated: p.treated,
-        limit: p.limit,
-      }));
-    const doses = dosageRows.map((r) => ({
-      product: r.product,
-      dose: getDoseResult(r).dose,
-    }));
-    const prompt = `Analiza los siguientes datos de una planta de tratamiento:
-Parametros (Norma INEN 1108): ${JSON.stringify(paramsData)}
-Regimen de dosificacion actual: ${JSON.stringify(doses)}
-Nivel de cumplimiento global: ${compliance}%
-
-Por favor, proporciona un diagnostico tecnico corto (maximo 120 palabras) y sugiere ajustes especificos en la dosificacion si hay desviaciones.`;
-
-    const result = await generateTech(prompt);
-    if (result) {
-      setObservaciones((prev) =>
-        prev
-          ? `${prev}\n\n--- ANALISIS INTELIGENTE ---\n${result}`
-          : `--- ANALISIS INTELIGENTE ---\n${result}`
-      );
-      showToast("Analisis completado con exito.", "success");
-    }
-  };
-
-  const handleAiCom = async () => {
-    const prompt = `Desarrolla una estrategia de ventas flash basada en:
-Competencia actual: ${comProveedor}
-Modalidad de compra: ${comContratacion}
-Productos que consumen: ${marketProducts.join(", ")}
-Contexto adicional: ${comComentarios}
-
-Genera 3 puntos clave de negociacion resaltando eficiencia tecnica y valor agregado profesional. Maximo 100 palabras.`;
-
-    const result = await generateCom(prompt);
-    if (result) {
-      setComComentarios((prev) =>
-        prev
-          ? `${prev}\n\n--- ANALISIS INTELIGENTE ---\n${result}`
-          : `--- ANALISIS INTELIGENTE ---\n${result}`
-      );
-      showToast("Analisis completado con exito.", "success");
-    }
-  };
-
-  const createVisita = useSafeMutation(api.visitas.create);
+  const createTest = useSafeMutation(api.waterQualityTests.create);
+  const removeTest = useSafeMutation(api.waterQualityTests.remove);
   const createBitacora = useSafeMutation(api.bitacoraEntries.create);
+  const upsertCapa = useSafeMutation(api.waterQualityCapa.upsert);
 
-  const handleFinalize = async () => {
-    if (!org || !telefono) {
-      showToast("Nombre del Cliente y Telefono son obligatorios.", "error");
+  const verifyResultRaw = useSafeQuery(
+    api.waterQualityTests.getForVerify,
+    verifyCode || verifyId ? { code: verifyCode ?? undefined, id: (verifyId as Id<"waterQualityTests">) ?? undefined } : "skip"
+  );
+
+  const { generate: generateDiagnosis, loading: loadingDiagnosis } = useGemini({ context: "calidad-agua-diagnostico" });
+
+  const code = useMemo(() => generateCode(currentPoint, custody), [currentPoint, custody]);
+  const compliance = useMemo(() => computeCompliance(results, currentPoint), [results, currentPoint]);
+  const lsi = useMemo(
+    () =>
+      computeLSI({
+        ph: numFromResults(results, "ph"),
+        temp: numFromResults(results, "temp"),
+        sdt: numFromResults(results, "sdt"),
+        dureza: numFromResults(results, "dureza"),
+        alcal: numFromResults(results, "alcal"),
+      }),
+    [results]
+  );
+  const nIndex = useMemo(
+    () => computeNIndex(numFromResults(results, "no3"), numFromResults(results, "no2")),
+    [results]
+  );
+
+  const updateResult = useCallback((key: string, value: string) => {
+    setResults((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const toggleGroup = (gi: number) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(gi)) next.delete(gi);
+      else next.add(gi);
+      return next;
+    });
+  };
+
+  const handleDiagnosis = async () => {
+    if (compliance.evald === 0) {
+      showToast("Ingrese resultados antes del diagnóstico", "error");
       return;
     }
-
-    const today = new Date().toISOString().split("T")[0];
-
-    try {
-      await createVisita({
-        tipoCliente,
-        org,
-        telefono,
-        correo: correo || undefined,
-        autoridad: autoridad || undefined,
-        tecnicoPlanta: tecnicoPlanta || undefined,
-        provincia: provincia || undefined,
-        canton: canton || undefined,
-        caudal: parseFloat(caudal) || undefined,
-        horasOperacion: parseFloat(horasOp) || undefined,
-        compliance,
-        observaciones: observaciones || undefined,
-        params: params
-          .filter((p) => p.treated !== "")
-          .map((p) => ({
-            name: p.name,
-            raw: p.raw ? parseFloat(p.raw) : undefined,
-            treated: parseFloat(p.treated),
-            limit: p.limit,
-            ok: (() => { const val = parseFloat(p.treated); return !isNaN(val) && val <= p.limit && val >= p.min; })(),
-          })),
-        dosages: dosageRows.map((row) => {
-          const res = getDoseResult(row);
-          return { product: row.product, mgL: String(res.dose), days: String(res.days) };
-        }),
-        comercial: {
-          proveedor: comProveedor || undefined,
-          marketProducts,
-          adquisicion: comAdquisicion || undefined,
-          contratacion: comContratacion || undefined,
-          fechaCompra: comFechaCompra || undefined,
-          comentarios: comComentarios || undefined,
-          cotizacion: quoteRows.map((r) => ({
-            prod: r.prod,
-            qty: r.qty,
-            price: r.price,
-            total: String(parseFloat(r.qty || "0") * parseFloat(r.price || "0")),
-          })),
-          totalQuote: String(quoteRows.reduce((s, r) => s + parseFloat(r.qty || "0") * parseFloat(r.price || "0"), 0)),
-        },
-      });
-      await createBitacora({
-        date: today,
-        source: "Asistencia Tecnica",
-        category: "Asistencia",
-        summary: `Visita ${tipoCliente} — ${org} — Cumplimiento: ${compliance}%`,
-      });
-      showToast("Gestion finalizada con exito.", "success");
-    } catch (err) {
-      console.error("Error al guardar visita:", err);
-      showToast("Error al guardar en base de datos", "error");
+    const prompt = buildDiagnosisPrompt(currentPoint, results, custody, compliance);
+    const result = await generateDiagnosis(prompt);
+    if (result) {
+      setDiagnostico(result);
+      showToast("Diagnóstico generado", "success");
+    } else {
+      showToast("No se pudo conectar con la IA", "error");
     }
   };
 
-  const tabs: { key: TabKey; label: string }[] = [
-    { key: "recoleccion", label: "Captura Tecnica" },
-    { key: "comercial", label: "Gestion Comercial" },
-    { key: "historial", label: "Archivo Central" },
-  ];
+  const handleSave = async () => {
+    const filledCount = Object.values(results).filter((v) => v !== "").length;
+    if (filledCount === 0) {
+      showToast("Ingrese al menos un resultado", "error");
+      return;
+    }
+    try {
+      await createTest({
+        code,
+        point: currentPoint,
+        planta: custody.planta || undefined,
+        operador: custody.operador || undefined,
+        sector: custody.sector || undefined,
+        provincia: custody.provincia || undefined,
+        canton: custody.canton || undefined,
+        caudal: custody.caudal ? parseFloat(custody.caudal) : undefined,
+        fecha: custody.fecha || new Date().toISOString().slice(0, 10),
+        hora: custody.hora || undefined,
+        analista: custody.analista || undefined,
+        responsable: custody.responsable || undefined,
+        metodo: custody.metodo || undefined,
+        calibracion: custody.calibracion || undefined,
+        certificado: custody.certificado || undefined,
+        producto: custody.producto || undefined,
+        diagnostico: diagnostico || undefined,
+        results,
+        pct: compliance.pct,
+        fail: compliance.fail,
+      });
+      await createBitacora({
+        date: custody.fecha || new Date().toISOString().slice(0, 10),
+        source: "Consola de Calidad de Agua",
+        category: "Calidad de Agua",
+        summary: `Ensayo ${POINT_LABEL[currentPoint]} — ${custody.planta || "N/D"} — Cumplimiento: ${compliance.pct}%`,
+      });
+      showToast("Ensayo registrado correctamente", "success");
+      setResults({});
+      setDiagnostico("");
+      setCustody((c) => ({ ...c, sector: "" }));
+    } catch (err) {
+      console.error("Error al guardar ensayo:", err);
+      showToast("Error al guardar — revise conexión", "error");
+    }
+  };
+
+  const handleShowQr = async (test: WaterQualityTestDoc) => {
+    try {
+      const url = verifyUrl(test.code, test._id);
+      const dataUrl = await QRCode.toDataURL(url, { margin: 1, width: 220 });
+      setQrTarget({ test, dataUrl });
+    } catch (err) {
+      console.error(err);
+      showToast("No se pudo generar el QR", "error");
+    }
+  };
+
+  const handlePrint = async (test: WaterQualityTestDoc) => {
+    try {
+      const url = verifyUrl(test.code, test._id);
+      const qrDataUrl = await QRCode.toDataURL(url, { margin: 1, width: 220 });
+      const html = buildCertificadoHTML({ ...test, qrDataUrl, verifyUrl: url });
+      const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+      const blobUrl = URL.createObjectURL(blob);
+      const w = window.open(blobUrl, "_blank", "noopener,noreferrer");
+      if (w) setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+    } catch (err) {
+      console.error(err);
+      showToast("No se pudo generar el certificado", "error");
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await removeTest({ id: deleteTarget._id });
+      showToast("Ensayo eliminado", "success");
+    } catch {
+      showToast("No se pudo eliminar", "error");
+    } finally {
+      setDeleteTarget(null);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (allTests.length === 0) {
+      showToast("No hay ensayos para exportar", "error");
+      return;
+    }
+    const rows = allTests.map((t) => {
+      const base: Record<string, unknown> = {
+        Código: t.code,
+        Fecha: t.fecha,
+        Hora: t.hora ?? "",
+        Punto: POINT_LABEL[t.point],
+        Planta: t.planta ?? "",
+        Operador: t.operador ?? "",
+        Sector: t.sector ?? "",
+        Provincia: t.provincia ?? "",
+        Cantón: t.canton ?? "",
+        Caudal: t.caudal ?? "",
+        Analista: t.analista ?? "",
+        Responsable: t.responsable ?? "",
+        Método: t.metodo ?? "",
+        Calibración: t.calibracion ?? "",
+        "Cert. Calibración": t.certificado ?? "",
+        "Cumplimiento %": t.pct,
+        Dictamen: t.fail === 0 ? "Conforme" : "No conforme",
+      };
+      for (const p of ALL) {
+        const v = t.results[p.k];
+        base[`${p.n} (${p.u})`] = v == null || v === "" ? "" : displayResultValue(p, v);
+      }
+      return base;
+    });
+    exportToExcel(rows, "Historico Calidad Agua", `Historico_Calidad_INEN1108_${new Date().toISOString().slice(0, 10)}`);
+    showToast("Histórico exportado", "success");
+  };
+
+  // ── No conformidades (CAPA), derivadas de todos los ensayos ──────────────
+  const ncRows = useMemo(() => {
+    const out: { id: string; testId: Id<"waterQualityTests">; paramKey: string; param: Param; code: string; fecha: string; point: SamplePoint; planta?: string; val: string; lim: string }[] = [];
+    for (const t of allTests) {
+      for (const key of Object.keys(t.results)) {
+        const p = PMAP[key];
+        if (!p) continue;
+        if (evalParam(p, t.results[key], t.point) === "bad") {
+          out.push({
+            id: `${t._id}__${key}`,
+            testId: t._id,
+            paramKey: key,
+            param: p,
+            code: t.code,
+            fecha: t.fecha,
+            point: t.point,
+            planta: t.planta,
+            val: displayResultValue(p, t.results[key]),
+            lim: limText(p, t.point),
+          });
+        }
+      }
+    }
+    return out;
+  }, [allTests]);
+
+  const capaMap = useMemo(() => {
+    const m = new Map<string, CapaDoc>();
+    for (const c of capaRows) m.set(`${c.testId}__${c.paramKey}`, c);
+    return m;
+  }, [capaRows]);
+
+  const handleCapaField = async (
+    testId: Id<"waterQualityTests">,
+    paramKey: string,
+    field: "categoria6M" | "porques" | "accion" | "responsable" | "estado",
+    value: string
+  ) => {
+    const existing = capaMap.get(`${testId}__${paramKey}`);
+    try {
+      await upsertCapa({
+        testId,
+        paramKey,
+        categoria6M: field === "categoria6M" ? value : existing?.categoria6M,
+        porques: field === "porques" ? value : existing?.porques,
+        accion: field === "accion" ? value : existing?.accion,
+        responsable: field === "responsable" ? value : existing?.responsable,
+        estado: (field === "estado" ? value : existing?.estado ?? "Abierta") as CapaDoc["estado"],
+      });
+    } catch (err) {
+      console.error(err);
+      showToast("No se pudo guardar la acción CAPA", "error");
+    }
+  };
+
+  // ── SPC ────────────────────────────────────────────────────────────────
+  const spcSeries = useMemo(() => {
+    return allTests
+      .filter((t) => t.point === spcPoint && t.results[spcParamKey] != null && t.results[spcParamKey] !== "")
+      .map((t) => ({ label: t.code || t.fecha, value: parseFloat(t.results[spcParamKey]), ts: t._creationTime }))
+      .filter((o) => !isNaN(o.value))
+      .sort((a, b) => a.ts - b.ts);
+  }, [allTests, spcPoint, spcParamKey]);
+
+  const spcParam = PMAP[spcParamKey];
+  const spcLimits = spcParam ? limitsFor(spcParam, spcPoint) : {};
+  const spcUsl = spcLimits.usl ?? spcLimits.max;
+  const spcLsl = spcLimits.lsl ?? spcLimits.min ?? 0;
+  const spcResult = spcSeries.length >= 2 ? computeSpc(spcSeries, { usl: spcUsl, lsl: spcLsl }) : null;
+  const spcChartData = spcSeries.map((s, i) => ({ idx: i + 1, value: s.value, label: s.label }));
+
+  // ── Archivo ────────────────────────────────────────────────────────────
+  const archiveFiltered = useMemo(() => {
+    const q = archiveSearch.toLowerCase();
+    if (!q) return allTests;
+    return allTests.filter((t) => JSON.stringify(t).toLowerCase().includes(q));
+  }, [allTests, archiveSearch]);
+
+  const complianceByMonth = useMemo(() => {
+    const byMonth = new Map<string, number[]>();
+    for (const t of allTests) {
+      const m = (t.fecha || "").slice(0, 7);
+      if (!m) continue;
+      if (!byMonth.has(m)) byMonth.set(m, []);
+      byMonth.get(m)!.push(t.pct ?? 100);
+    }
+    return Array.from(byMonth.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, vals]) => ({ month, pct: Math.round(vals.reduce((s, v) => s + v, 0) / vals.length) }));
+  }, [allTests]);
+
+  const ncByParam = useMemo(() => {
+    const byParam = new Map<string, number>();
+    for (const nc of ncRows) byParam.set(nc.param.n, (byParam.get(nc.param.n) ?? 0) + 1);
+    return Array.from(byParam.entries()).map(([name, count]) => ({ name, count }));
+  }, [ncRows]);
+
+  const kpiTotal = allTests.length;
+  const kpiCompliance = allTests.length ? Math.round(allTests.reduce((s, t) => s + (t.pct ?? 100), 0) / allTests.length) : null;
+  const kpiLast = allTests[0]?.fecha ?? "—";
+
+  const ncOpenClosed = useMemo(() => {
+    let open = 0;
+    let closed = 0;
+    for (const nc of ncRows) {
+      const estado = capaMap.get(nc.id)?.estado ?? "Abierta";
+      if (estado === "Cerrada" || estado === "Verificada") closed++;
+      else open++;
+    }
+    return { open, closed };
+  }, [ncRows, capaMap]);
+
+  // ── Verificación por QR (requiere sesión, como el resto de la plataforma) ─
+  if (verifyCode || verifyId) {
+    return (
+      <AuthGuard permissionKey="canAccessAsistencia" moduleName="Consola de Calidad de Agua">
+        <div className="min-h-screen bg-slate-50 text-slate-900">
+          <div className="max-w-2xl mx-auto px-6 py-14">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-navy-blue text-white flex items-center justify-center font-black text-xs rounded-xl">H2O</div>
+              <div>
+                <p className="text-[9px] font-black tracking-[0.22em] uppercase text-slate-400">TERAH2O · Sistema de Gestión de Calidad</p>
+                <p className="text-sm font-black text-navy-blue uppercase tracking-widest">Verificación de Certificado</p>
+              </div>
+            </div>
+            {verifyResultRaw === undefined ? (
+              <div className="bg-white rounded-3xl border border-slate-200 card-shadow p-10 text-center">
+                <p className="text-sm font-black uppercase tracking-widest text-slate-400">Consultando registro…</p>
+              </div>
+            ) : verifyResultRaw === null ? (
+              <div className="bg-white rounded-3xl border-t-4 border-amber-500 card-shadow p-10 text-center">
+                <p className="text-xl font-black uppercase tracking-tight text-amber-600">Certificado no encontrado</p>
+                <p className="text-[12px] text-slate-500 font-semibold mt-2 font-mono">{verifyCode || verifyId}</p>
+                <p className="text-[12px] text-slate-500 font-semibold mt-2">No existe un ensayo con este código en la plataforma TeraH2O.</p>
+              </div>
+            ) : (
+              (() => {
+                const r = verifyResultRaw as { code: string; point: SamplePoint; planta?: string; provincia?: string; canton?: string; fecha?: string; hora?: string; analista?: string; responsable?: string; results: Record<string, string>; pct: number; fail: number };
+                const ok = r.fail === 0;
+                const rows = buildCertificadoRows({ ...r, code: r.code, point: r.point });
+                return (
+                  <>
+                    <div className={`bg-white rounded-3xl card-shadow p-8 mb-6 border-t-4 ${ok ? "border-success-green" : "border-danger-red"}`}>
+                      <div className="flex items-center gap-4 mb-2">
+                        <div className={`w-14 h-14 rounded-xl flex items-center justify-center text-white ${ok ? "bg-success-green" : "bg-danger-red"}`}>
+                          <ShieldCheck className="w-8 h-8" />
+                        </div>
+                        <div>
+                          <p className={`text-2xl font-black uppercase tracking-tight ${ok ? "text-success-green" : "text-danger-red"}`}>Certificado Verificado</p>
+                          <p className="text-[11px] font-bold text-slate-500 font-mono">{r.code}</p>
+                        </div>
+                      </div>
+                      <p className="text-[12px] text-slate-600 font-semibold mt-3">
+                        Este ensayo es <b>auténtico</b> y consta registrado en la plataforma TeraH2O. Dictamen global:{" "}
+                        <b className={ok ? "text-success-green" : "text-danger-red"}>
+                          {ok ? "AGUA APTA" : `NO CONFORME · ${r.fail} desviación(es)`} · {r.pct}% de cumplimiento ({normName(r.point)})
+                        </b>
+                        .
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-3xl card-shadow p-8">
+                      <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-[12px] mb-6">
+                        <div><span className="text-slate-400 font-bold">Planta:</span> <b>{r.planta || "—"}</b></div>
+                        <div><span className="text-slate-400 font-bold">Punto:</span> <b>{POINT_LABEL[r.point]}</b></div>
+                        <div><span className="text-slate-400 font-bold">Fecha / hora:</span> <b>{r.fecha || "—"} {r.hora || ""}</b></div>
+                        <div><span className="text-slate-400 font-bold">Provincia / cantón:</span> <b>{r.provincia || "—"} / {r.canton || "—"}</b></div>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-[9px] text-slate-400 uppercase tracking-widest border-b border-slate-200">
+                            <th className="py-2 font-black">Parámetro</th>
+                            <th className="py-2 font-black">Resultado</th>
+                            <th className="py-2 font-black">Dictamen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((row) => (
+                            <tr key={row.param.k} className="border-b border-slate-100">
+                              <td className="py-2.5 pr-3 text-[12px] font-semibold">{row.param.n}</td>
+                              <td className="py-2.5 px-2 font-mono text-center text-[12px] font-bold">{row.displayValue} {row.param.u}</td>
+                              <td className={`py-2.5 pl-2 text-center text-[10px] font-black tracking-widest ${row.dictamen === "CUMPLE" ? "text-success-green" : row.dictamen === "NO CUMPLE" ? "text-danger-red" : "text-slate-400"}`}>{row.dictamen}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                );
+              })()
+            )}
+            <Link href="/asistencia" className="block text-center mt-8 text-[10px] font-black uppercase tracking-widest text-navy-blue hover:underline">
+              Volver a la consola
+            </Link>
+          </div>
+        </div>
+      </AuthGuard>
+    );
+  }
 
   return (
-    <AuthGuard permissionKey="canAccessAsistencia" moduleName="Asistencia Tecnica">
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-36">
-      <Toast {...toast} />
+    <AuthGuard permissionKey="canAccessAsistencia" moduleName="Consola de Calidad de Agua">
+      <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+        <Toast {...toast} />
 
-      {/* Header */}
-      <header className="bg-navy-blue p-10 md:p-14 text-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-white/60 hover:text-white transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <span className="bg-white/10 text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] uppercase border border-white/20">
-                SERVICIOS PROFESIONALES TERA
-              </span>
+        {/* Header */}
+        <header className="bg-navy-blue p-10 md:p-14 text-white relative overflow-hidden">
+          <div className="max-w-7xl mx-auto relative z-10">
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                <Link href="/" className="text-white/60 hover:text-white transition-colors">
+                  <ArrowLeft className="w-5 h-5" />
+                </Link>
+                <span className="bg-white/10 text-[10px] font-black px-4 py-1.5 rounded-full tracking-[0.2em] uppercase border border-white/20">
+                  TERAH2O · SISTEMA DE GESTIÓN DE CALIDAD
+                </span>
+              </div>
+              <NavbarUser />
             </div>
-            <NavbarUser />
+            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+              Consola de Vigilancia de Calidad del Agua
+            </h1>
+            <p className="text-blue-200 mt-3 text-lg font-light">
+              Monitoreo del agua de salida del tren de tratamiento · <span className="font-semibold text-cyan-300">NTE INEN 1108:2020</span>
+            </p>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter leading-none">
-            Sistema Inteligente de Asistencia Tecnica Multicliente
-          </h1>
-          <p className="text-blue-200 mt-3 text-lg font-light italic opacity-70">
-            Gestion Potabilizacion y Suministros.
-          </p>
-        </div>
-      </header>
+        </header>
 
-      {/* Tabs */}
-      <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto flex justify-center md:justify-start overflow-x-auto">
-          {tabs.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`px-10 py-6 text-[10px] font-black uppercase tracking-[0.25em] whitespace-nowrap transition-all ${
-                activeTab === t.key ? "tab-active" : "opacity-40"
-              }`}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </nav>
-
-      <main className="max-w-7xl mx-auto p-6 md:p-10">
-        {/* CAPTURA TECNICA */}
-        {activeTab === "recoleccion" && (
-          <div className="space-y-10 fade-in">
-            {/* 01. Identificacion */}
-            <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="01" title="Identificacion del Cliente">
-                <select
-                  value={tipoCliente}
-                  onChange={(e) => setTipoCliente(e.target.value as "CARTERA" | "POTENCIAL")}
-                  className="p-3 rounded-xl font-black border-2 border-navy-blue text-navy-blue text-xs uppercase"
-                >
-                  <option value="CARTERA">CLIENTE ACTIVO</option>
-                  <option value="POTENCIAL">PROSPECTO POTENCIAL</option>
-                </select>
-              </SectionHeader>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="md:col-span-3">
-                  <InputField label="Institucion / Empresa / GAD" value={org} onChange={(e) => setOrg(e.target.value)} placeholder="Nombre completo" />
-                </div>
-                <InputField label="Telefono / WhatsApp" value={telefono} onChange={(e) => setTelefono(e.target.value)} placeholder="Ej: 0998887766" />
-                <div className="md:col-span-2">
-                  <InputField label="Correo Electronico" type="email" value={correo} onChange={(e) => setCorreo(e.target.value)} placeholder="cliente@entidad.com" />
-                </div>
-                <InputField label="Gerente / Responsable" value={autoridad} onChange={(e) => setAutoridad(e.target.value)} />
-                <InputField label="Tecnico en Planta" value={tecnicoPlanta} onChange={(e) => setTecnicoPlanta(e.target.value)} />
-                <div className="md:col-span-4 grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-slate-100 mt-2">
-                  <InputField label="Provincia" value={provincia} onChange={(e) => setProvincia(e.target.value)} />
-                  <InputField label="Canton / Ciudad" value={canton} onChange={(e) => setCanton(e.target.value)} />
-                  <InputField label="Caudal (L/s)" type="number" step="0.01" value={caudal} onChange={(e) => setCaudal(e.target.value)} className="font-black text-navy-blue" />
-                  <InputField label="Horas Op/Dia" type="number" step="0.5" value={horasOp} onChange={(e) => setHorasOp(e.target.value)} className="font-black" />
-                </div>
-              </div>
-            </section>
-
-            {/* 02. Protocolo INEN 1108 */}
-            <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="02" title="Protocolo Analitico INEN 1108" />
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm min-w-[720px]">
-                  <thead className="sticky top-14 z-10">
-                    <tr className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
-                      <th className="p-6 text-left min-w-[200px]">Parametro Tecnico</th>
-                      <th className="p-6 text-center min-w-[150px]">Agua Cruda</th>
-                      <th className="p-6 text-center min-w-[150px]">Agua Tratada</th>
-                      <th className="p-6 text-left min-w-[180px]">Validacion Norma</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {params.map((p, idx) => {
-                      const status = getParamStatus(p);
-                      return (
-                        <tr key={p.name}>
-                          <td className="p-6 font-black text-[11px] text-navy-blue uppercase tracking-tighter">
-                            {p.name}{" "}
-                            <span className="text-[9px] text-slate-400 font-bold">
-                              ({p.unit})
-                            </span>
-                          </td>
-                          <td className="p-6 text-center">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="w-24 p-2 rounded-xl text-center border border-slate-200 bg-white text-slate-900"
-                              value={p.raw}
-                              onChange={(e) => {
-                                const newParams = [...params];
-                                newParams[idx].raw = e.target.value;
-                                setParams(newParams);
-                              }}
-                            />
-                          </td>
-                          <td className="p-6 text-center">
-                            <input
-                              type="number"
-                              step="0.01"
-                              className="w-24 p-2 rounded-xl text-center font-black border border-slate-200 bg-white text-slate-900"
-                              value={p.treated}
-                              onChange={(e) => {
-                                const newParams = [...params];
-                                newParams[idx].treated = e.target.value;
-                                setParams(newParams);
-                              }}
-                            />
-                          </td>
-                          <td className="p-6">
-                            <div className="flex items-center gap-4">
-                              <span className="text-[10px] text-slate-400 font-black tracking-widest">
-                                INEN: {p.limit}
-                              </span>
-                              <div
-                                className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
-                                  status === "ok"
-                                    ? "bg-success-green shadow-[0_0_10px_#10b981]"
-                                    : status === "fail"
-                                      ? "bg-danger-red shadow-[0_0_10px_#ef4444]"
-                                      : "bg-slate-200"
-                                }`}
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Compliance indicator */}
-              <div className="mt-10 p-8 rounded-3xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row items-center justify-between gap-8">
-                <div className="flex-1">
-                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                    Indicador de Cumplimiento Global
-                  </h4>
-                  <p className="text-xs text-slate-500 font-medium italic">
-                    Evaluacion porcentual instantanea contra limites maximos
-                    permitidos.
-                  </p>
-                </div>
-                <ComplianceGauge percentage={compliance} />
-              </div>
-            </section>
-
-            {/* 03. Dosificacion */}
-            <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <SectionHeader number="03" title="Ingenieria de Procesos y Stock" />
-              <div className="space-y-4">
-                {dosageRows.map((row, idx) => {
-                  const result = getDoseResult(row);
-                  return (
-                    <div
-                      key={row.id}
-                      className="grid grid-cols-1 md:grid-cols-6 gap-6 p-8 bg-slate-50 rounded-[2rem] border border-slate-200 relative shadow-inner"
-                    >
-                      {idx > 0 && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setDosageRows((rows) =>
-                              rows.filter((r) => r.id !== row.id)
-                            )
-                          }
-                          className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-10 h-10 text-[12px] font-black shadow-2xl hover:scale-110 transition-transform"
-                        >
-                          ×
-                        </button>
-                      )}
-                      <div className="md:col-span-2">
-                        <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block ml-1">
-                          Insumo Quimico
-                        </label>
-                        <select
-                          className="w-full p-4 rounded-xl text-xs font-black border border-slate-200 uppercase bg-white text-slate-900"
-                          value={row.product}
-                          onChange={(e) => {
-                            const newRows = [...dosageRows];
-                            newRows[idx].product = e.target.value;
-                            setDosageRows(newRows);
-                          }}
-                        >
-                          {CHEMICAL_PRODUCTS.map((cp) => (
-                            <option key={cp.value} value={cp.value}>
-                              {cp.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block ml-1">
-                          mL/min
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="w-full p-4 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-900"
-                          value={row.mlMin}
-                          onChange={(e) => {
-                            const newRows = [...dosageRows];
-                            newRows[idx].mlMin = e.target.value;
-                            setDosageRows(newRows);
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block ml-1">
-                          Conc (%)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="w-full p-4 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-900"
-                          value={row.concPct}
-                          onChange={(e) => {
-                            const newRows = [...dosageRows];
-                            newRows[idx].concPct = e.target.value;
-                            setDosageRows(newRows);
-                          }}
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[9px] font-black uppercase text-slate-400 mb-2 block ml-1">
-                          Stock (Kg)
-                        </label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          className="w-full p-4 rounded-xl text-xs font-bold border border-slate-200 bg-white text-slate-900"
-                          value={row.stockKg}
-                          onChange={(e) => {
-                            const newRows = [...dosageRows];
-                            newRows[idx].stockKg = e.target.value;
-                            setDosageRows(newRows);
-                          }}
-                        />
-                      </div>
-                      <div className="bg-navy-blue rounded-2xl p-4 text-white text-center flex flex-col justify-center shadow-xl">
-                        <p className="text-[10px] font-bold uppercase opacity-50">
-                          Dosis mg/L
-                        </p>
-                        <p className="text-2xl font-black leading-none">
-                          {result.dose}
-                        </p>
-                        <p className="text-[10px] text-cyan-400 font-black uppercase mt-2">
-                          Dias: {result.days}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Tabs */}
+        <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
+          <div className="max-w-7xl mx-auto flex overflow-x-auto">
+            {TABS.map((t) => (
               <button
-                type="button"
-                onClick={() =>
-                  setDosageRows((rows) => [
-                    ...rows,
-                    {
-                      id: Date.now(),
-                      product: "PAC",
-                      mlMin: "",
-                      concPct: "",
-                      stockKg: "",
-                    },
-                  ])
-                }
-                className="mt-6 text-navy-blue text-[10px] font-black uppercase tracking-widest hover:underline"
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`px-8 py-6 text-[10px] font-black uppercase tracking-[0.2em] whitespace-nowrap transition-all ${
+                  activeTab === t.key ? "tab-active" : "opacity-40"
+                }`}
               >
-                + Adicionar Fila Operativa
+                {t.label}
               </button>
-            </section>
-
-            {/* 04. Observaciones */}
-            <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
-              <div className="border-b border-slate-100 pb-6 mb-8 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-navy-blue rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20">
-                    04
-                  </div>
-                  <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest">
-                    Observaciones de Ingenieria
-                  </h3>
-                </div>
-                <AiButton
-                  onClick={handleAiTech}
-                  loading={loadingTech}
-                  label="Diagnostico"
-                />
-              </div>
-              <textarea
-                rows={4}
-                className="w-full p-6 rounded-2xl text-sm border border-slate-200 bg-white text-slate-900 focus:border-navy-blue focus:outline-none focus:ring-4 focus:ring-navy-blue/[0.08]"
-                placeholder="Hallazgos tecnicos y recomendaciones de operacion..."
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-              />
-            </section>
+            ))}
           </div>
-        )}
+        </nav>
 
-        {/* GESTION COMERCIAL */}
-        {activeTab === "comercial" && (
-          <div className="space-y-10 fade-in">
-            <section className="bg-white p-10 rounded-[2.5rem] border-l-[15px] border-gold-comercial card-shadow">
-              <div className="border-b border-slate-100 pb-6 mb-8 flex justify-between items-center">
-                <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest text-gold-comercial">
-                  Analisis de Mercado
-                </h3>
-                <AiButton
-                  onClick={handleAiCom}
-                  loading={loadingCom}
-                  label="Estrategia"
-                  variant="amber"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-                <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                  <label className="block text-[10px] font-black text-slate-500 uppercase mb-4 tracking-widest">
-                    Productos que consumen actualmente:
-                  </label>
-                  <div className="grid grid-cols-1 gap-3">
-                    {[
-                      "Coagulantes",
-                      "Desinfectantes",
-                      "Floculantes",
-                      "Ajuste pH",
-                    ].map((prod) => (
-                      <label
-                        key={prod}
-                        className="flex items-center justify-between p-3 bg-white rounded-xl shadow-sm cursor-pointer border border-transparent hover:border-navy-blue transition-all"
+        <main className="max-w-7xl mx-auto p-6 md:p-10">
+          {/* ============ TAB 1: REGISTRO ============ */}
+          {activeTab === "registro" && (
+            <div className="space-y-10 fade-in">
+              {/* Cadena de custodia */}
+              <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
+                <div className="border-b border-slate-100 pb-6 mb-8 flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-navy-blue rounded-xl flex items-center justify-center text-white font-black shadow-lg shadow-blue-900/20 text-[11px]">
+                      CC
+                    </div>
+                    <div>
+                      <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest">Cadena de Custodia &amp; Trazabilidad</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Identificación de la muestra, punto y responsables</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Código de muestra</p>
+                    <p className="font-mono text-sm font-bold text-navy-blue">{code}</p>
+                  </div>
+                </div>
+
+                <div className="mb-7">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">Punto de muestreo (origen)</label>
+                  <div className="grid grid-cols-3 gap-0 max-w-xl border border-slate-200 rounded-xl overflow-hidden">
+                    {(["SALIDA", "CRUDA", "RED"] as SamplePoint[]).map((pt) => (
+                      <button
+                        key={pt}
+                        type="button"
+                        onClick={() => setCurrentPoint(pt)}
+                        className={`p-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                          currentPoint === pt ? "bg-navy-blue text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                        }`}
                       >
-                        <span className="text-xs font-bold text-slate-700">
-                          {prod === "Coagulantes"
-                            ? "Coagulantes (PAC/Sulfato)"
-                            : prod === "Desinfectantes"
-                              ? "Desinfectantes (Cloro/Hipoclorito)"
-                              : prod === "Floculantes"
-                                ? "Polimeros / Floculantes"
-                                : "Ajuste de pH (Cal/Soda)"}
-                        </span>
-                        <input
-                          type="checkbox"
-                          className="w-5 h-5 rounded text-navy-blue"
-                          checked={marketProducts.includes(prod)}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setMarketProducts((prev) => [...prev, prod]);
-                            } else {
-                              setMarketProducts((prev) =>
-                                prev.filter((p) => p !== prod)
-                              );
-                            }
-                          }}
-                        />
-                      </label>
+                        {POINT_LABEL[pt]}
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                <div className="space-y-6">
-                  <InputField
-                    label="Proveedor Actual de la Competencia"
-                    value={comProveedor}
-                    onChange={(e) => setComProveedor(e.target.value)}
-                    placeholder="Nombre de la empresa"
-                    className="uppercase"
-                  />
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">
-                      Modalidad de Adquisicion
-                    </label>
-                    <select
-                      className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900"
-                      value={comAdquisicion}
-                      onChange={(e) => setComAdquisicion(e.target.value)}
-                    >
-                      <option value="Compra Directa">Compra Directa</option>
-                      <option value="Portal Compras">
-                        Portal de Compras Publicas (SERCOP)
-                      </option>
-                      <option value="Licitacion">
-                        Licitacion de Suministros
-                      </option>
-                    </select>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                  <div className="md:col-span-2">
+                    <InputField label="Planta / Sistema de tratamiento" value={custody.planta} onChange={(e) => setCustody((c) => ({ ...c, planta: e.target.value }))} placeholder="Ej: PTAP Central" />
                   </div>
-                  <div>
-                    <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">
-                      Tipo de Contratacion
-                    </label>
-                    <select
-                      className="w-full p-4 rounded-xl font-bold border border-slate-200 bg-white text-slate-900"
-                      value={comContratacion}
-                      onChange={(e) => setComContratacion(e.target.value)}
-                    >
-                      <option value="Infima Cuantia">Infima Cuantia</option>
-                      <option value="Subasta Inversa">
-                        Subasta Inversa Electronica
-                      </option>
-                      <option value="Menor Cuantia">Menor Cuantia</option>
-                    </select>
-                  </div>
-                  <InputField
-                    label="Fecha Proxima Compra"
-                    type="date"
-                    value={comFechaCompra}
-                    onChange={(e) => setComFechaCompra(e.target.value)}
+                  <InputField label="GAD / Operador" value={custody.operador} onChange={(e) => setCustody((c) => ({ ...c, operador: e.target.value }))} />
+                  <InputField label="Punto / Sector específico" value={custody.sector} onChange={(e) => setCustody((c) => ({ ...c, sector: e.target.value }))} placeholder="Ej: Tanque de reserva" />
+                  <InputField label="Provincia" value={custody.provincia} onChange={(e) => setCustody((c) => ({ ...c, provincia: e.target.value }))} />
+                  <InputField label="Cantón / Ciudad" value={custody.canton} onChange={(e) => setCustody((c) => ({ ...c, canton: e.target.value }))} />
+                  <InputField label="Caudal (L/s)" type="number" step="0.01" value={custody.caudal} onChange={(e) => setCustody((c) => ({ ...c, caudal: e.target.value }))} className="font-black text-navy-blue" />
+                  <InputField label="Fecha de muestreo" type="date" value={custody.fecha} onChange={(e) => setCustody((c) => ({ ...c, fecha: e.target.value }))} />
+                  <InputField label="Hora" type="time" value={custody.hora} onChange={(e) => setCustody((c) => ({ ...c, hora: e.target.value }))} className="font-mono" />
+                  <InputField label="Analista de laboratorio" value={custody.analista} onChange={(e) => setCustody((c) => ({ ...c, analista: e.target.value }))} />
+                  <InputField label="Responsable de calidad" value={custody.responsable} onChange={(e) => setCustody((c) => ({ ...c, responsable: e.target.value }))} />
+                  <InputField label="Método / Equipo" value={custody.metodo} onChange={(e) => setCustody((c) => ({ ...c, metodo: e.target.value }))} placeholder="Ej: Espectrofotómetro HACH" />
+                  <SelectField
+                    label="Estado de calibración"
+                    value={custody.calibracion}
+                    onChange={(e) => setCustody((c) => ({ ...c, calibracion: e.target.value }))}
+                    options={[
+                      { value: "Vigente", label: "Vigente" },
+                      { value: "Próx. a vencer", label: "Próxima a vencer" },
+                      { value: "Vencida", label: "Vencida" },
+                      { value: "N/A", label: "No aplica" },
+                    ]}
                   />
-                </div>
-
-                <div className="md:col-span-2 pt-6 border-t border-slate-100">
-                  <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">
-                    Comentarios y Sugerencia IA
-                  </label>
-                  <textarea
-                    rows={3}
-                    className="w-full p-5 rounded-2xl text-sm border border-gold-comercial/30 font-medium bg-white text-slate-900"
-                    placeholder="Estrategia de negociacion..."
-                    value={comComentarios}
-                    onChange={(e) => setComComentarios(e.target.value)}
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* Cotizador */}
-            {tipoCliente === "POTENCIAL" && (
-              <section className="bg-white p-10 rounded-[2.5rem] border-l-[15px] border-success-green card-shadow">
-                <div className="border-b border-slate-100 pb-6 mb-8">
-                  <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest text-success-green">
-                    Generador de Propuesta Economica
-                  </h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="text-slate-400 uppercase font-black border-b text-left">
-                        <th className="p-4">Descripcion del Insumo</th>
-                        <th className="p-4 text-center">Cant. Propuesta</th>
-                        <th className="p-4 text-center">P. Unitario ($)</th>
-                        <th className="p-4 text-right">Subtotal</th>
-                        <th className="p-4 text-center w-10"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {quoteRows.map((row, idx) => {
-                        const rowTotal =
-                          (parseFloat(row.qty) || 0) *
-                          (parseFloat(row.price) || 0);
-                        return (
-                          <tr key={row.id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-6">
-                              <input
-                                type="text"
-                                className="w-full p-4 rounded-xl text-xs font-black uppercase border border-slate-200 bg-white text-slate-900"
-                                placeholder="Insumo"
-                                value={row.prod}
-                                onChange={(e) => {
-                                  const newRows = [...quoteRows];
-                                  newRows[idx].prod = e.target.value;
-                                  setQuoteRows(newRows);
-                                }}
-                              />
-                            </td>
-                            <td className="p-6">
-                              <input
-                                type="number"
-                                className="w-full p-4 rounded-xl text-xs text-center font-black border border-slate-200 bg-white text-slate-900"
-                                value={row.qty}
-                                onChange={(e) => {
-                                  const newRows = [...quoteRows];
-                                  newRows[idx].qty = e.target.value;
-                                  setQuoteRows(newRows);
-                                }}
-                              />
-                            </td>
-                            <td className="p-6">
-                              <input
-                                type="number"
-                                step="0.01"
-                                className="w-full p-4 rounded-xl text-xs text-center font-black border border-slate-200 bg-white text-slate-900"
-                                value={row.price}
-                                onChange={(e) => {
-                                  const newRows = [...quoteRows];
-                                  newRows[idx].price = e.target.value;
-                                  setQuoteRows(newRows);
-                                }}
-                              />
-                            </td>
-                            <td className="p-6 text-right font-black text-navy-blue text-lg">
-                              ${rowTotal.toFixed(2)}
-                            </td>
-                            <td className="p-6 text-center">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setQuoteRows((rows) =>
-                                    rows.filter((r) => r.id !== row.id)
-                                  )
-                                }
-                                className="text-red-400 scale-125 font-black"
-                              >
-                                ×
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setQuoteRows((rows) => [
-                      ...rows,
-                      { id: Date.now(), prod: "", qty: "0", price: "0" },
-                    ])
-                  }
-                  className="mt-6 text-[10px] font-black uppercase text-success-green hover:underline tracking-widest"
-                >
-                  + Proponer Nuevo Item
-                </button>
-
-                <div className="mt-12 flex justify-end">
-                  <div className="w-80 space-y-4 p-8 bg-slate-50 rounded-[2rem] border border-slate-200">
-                    <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
-                      <span>Subtotal:</span>
-                      <span>${quoteSubtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-xs text-slate-500 font-bold uppercase tracking-widest">
-                      <span>IVA (15%):</span>
-                      <span>${quoteTax.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-2xl text-navy-blue font-black border-t-2 border-navy-blue/20 pt-4 mt-2">
-                      <span>TOTAL:</span>
-                      <span>${quoteTotal.toFixed(2)}</span>
-                    </div>
+                  <InputField label="Código de certificado de calibración" value={custody.certificado} onChange={(e) => setCustody((c) => ({ ...c, certificado: e.target.value }))} className="font-mono" placeholder="Opcional" />
+                  <div className="md:col-span-2">
+                    <InputField label="Producto químico / coagulante de la planta" value={custody.producto} onChange={(e) => setCustody((c) => ({ ...c, producto: e.target.value }))} placeholder="Ej: Sulfato de aluminio, PAC, hipoclorito de calcio…" />
                   </div>
                 </div>
               </section>
-            )}
-          </div>
-        )}
 
-        {/* ARCHIVO CENTRAL */}
-        {activeTab === "historial" && (
-          <div className="space-y-16 fade-in">
-            <div className="flex flex-col md:flex-row justify-between items-end gap-6">
-              <div>
-                <h2 className="text-4xl font-black text-navy-blue uppercase tracking-tighter leading-none">
-                  Archivo Central
-                </h2>
-                <p className="text-slate-400 font-black uppercase text-[10px] tracking-[0.3em] mt-3">
-                  Base de datos de gestion tecnica y prospectos.
-                </p>
+              {/* Parámetros */}
+              <section className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
+                <div className="border-b border-slate-100 pb-6 mb-4 flex flex-wrap items-center justify-between gap-4">
+                  <div>
+                    <h3 className="text-navy-blue text-sm font-black uppercase tracking-widest">
+                      Resultados Analíticos · <span>{normName(currentPoint)}</span>
+                    </h3>
+                    <p className="text-[10px] text-slate-500 font-semibold mt-1">
+                      {currentPoint === "CRUDA"
+                        ? "Agua cruda: evaluada como agua A TRATAR según TULSMA Anexo 1, Tabla 1 (tratamiento convencional) — no como agua potable"
+                        : "Validación instantánea contra NTE INEN 1108:2020 (agua para consumo humano)"}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="button" onClick={() => setCollapsedGroups(new Set())} className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-navy-blue">
+                      Expandir
+                    </button>
+                    <span className="text-slate-300">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setCollapsedGroups(new Set(GROUPS.map((_, i) => i)))}
+                      className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-navy-blue"
+                    >
+                      Colapsar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {GROUPS.map((grp, gi) => {
+                    const collapsed = collapsedGroups.has(gi);
+                    return (
+                      <div key={grp.g} className="border border-slate-200 rounded-xl overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => toggleGroup(gi)}
+                          className="w-full flex items-center justify-between bg-slate-50 px-5 py-3"
+                        >
+                          <span className="text-[11px] font-black text-navy-blue uppercase tracking-widest">{grp.g}</span>
+                          {collapsed ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronUp className="w-4 h-4 text-slate-400" />}
+                        </button>
+                        {!collapsed && (
+                          <div className="px-5 pb-3 pt-1">
+                            <table className="w-full">
+                              <thead>
+                                <tr className="text-[9px] text-slate-400 uppercase tracking-widest">
+                                  <th className="text-left font-black py-1">Parámetro</th>
+                                  <th className="font-black py-1">Resultado</th>
+                                  <th className="font-black py-1">Límite norma</th>
+                                  <th className="font-black py-1">Validez</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {grp.params.map((p) => {
+                                  const raw = results[p.k] ?? "";
+                                  const status = evalParam(p, raw, currentPoint);
+                                  return (
+                                    <tr key={p.k} className="border-b border-slate-50">
+                                      <td className="py-3 pr-4">
+                                        <span className="text-[12px] font-bold text-slate-900">{p.n}</span>{" "}
+                                        <span className="text-[10px] text-slate-400 font-semibold">{p.u}</span>
+                                      </td>
+                                      <td className="py-3 px-2 w-40">
+                                        {p.type ? (
+                                          <select
+                                            className="w-full p-2.5 text-sm font-bold border border-slate-200 rounded-lg"
+                                            value={raw}
+                                            onChange={(e) => updateResult(p.k, e.target.value)}
+                                          >
+                                            <option value="">—</option>
+                                            <option value="0">{p.type === "micro" ? "Ausencia (<1.1)" : "No objetable"}</option>
+                                            <option value="1">{p.type === "micro" ? "Presencia (≥1.1)" : "Objetable"}</option>
+                                          </select>
+                                        ) : (
+                                          <input
+                                            type="number"
+                                            step="0.0001"
+                                            className="w-full p-2.5 text-sm font-bold font-mono text-center border border-slate-200 rounded-lg"
+                                            value={raw}
+                                            onChange={(e) => updateResult(p.k, e.target.value)}
+                                          />
+                                        )}
+                                      </td>
+                                      <td className="py-3 px-2 w-32 text-center font-mono text-[11px] text-slate-500 font-semibold">{limText(p, currentPoint)}</td>
+                                      <td className="py-3 pl-2 w-16 text-center">
+                                        <span
+                                          className={`inline-block w-3.5 h-3.5 rounded-full border ${
+                                            status === "ok"
+                                              ? "bg-success-green border-success-green shadow-[0_0_10px_#10b981]"
+                                              : status === "bad"
+                                                ? "bg-danger-red border-danger-red shadow-[0_0_10px_#ef4444]"
+                                                : status === "op"
+                                                  ? "bg-slate-400 border-slate-400"
+                                                  : "bg-slate-200 border-slate-200"
+                                          }`}
+                                        />
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* Panel cumplimiento + índices + IA */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 card-shadow lg:col-span-1">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Dictamen de Cumplimiento</h4>
+                  <ComplianceGauge percentage={compliance.pct} />
+                  <p className="text-[11px] text-slate-500 font-semibold mt-3">
+                    <span className="font-mono font-bold">{compliance.evald}</span> parámetros evaluados ·{" "}
+                    <span className="font-mono font-bold text-danger-red">{compliance.fail}</span> no conformidades
+                  </p>
+
+                  <div className="mt-6 pt-6 border-t border-slate-100 space-y-4">
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Índice de saturación de Langelier (LSI)</p>
+                      <p className="text-[11px] font-semibold leading-snug">
+                        <span className="font-mono font-bold text-navy-blue text-sm">{lsi ? `${lsi.value > 0 ? "+" : ""}${lsi.value.toFixed(2)}` : "—"}</span>{" "}
+                        <span className="text-slate-500">{lsi ? lsi.label : "requiere pH, T°, SDT, dureza y alcalinidad"}</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Índice combinado nitratos + nitritos</p>
+                      <p className="text-[11px] font-semibold leading-snug">
+                        <span className="font-mono font-bold text-navy-blue text-sm">{nIndex ? nIndex.value.toFixed(2) : "—"}</span>{" "}
+                        <span className={nIndex ? (nIndex.conforme ? "text-success-green" : "text-danger-red") : "text-slate-500"}>
+                          {nIndex ? (nIndex.conforme ? "≤ 1 — conforme" : "Supera 1 — NO conforme") : "[NO₃]/50 + [NO₂]/3 ≤ 1"}
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 card-shadow lg:col-span-2">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Diagnóstico Técnico Automático</h4>
+                    <AiButton onClick={handleDiagnosis} loading={loadingDiagnosis} label="Generar diagnóstico" />
+                  </div>
+                  <textarea
+                    rows={7}
+                    className="w-full p-4 rounded-2xl text-sm leading-relaxed border border-slate-200 bg-white text-slate-900"
+                    placeholder="Hallazgos, interpretación frente a la norma aplicable y recomendaciones de operación del tren de tratamiento…"
+                    value={diagnostico}
+                    onChange={(e) => setDiagnostico(e.target.value)}
+                  />
+                </div>
               </div>
-              <div className="flex gap-4">
-                <button onClick={exportCarteraExcel} className="bg-blue-600 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-blue-700 transition shadow-xl tracking-widest">
-                  Excel Cartera Tecnica
-                </button>
-                <button onClick={exportProspectosExcel} className="bg-amber-500 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase hover:bg-amber-600 transition shadow-xl tracking-widest">
-                  Excel Prospectos
+
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  className="bg-navy-blue text-white px-16 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.3em] hover:bg-slate-800 shadow-2xl transition-all active:scale-95 border-b-4 border-black"
+                >
+                  Registrar Ensayo
                 </button>
               </div>
             </div>
+          )}
 
-            {/* Buscador */}
-            <div className="relative max-w-xl">
-              <svg className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-              <input
-                type="text"
-                value={archiveSearch}
-                onChange={(e) => setArchiveSearch(e.target.value)}
-                placeholder="Buscar por institucion, provincia..."
-                className="w-full rounded-2xl py-3.5 pl-12 pr-6 text-slate-900 placeholder-slate-400 border border-slate-200 focus:outline-none focus:border-blue-500 transition-all bg-white shadow-sm"
-              />
+          {/* ============ TAB 2: SPC ============ */}
+          {activeTab === "spc" && (
+            <div className="space-y-8 fade-in">
+              <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 card-shadow">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-100 pb-6 mb-8">
+                  <div>
+                    <h3 className="text-navy-blue text-lg font-black uppercase tracking-tight">Control Estadístico de Proceso</h3>
+                    <p className="text-[11px] text-slate-500 font-semibold mt-1">Carta de control de Shewhart (individuos · ±3σ) e índices de capacidad Cp / Cpk</p>
+                  </div>
+                  <div className="flex flex-wrap gap-4">
+                    <SelectField
+                      label="Punto"
+                      value={spcPoint}
+                      onChange={(e) => setSpcPoint(e.target.value as SamplePoint)}
+                      options={(["SALIDA", "CRUDA", "RED"] as SamplePoint[]).map((pt) => ({ value: pt, label: POINT_LABEL[pt] }))}
+                    />
+                    <SelectField
+                      label="Parámetro"
+                      value={spcParamKey}
+                      onChange={(e) => setSpcParamKey(e.target.value)}
+                      options={spcOptions.map((p) => ({ value: p.k, label: `${p.n} (${p.u})` }))}
+                    />
+                  </div>
+                </div>
+
+                {!spcResult ? (
+                  <div className="text-center py-20">
+                    <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Se requieren al menos 2 ensayos registrados para este punto y parámetro</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ height: 340 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={spcChartData} margin={{ top: 10, right: 20, left: 0, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                          <XAxis dataKey="idx" tick={{ fontSize: 10 }} label={{ value: "Orden del ensayo", position: "insideBottom", offset: -5, fontSize: 9 }} />
+                          <YAxis tick={{ fontSize: 10, fontFamily: "monospace" }} />
+                          <Tooltip />
+                          <Legend wrapperStyle={{ fontSize: 10 }} />
+                          <ReferenceLine y={spcResult.mean} stroke="#0e9f6e" strokeDasharray="6 4" strokeWidth={1.5} label={{ value: "LC", fontSize: 9, fill: "#0e9f6e" }} />
+                          <ReferenceLine y={spcResult.ucl} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: "LCS +3σ", fontSize: 9, fill: "#94a3b8" }} />
+                          <ReferenceLine y={spcResult.lcl} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: "LCI −3σ", fontSize: 9, fill: "#94a3b8" }} />
+                          {spcUsl != null && <ReferenceLine y={spcUsl} stroke="#dc2626" strokeWidth={1.5} label={{ value: "LME norma", fontSize: 9, fill: "#dc2626" }} />}
+                          {spcLsl > 0 && <ReferenceLine y={spcLsl} stroke="#dc2626" strokeWidth={1.5} label={{ value: "LMI norma", fontSize: 9, fill: "#dc2626" }} />}
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            name={spcParam?.n ?? ""}
+                            stroke="#000040"
+                            strokeWidth={2}
+                            dot={(props: { cx?: number; cy?: number; index?: number }) => {
+                              const { cx, cy, index } = props;
+                              const bad = index != null ? spcResult.outOfControl[index] : false;
+                              return <circle key={`dot-${index}`} cx={cx} cy={cy} r={5} fill={bad ? "#dc2626" : "#000040"} stroke={bad ? "#dc2626" : "#000040"} />;
+                            }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-10">
+                      <div className="bg-white p-5 rounded-xl border border-slate-200 border-l-4 border-l-navy-blue">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Media (LC)</p>
+                        <p className="font-mono text-2xl font-extrabold text-navy-blue mt-1">{spcResult.mean.toFixed(3)}</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">σ estimada</p>
+                        <p className="font-mono text-2xl font-extrabold mt-1">{spcResult.sigma.toFixed(3)}</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LCS (+3σ)</p>
+                        <p className="font-mono text-2xl font-extrabold mt-1">{spcResult.ucl.toFixed(3)}</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">LCI (−3σ)</p>
+                        <p className="font-mono text-2xl font-extrabold mt-1">{Math.max(spcResult.lcl, 0).toFixed(3)}</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cp</p>
+                        <p className="font-mono text-2xl font-extrabold text-navy-blue mt-1">{spcResult.cp != null ? spcResult.cp.toFixed(2) : "—"}</p>
+                      </div>
+                      <div className="bg-white p-5 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cpk</p>
+                        <p
+                          className="font-mono text-2xl font-extrabold mt-1"
+                          style={{ color: spcResult.cpk == null ? "#0f172a" : spcResult.cpk >= 1.33 ? "#0e9f6e" : spcResult.cpk >= 1 ? "#c2710c" : "#dc2626" }}
+                        >
+                          {spcResult.cpk != null ? spcResult.cpk.toFixed(2) : "—"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Interpretación de capacidad</p>
+                        <p className="text-[12px] text-slate-700 font-semibold leading-relaxed">{spcResult.interp}</p>
+                      </div>
+                      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Señales fuera de control</p>
+                        <div className="text-[12px] font-semibold leading-relaxed space-y-1">
+                          {spcResult.signals.length ? (
+                            spcResult.signals.map((s, i) => (
+                              <div key={i} className="text-danger-red">• {s}</div>
+                            ))
+                          ) : (
+                            <div className="text-success-green">• Proceso bajo control estadístico</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-semibold mt-6 leading-relaxed">
+                      Los <strong>límites de control</strong> (±3σ) describen la voz del proceso y se calculan de los propios datos (regla I-MR, d₂=1.128). Los{" "}
+                      <strong>límites de especificación</strong> (líneas rojas) son los de la norma aplicable. Un proceso puede estar dentro de norma pero fuera de
+                      control estadístico: eso anticipa una desviación antes de incumplir.
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className="space-y-14">
-              <div>
-                <h3 className="text-[11px] font-black text-slate-400 uppercase mb-6 border-b pb-4 flex items-center gap-3">
-                  <span className="w-4 h-4 bg-blue-500 rounded-full shadow-lg" />
-                  Cartera de Clientes (Seguimiento Tecnico)
-                </h3>
-                <div className="bg-white rounded-[3rem] shadow-xl border border-slate-200 overflow-hidden overflow-x-auto">
-                  <table className="w-full text-left min-w-[900px]">
-                    <thead className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
+          {/* ============ TAB 3: CAPA ============ */}
+          {activeTab === "capa" && (
+            <div className="space-y-8 fade-in">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-navy-blue text-2xl font-black uppercase tracking-tight">Gestión de No Conformidades</h3>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-1">Derivadas automáticamente de los ensayos que incumplen la norma aplicable · Causa raíz y acción correctiva (CAPA)</p>
+                </div>
+                <div className="flex gap-3">
+                  <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Abiertas</p>
+                    <p className="font-mono text-2xl font-extrabold text-danger-red">{ncOpenClosed.open}</p>
+                  </div>
+                  <div className="bg-white px-6 py-3 rounded-xl border border-slate-200 text-center">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cerradas</p>
+                    <p className="font-mono text-2xl font-extrabold text-success-green">{ncOpenClosed.closed}</p>
+                  </div>
+                </div>
+              </div>
+
+              {ncRows.length === 0 ? (
+                <div className="bg-white rounded-[2.5rem] border border-slate-200 card-shadow p-16 text-center">
+                  <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sin no conformidades registradas — todos los ensayos cumplen la norma</p>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {ncRows.map((nc) => {
+                    const a = capaMap.get(nc.id);
+                    const estado = a?.estado ?? "Abierta";
+                    const stColor = estado === "Verificada" ? "#0e9f6e" : estado === "Cerrada" ? "#0e9f6e" : estado === "En proceso" ? "#c2710c" : "#dc2626";
+                    return (
+                      <div key={nc.id} className="bg-white p-7 rounded-2xl border border-slate-200 card-shadow border-l-4" style={{ borderLeftColor: stColor }}>
+                        <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
+                          <div>
+                            <div className="flex items-center gap-3 mb-1">
+                              <span className="text-sm font-black text-navy-blue uppercase tracking-wide">{nc.param.n}</span>
+                              <span className="text-[9px] font-mono font-bold px-2 py-0.5 border border-slate-200 text-slate-500 rounded">{POINT_LABEL[nc.point]}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-semibold font-mono">{nc.code} · {nc.fecha} · {nc.planta || ""}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Resultado vs límite</p>
+                            <p className="font-mono text-sm font-bold">
+                              <span className="text-danger-red">{nc.val}</span> <span className="text-slate-400">/ {nc.lim} {nc.param.u}</span>
+                            </p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div>
+                            <SelectField
+                              label="Causa raíz (Ishikawa 6M)"
+                              value={a?.categoria6M ?? ""}
+                              onChange={(e) => handleCapaField(nc.testId, nc.paramKey, "categoria6M", e.target.value)}
+                              options={[{ value: "", label: "— Seleccione categoría —" }, ...CAUSA_6M.map((c) => ({ value: c, label: c }))]}
+                              className="mb-3"
+                            />
+                            <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">Análisis (5 porqués)</label>
+                            <textarea
+                              rows={3}
+                              className="w-full p-2.5 text-sm rounded-xl border border-slate-200"
+                              placeholder="¿Por qué ocurrió? …"
+                              defaultValue={a?.porques ?? ""}
+                              onBlur={(e) => handleCapaField(nc.testId, nc.paramKey, "porques", e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[9px] font-black text-slate-400 uppercase mb-2 ml-1">Acción correctiva</label>
+                            <textarea
+                              rows={3}
+                              className="w-full p-2.5 text-sm rounded-xl border border-slate-200 mb-3"
+                              placeholder="Acción sobre la operación / dosificación / barrera…"
+                              defaultValue={a?.accion ?? ""}
+                              onBlur={(e) => handleCapaField(nc.testId, nc.paramKey, "accion", e.target.value)}
+                            />
+                            <div className="grid grid-cols-2 gap-3">
+                              <InputField
+                                label="Responsable"
+                                defaultValue={a?.responsable ?? ""}
+                                onBlur={(e) => handleCapaField(nc.testId, nc.paramKey, "responsable", e.target.value)}
+                              />
+                              <SelectField
+                                label="Estado"
+                                value={estado}
+                                onChange={(e) => handleCapaField(nc.testId, nc.paramKey, "estado", e.target.value)}
+                                options={ESTADOS_CAPA.map((e) => ({ value: e, label: e }))}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ============ TAB 4: ARCHIVO ============ */}
+          {activeTab === "archivo" && (
+            <div className="space-y-10 fade-in">
+              <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+                <div>
+                  <h3 className="text-navy-blue text-2xl font-black uppercase tracking-tight">Archivo de Ensayos &amp; Reportes</h3>
+                  <p className="text-[11px] text-slate-500 font-semibold mt-1">Historial completo de la vigilancia de calidad</p>
+                </div>
+                <button onClick={handleExportExcel} className="bg-navy-blue text-white px-7 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg">
+                  Exportar histórico (Excel)
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+                <div className="bg-white p-7 rounded-2xl border border-slate-200 card-shadow text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total ensayos</p>
+                  <p className="font-mono text-4xl font-extrabold text-navy-blue mt-2">{kpiTotal}</p>
+                </div>
+                <div className="bg-white p-7 rounded-2xl border border-slate-200 card-shadow text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cumplimiento prom.</p>
+                  <p className="font-mono text-4xl font-extrabold text-success-green mt-2">{kpiCompliance == null ? "—" : `${kpiCompliance}%`}</p>
+                </div>
+                <div className="bg-white p-7 rounded-2xl border border-slate-200 card-shadow text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">No conformidades</p>
+                  <p className="font-mono text-4xl font-extrabold text-danger-red mt-2">{ncRows.length}</p>
+                </div>
+                <div className="bg-white p-7 rounded-2xl border border-slate-200 card-shadow text-center">
+                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Último ensayo</p>
+                  <p className="text-sm font-extrabold text-navy-blue mt-4 font-mono">{kpiLast}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 card-shadow">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Cumplimiento por mes</h4>
+                  <div style={{ height: 260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={complianceByMonth}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fontFamily: "monospace" }} />
+                        <Tooltip />
+                        <Bar dataKey="pct" fill="#000040" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 card-shadow">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">No conformidades por parámetro</h4>
+                  <div style={{ height: 260 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={ncByParam.length ? ncByParam : [{ name: "—", count: 0 }]} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                        <XAxis type="number" allowDecimals={false} tick={{ fontSize: 10, fontFamily: "monospace" }} />
+                        <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 10 }} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#dc2626" radius={[0, 4, 4, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white p-6 rounded-2xl border border-slate-200 card-shadow relative">
+                <Search className="absolute left-11 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={archiveSearch}
+                  onChange={(e) => setArchiveSearch(e.target.value)}
+                  placeholder="Buscar por planta, punto, analista, fecha…"
+                  className="w-full p-3 pl-10 rounded-xl font-semibold border border-slate-200"
+                />
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 card-shadow overflow-x-auto">
+                <table className="w-full text-left min-w-[860px]">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase">Código</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase">Fecha</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase">Planta</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase">Punto</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-center">Cumpl.</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-center">Dictamen</th>
+                      <th className="p-5 text-[10px] font-black text-slate-400 uppercase text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-sm">
+                    {archiveFiltered.length === 0 ? (
                       <tr>
-                        <th className="p-8">Fecha</th>
-                        <th className="p-8">Institucion</th>
-                        <th className="p-8">Ubicacion</th>
-                        <th className="p-8 text-center">Cumplimiento %</th>
-                        <th className="p-8 text-center">Gestion</th>
+                        <td colSpan={7} className="p-12 text-center text-slate-400 font-bold uppercase tracking-widest text-xs">
+                          Sin ensayos registrados
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="text-sm divide-y divide-slate-100">
-                      {filteredCartera.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
-                            No hay registros de cartera.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredCartera.map((v: NonNullable<typeof allVisitas>[number]) => (
-                          <tr key={v._id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-6 font-mono text-xs text-slate-500">{new Date(v._creationTime).toLocaleDateString("es-EC")}</td>
-                            <td className="p-6 font-black text-navy-blue">{v.org}</td>
-                            <td className="p-6 text-slate-600">{v.provincia ?? "—"} — {v.canton ?? ""}</td>
-                            <td className="p-6 text-center">
-                              <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${(v.compliance ?? 0) >= 80 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-                                {v.compliance ?? 0}%
+                    ) : (
+                      archiveFiltered.map((t) => {
+                        const ok = t.fail === 0;
+                        return (
+                          <tr key={t._id} className="hover:bg-slate-50">
+                            <td className="p-5 font-mono text-[11px] font-bold text-navy-blue">{t.code}</td>
+                            <td className="p-5 text-[12px] font-semibold">{t.fecha}</td>
+                            <td className="p-5 text-[12px] font-semibold">{t.planta || "—"}</td>
+                            <td className="p-5">
+                              <span className="text-[9px] font-mono font-bold px-2 py-1 border border-slate-200 text-slate-600 rounded">{POINT_LABEL[t.point]}</span>
+                            </td>
+                            <td className={`p-5 text-center font-mono font-bold ${ok ? "" : "text-danger-red"}`}>{t.pct}%</td>
+                            <td className="p-5 text-center">
+                              <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full ${ok ? "bg-success-green/10 text-success-green" : "bg-danger-red/10 text-danger-red"}`}>
+                                {ok ? "Conforme" : "No conforme"}
                               </span>
                             </td>
-                            <td className="p-6 text-center">
-                              <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-black uppercase">Activo</span>
+                            <td className="p-5">
+                              <div className="flex items-center justify-center gap-4">
+                                <button onClick={() => handleShowQr(t)} title="QR" className="text-slate-400 hover:text-navy-blue transition-colors">
+                                  <QrCode className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => handlePrint(t)} title="PDF" className="text-slate-400 hover:text-navy-blue transition-colors">
+                                  <FileText className="w-4 h-4" />
+                                </button>
+                                <button onClick={() => setDeleteTarget(t)} title="Eliminar" className="text-slate-400 hover:text-danger-red transition-colors">
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
+              <p className="text-[10px] text-slate-400 font-semibold leading-relaxed">
+                ⚠ Límites precargados: NTE INEN 1108:2020 para agua de salida y red de distribución (agua para consumo humano); TULSMA Anexo 1, Tabla 1 para agua
+                cruda (aguas que requieren tratamiento convencional). Verifique cada valor contra la edición oficial vigente antes de emitir dictámenes con
+                validez legal.
+              </p>
+            </div>
+          )}
+        </main>
 
-              <div>
-                <h3 className="text-[11px] font-black text-gold-comercial uppercase mb-6 border-b border-gold-comercial/30 pb-4 flex items-center gap-3">
-                  <span className="w-4 h-4 bg-gold-comercial rounded-full shadow-lg" />
-                  Pipeline Comercial (Ventas)
-                </h3>
-                <div className="bg-white rounded-[3rem] shadow-xl border border-slate-200 overflow-hidden overflow-x-auto">
-                  <table className="w-full text-left min-w-[900px]">
-                    <thead className="bg-slate-50 text-[10px] uppercase text-slate-400 font-black border-b">
-                      <tr>
-                        <th className="p-8">Fecha</th>
-                        <th className="p-8">Prospecto</th>
-                        <th className="p-8">Provincia</th>
-                        <th className="p-8 text-center">Total Ofertado</th>
-                        <th className="p-8 text-center">Gestion</th>
-                      </tr>
-                    </thead>
-                    <tbody className="text-sm divide-y divide-slate-100">
-                      {filteredProspectos.length === 0 ? (
-                        <tr>
-                          <td colSpan={5} className="p-8 text-center text-slate-400 italic text-xs">
-                            No hay prospectos registrados.
-                          </td>
-                        </tr>
-                      ) : (
-                        filteredProspectos.map((v: NonNullable<typeof allVisitas>[number]) => (
-                          <tr key={v._id} className="hover:bg-slate-50 transition-colors">
-                            <td className="p-6 font-mono text-xs text-slate-500">{new Date(v._creationTime).toLocaleDateString("es-EC")}</td>
-                            <td className="p-6 font-black text-navy-blue">{v.org}</td>
-                            <td className="p-6 text-slate-600">{v.provincia ?? "—"}</td>
-                            <td className="p-6 text-center font-black text-gold-comercial">{v.comercial?.totalQuote ? `$ ${v.comercial.totalQuote}` : "—"}</td>
-                            <td className="p-6 text-center">
-                              <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase">Prospecto</span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+        {/* QR MODAL */}
+        {qrTarget && (
+          <div className="fixed inset-0 z-[300] bg-black/60 flex items-center justify-center p-6" onClick={() => setQrTarget(null)}>
+            <div className="bg-white rounded-2xl p-8 max-w-sm w-full text-center" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-end">
+                <button onClick={() => setQrTarget(null)} className="text-slate-400 hover:text-slate-600">
+                  <X className="w-4 h-4" />
+                </button>
               </div>
+              <p className="text-[9px] font-black tracking-[0.22em] uppercase text-slate-400 mb-1">TeraH2O · Verificación de certificado</p>
+              <p className="font-mono text-sm font-bold text-navy-blue mb-5">{qrTarget.test.code}</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrTarget.dataUrl} className="mx-auto border border-slate-200 p-2" style={{ width: 220, height: 220 }} alt="Código QR" />
+              <p className="text-[11px] text-slate-500 font-semibold mt-5 leading-relaxed">
+                Escanee para abrir el certificado registrado en el sistema (requiere sesión iniciada).
+              </p>
+              <a href={verifyUrl(qrTarget.test.code, qrTarget.test._id)} target="_blank" rel="noopener noreferrer" className="block mt-4 text-[10px] font-mono text-navy-blue underline break-all">
+                {verifyUrl(qrTarget.test.code, qrTarget.test._id)}
+              </a>
+              <button onClick={() => setQrTarget(null)} className="mt-6 bg-navy-blue text-white px-8 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest w-full">
+                Cerrar
+              </button>
             </div>
           </div>
         )}
-      </main>
 
-      {/* Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/[0.98] backdrop-blur-lg border-t border-slate-200 p-5 z-[100] shadow-[0_-10px_25px_-5px_rgba(0,0,0,0.05)]">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 bg-navy-blue rounded-2xl flex items-center justify-center text-white shadow-xl rotate-2">
-              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <div>
-              <p className={`text-[11px] font-black uppercase tracking-[0.3em] ${tipoCliente === "POTENCIAL" ? "text-gold-comercial" : "text-navy-blue opacity-60"}`}>
-                {tipoCliente === "POTENCIAL"
-                  ? "Prospecto Comercial: Oferta de Suministros"
-                  : "Cliente Cartera: Ingenieria Aplicada"}
-              </p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                Seguimiento de Ingenieria Terminado.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleFinalize}
-            className="w-full md:w-auto bg-navy-blue text-white px-20 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.4em] hover:bg-slate-800 shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-4 border-b-4 border-black"
-          >
-            Finalizar y Generar Documentos
-          </button>
-        </div>
+        <ConfirmDialog
+          isOpen={!!deleteTarget}
+          title="Eliminar ensayo"
+          message={`¿Eliminar el ensayo ${deleteTarget?.code ?? ""} del archivo? Esta acción no se puede deshacer.`}
+          confirmLabel="Eliminar"
+          variant="danger"
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
       </div>
-    </div>
     </AuthGuard>
   );
 }
