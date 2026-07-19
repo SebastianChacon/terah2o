@@ -21,6 +21,24 @@ async function goToView(
   await page.waitForTimeout(500);
 }
 
+// Busca en la pestaña "Clientes" y abre el detalle del primer resultado.
+async function openClientBySearch(
+  page: import("@playwright/test").Page,
+  query: string
+) {
+  await goToView(page, "Clientes");
+  await page.getByPlaceholder(/Buscar/i).fill(query);
+  await page.waitForTimeout(500);
+  await page.getByRole("button", { name: "Gestionar" }).first().click();
+  await page.waitForTimeout(500);
+}
+
+// Fila de un miembro del equipo dentro de ClientDetail — clase única no compartida
+// por el card wrapper que la contiene (evita matchear el Section entero).
+function teamRow(page: import("@playwright/test").Page) {
+  return page.locator('div[class*="border-[#eef2f6]"][class*="rounded-xl"]');
+}
+
 test.describe.serial("Panel Owner Pro (super-admin global)", () => {
   test.beforeAll(async () => {
     await seedTestData(OWNER_EMAIL);
@@ -38,8 +56,8 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await expect(page.locator("text=Resumen ejecutivo")).not.toBeVisible();
   });
 
-  // ── 2. Autorizado: ve el dashboard con métricas ───────────────────────────
-  test("owner ve el dashboard y sus métricas globales", async ({ page, context }) => {
+  // ── 2. Autorizado: ve el dashboard con métricas y su org en Clientes ──────
+  test("owner ve el dashboard y su organización en Clientes", async ({ page, context }) => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
@@ -50,20 +68,31 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await expect(page.locator("text=MRR estimado")).toBeVisible({ timeout: 8000 });
     await expect(page.locator("text=Organizaciones").first()).toBeVisible();
 
-    // En Cuentas, su propia cuenta aparece
-    await goToView(page, "Cuentas");
-    await expect(page.locator(`text=${OWNER_EMAIL}`).first()).toBeVisible({ timeout: 8000 });
+    // En Clientes, buscar por su propio correo aísla su organización
+    await goToView(page, "Clientes");
+    await page.getByPlaceholder(/Buscar/i).fill(OWNER_EMAIL);
+    await page.waitForTimeout(500);
+    await expect(page.getByRole("button", { name: "Gestionar" })).toHaveCount(1, { timeout: 8000 });
+
+    // Entrar al detalle muestra el equipo de la cuenta
+    await page.getByRole("button", { name: "Gestionar" }).first().click();
+    await expect(page.locator("text=Equipo de la cuenta")).toBeVisible({ timeout: 8000 });
   });
 
-  // ── 3. Toggle de permiso persiste tras recargar ───────────────────────────
+  // ── 3. Toggle de permiso de un operador persiste tras recargar ────────────
   test("owner puede alternar un permiso de un operador y persiste", async ({ page, context }) => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
     await waitConvex(page);
-    await goToView(page, "Cuentas");
+    await openClientBySearch(page, OWNER_EMAIL);
 
-    const row = page.locator("div.rounded-xl").filter({ hasText: OPERATOR_EMAIL }).first();
+    // La fila del operador es la única con badge "Operador" + botón "Eliminar cuenta"
+    // (independiente del nombre/correo mostrado, que puede variar).
+    const row = teamRow(page)
+      .filter({ has: page.getByTitle("Eliminar cuenta") })
+      .filter({ hasText: "Operador" })
+      .first();
     await expect(row).toBeVisible({ timeout: 8000 });
 
     const toggle = row.getByRole("button", { name: /Asistencia/i }).first();
@@ -73,11 +102,14 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await toggle.click();
     await page.waitForTimeout(1500); // mutación Convex
 
-    // Recargar (vuelve al dashboard) → ir a Cuentas y comprobar el estado contrario
+    // Recargar (vuelve al dashboard) → reabrir el cliente y comprobar el estado contrario
     await page.reload();
     await waitConvex(page);
-    await goToView(page, "Cuentas");
-    const rowAfter = page.locator("div.rounded-xl").filter({ hasText: OPERATOR_EMAIL }).first();
+    await openClientBySearch(page, OWNER_EMAIL);
+    const rowAfter = teamRow(page)
+      .filter({ has: page.getByTitle("Eliminar cuenta") })
+      .filter({ hasText: "Operador" })
+      .first();
     const toggleAfter = rowAfter.getByRole("button", { name: /Asistencia/i }).first();
     const isOnAfter = (await toggleAfter.getAttribute("class"))?.includes("emerald") ?? false;
     expect(isOnAfter).toBe(!wasOn);
@@ -87,60 +119,56 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await page.waitForTimeout(1500);
   });
 
-  // ── 4. Guardas de eliminación ─────────────────────────────────────────────
-  test("el botón eliminar del owner/dueño-de-org está deshabilitado", async ({ page, context }) => {
+  // ── 4. Guarda de eliminación: el dueño de la org no tiene botón de borrar ──
+  test("la fila del dueño de la organización no tiene botón de eliminar", async ({ page, context }) => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
     await waitConvex(page);
-    await goToView(page, "Cuentas");
+    await openClientBySearch(page, OWNER_EMAIL);
 
-    // La fila del propio owner (admin + dueño de org): botón eliminar deshabilitado
-    const ownerRow = page.locator("div.rounded-xl").filter({ hasText: OWNER_EMAIL }).first();
+    // La fila con el badge "Dueño" no debe exponer "Eliminar cuenta" ni "Promover/Degradar"
+    const ownerRow = teamRow(page).filter({ hasText: "Dueño" }).first();
     await expect(ownerRow).toBeVisible({ timeout: 8000 });
-    await expect(ownerRow.getByText("Dueño")).toBeVisible();
-    // El último botón de la fila = eliminar (debe estar deshabilitado para el dueño)
-    await expect(ownerRow.getByRole("button").last()).toBeDisabled();
+    await expect(ownerRow.getByTitle("Eliminar cuenta")).toHaveCount(0);
+
+    // Otro miembro (no dueño) sí expone el botón, habilitado
+    const otherRow = teamRow(page)
+      .filter({ has: page.getByTitle("Eliminar cuenta") })
+      .first();
+    await expect(otherRow).toBeVisible();
+    await expect(otherRow.getByTitle("Eliminar cuenta")).toBeEnabled();
   });
 
   // ── 5. Editor de suscripción guarda (no destructivo) ──────────────────────
-  test("owner puede cambiar y guardar la suscripción de una org", async ({ page, context }) => {
+  test("owner puede guardar la suscripción de una org", async ({ page, context }) => {
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
     await waitConvex(page);
-    await goToView(page, "Suscripciones");
-
-    const card = page.locator("div.rounded-xl").filter({ has: page.getByRole("button", { name: "Guardar" }) }).first();
-    await expect(card).toBeVisible({ timeout: 8000 });
+    await openClientBySearch(page, OWNER_EMAIL);
 
     // Guardar sin cambiar valores → toast de éxito (idempotente, no destructivo)
-    await card.getByRole("button", { name: "Guardar" }).click();
+    await page.getByRole("button", { name: "Guardar suscripción" }).click();
     await expect(page.locator("text=/actualizada/i")).toBeVisible({ timeout: 8000 });
   });
 
-  // ── 6. Eliminar una cuenta individual (el bug reportado) ──────────────────
+  // ── 6. Eliminar una cuenta de operador desechable ──────────────────────────
   // Crea un operador desechable (solo en Convex, sin Clerk) y lo elimina vía la
   // UI. Verifica el camino feliz del flujo de borrado de cuenta: confirma el
   // diálogo → toast de éxito → la fila desaparece de la lista.
   test("owner elimina una cuenta de operador y desaparece de la lista", async ({ page, context }) => {
-    const operatorEmail = await seedDisposableOperator(OWNER_EMAIL);
+    await seedDisposableOperator(OWNER_EMAIL);
 
     await context.clearCookies();
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
     await waitConvex(page);
-    await goToView(page, "Cuentas");
+    await openClientBySearch(page, OWNER_EMAIL);
 
-    // Buscar para aislar la fila del operador desechable
-    await page.getByPlaceholder(/Buscar/i).fill(operatorEmail);
-    await page.waitForTimeout(500);
-
-    const row = page.locator("div.rounded-xl").filter({ hasText: operatorEmail }).first();
+    const row = teamRow(page).filter({ hasText: "E2E Disposable" }).first();
     await expect(row).toBeVisible({ timeout: 8000 });
 
-    // Botón eliminar (por title; en filas de operador hay también toggles de
-    // permisos, así que NO sirve .last()). Habilitado: no es dueño de org.
     const deleteBtn = row.getByTitle("Eliminar cuenta");
     await expect(deleteBtn).toBeEnabled();
     await deleteBtn.click();
@@ -151,9 +179,9 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
 
     // Toast de éxito y la cuenta deja de existir
     await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
-    await expect(
-      page.locator("div.rounded-xl").filter({ hasText: operatorEmail })
-    ).toHaveCount(0, { timeout: 8000 });
+    await expect(teamRow(page).filter({ hasText: "E2E Disposable" })).toHaveCount(0, {
+      timeout: 8000,
+    });
   });
 
   // ── 7. Crear cliente y eliminarlo (aislado, limpia tras sí) ────────────────
@@ -164,7 +192,6 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await waitConvex(page);
 
     // Limpia cualquier org de prueba dejada por una corrida anterior.
-    await goToView(page, "Organizaciones");
     await deleteTestOrgs(page);
 
     const stamp = Date.now();
@@ -179,15 +206,15 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await page.getByRole("button", { name: "Crear cliente" }).click();
     await expect(page.locator("text=/creado/i")).toBeVisible({ timeout: 12000 });
 
-    // Aparece en Organizaciones
-    await goToView(page, "Organizaciones");
-    const orgCard = page.locator("div.rounded-xl").filter({ hasText: orgName }).first();
-    await expect(orgCard).toBeVisible({ timeout: 8000 });
+    // Aparece en Clientes
+    await goToView(page, "Clientes");
+    await page.getByPlaceholder(/Buscar/i).fill(orgName);
+    await page.waitForTimeout(500);
+    await expect(page.getByRole("button", { name: "Gestionar" })).toHaveCount(1, { timeout: 8000 });
 
-    // Eliminar la org de prueba (limpieza): abrir modal por título, tipear nombre, confirmar
-    await orgCard
-      .getByRole("button", { name: "Eliminar organización completa" })
-      .click();
+    // Eliminar la org de prueba (limpieza): entrar al detalle, tipear nombre, confirmar
+    await page.getByRole("button", { name: "Gestionar" }).first().click();
+    await page.getByRole("button", { name: "Eliminar organización" }).click();
     await page.getByPlaceholder(orgName).fill(orgName);
     await page.getByRole("button", { name: "Eliminar org", exact: true }).click();
     await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
@@ -201,8 +228,6 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await loginWithClerkTicket(page, OWNER_EMAIL);
     await page.goto("/owner");
     await waitConvex(page);
-
-    await goToView(page, "Organizaciones");
     await deleteTestOrgs(page);
 
     const stamp = Date.now();
@@ -217,62 +242,75 @@ test.describe.serial("Panel Owner Pro (super-admin global)", () => {
     await page.getByRole("button", { name: "Crear cliente" }).click();
     await expect(page.locator("text=/creado/i")).toBeVisible({ timeout: 12000 });
 
-    await goToView(page, "Organizaciones");
-    const card = page.locator("div.rounded-xl").filter({ hasText: orgName }).first();
-    await expect(card).toBeVisible({ timeout: 8000 });
+    await goToView(page, "Clientes");
+    await page.getByPlaceholder(/Buscar/i).fill(orgName);
+    await page.waitForTimeout(500);
+    await page.getByRole("button", { name: "Gestionar" }).first().click();
+    await expect(page.locator("text=Permisos de acceso")).toBeVisible({ timeout: 8000 });
 
-    // Default OFF: habilitar "Operaciones (hub)"
-    const opsToggle = card.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
+    // Default OFF: habilitar "Operaciones (hub)" (org-level, primer match = PermissionsCard)
+    const opsToggle = page.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
     await expect(opsToggle).toBeVisible();
-    expect((await opsToggle.getAttribute("class"))?.includes("emerald") ?? false).toBe(false);
+    expect((await opsToggle.getAttribute("class"))?.includes("e8f1fc") ?? false).toBe(false);
     await opsToggle.click();
     await page.waitForTimeout(1500);
 
     // Cambiar cupo de administradores a 3
-    const adminSeats = card
+    const adminSeats = page
       .locator('label:has-text("Cupo de administradores") + div input[type="number"]')
       .first();
     await adminSeats.fill("3");
-    await card
+    await page
       .locator('label:has-text("Cupo de administradores") + div button')
       .first()
       .click();
-    await expect(page.locator("text=/administradores actualizado/i")).toBeVisible({ timeout: 8000 });
+    await expect(page.locator("text=/administradores actualizado/i").first()).toBeVisible({ timeout: 8000 });
 
     // Recargar y verificar persistencia
     await page.reload();
     await waitConvex(page);
-    await goToView(page, "Organizaciones");
-    const cardAfter = page.locator("div.rounded-xl").filter({ hasText: orgName }).first();
-    const opsAfter = cardAfter.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
-    expect((await opsAfter.getAttribute("class"))?.includes("emerald") ?? false).toBe(true);
-    const adminSeatsAfter = cardAfter
+    await goToView(page, "Clientes");
+    await page.getByPlaceholder(/Buscar/i).fill(orgName);
+    await page.waitForTimeout(500);
+    await page.getByRole("button", { name: "Gestionar" }).first().click();
+    await expect(page.locator("text=Permisos de acceso")).toBeVisible({ timeout: 8000 });
+
+    const opsAfter = page.getByRole("button", { name: "Operaciones (hub)", exact: true }).first();
+    expect((await opsAfter.getAttribute("class"))?.includes("e8f1fc") ?? false).toBe(true);
+    const adminSeatsAfter = page
       .locator('label:has-text("Cupo de administradores") + div input[type="number"]')
       .first();
     await expect(adminSeatsAfter).toHaveValue("3");
 
     // Limpieza: eliminar la org de prueba
-    await cardAfter
-      .getByRole("button", { name: "Eliminar organización completa" })
-      .click();
+    await page.getByRole("button", { name: "Eliminar organización" }).click();
     await page.getByPlaceholder(orgName).fill(orgName);
     await page.getByRole("button", { name: "Eliminar org", exact: true }).click();
     await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });
   });
 });
 
-// Borra todas las org-cards cuyo nombre empieza con "E2E Test Org".
+// Busca en Clientes y borra todas las orgs cuyo nombre empieza con "E2E Test Org".
 async function deleteTestOrgs(page: import("@playwright/test").Page) {
+  await page.getByRole("button", { name: "Clientes", exact: true }).first().click();
+  await page.waitForTimeout(500);
+  const search = page.getByPlaceholder(/Buscar/i);
+
   for (let i = 0; i < 30; i++) {
-    const card = page
-      .locator("div.rounded-xl")
+    await search.fill("E2E Test Org");
+    await page.waitForTimeout(500);
+    const manageBtn = page.getByRole("button", { name: "Gestionar" }).first();
+    if ((await manageBtn.count()) === 0) return;
+    await manageBtn.click();
+
+    const nameHeading = page
+      .locator("button")
+      .filter({ has: page.locator("svg") })
       .filter({ hasText: /E2E Test Org/ })
       .first();
-    if ((await card.count()) === 0) return;
-    const name = (await card.locator("span.truncate").first().innerText()).trim();
-    await card
-      .getByRole("button", { name: "Eliminar organización completa" })
-      .click();
+    const name = (await nameHeading.innerText()).trim();
+
+    await page.getByRole("button", { name: "Eliminar organización" }).click();
     await page.getByPlaceholder(name).fill(name);
     await page.getByRole("button", { name: "Eliminar org", exact: true }).click();
     await expect(page.locator("text=/eliminada/i")).toBeVisible({ timeout: 12000 });

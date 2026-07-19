@@ -42,6 +42,10 @@ export interface OrgRow {
     kgMonth: number;
     habitantes: number;
   } | null;
+  contactCargo: string | null;
+  contactPhone: string | null;
+  region: string | null;
+  address: string | null;
   subscription: {
     status: SubscriptionStatus;
     plan: SubscriptionPlan;

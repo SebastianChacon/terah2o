@@ -12,7 +12,6 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { Id } from "../../../../convex/_generated/dataModel";
 import type { AccountRow, AuditLogRow, OrgRow, PlanRow } from "../types";
 import { clientStatus, formatDate, fromDateInput, toDateInput } from "../types";
@@ -49,6 +48,67 @@ function Section({ title, hint, children }: { title: string; hint?: string; chil
       {!hint && <div className="mb-3" />}
       {children}
     </div>
+  );
+}
+
+// ── Información de contacto comercial (persona, cargo, teléfono, región) ───
+function ContactInfoCard({
+  org,
+  showToast,
+}: {
+  org: OrgRow;
+  showToast: (msg: string, type: "success" | "error") => void;
+}) {
+  const setContactInfo = useMutation(api.superAdmin.setOrgContactInfo);
+
+  const [contactCargo, setContactCargo] = useState(org.contactCargo ?? "");
+  const [contactPhone, setContactPhone] = useState(org.contactPhone ?? "");
+  const [region, setRegion] = useState(org.region ?? "");
+  const [address, setAddress] = useState(org.address ?? "");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    try {
+      await setContactInfo({
+        organizationId: org._id,
+        contactCargo: contactCargo || undefined,
+        contactPhone: contactPhone || undefined,
+        region: region || undefined,
+        address: address || undefined,
+      });
+      showToast("Datos de contacto guardados", "success");
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : "Error", "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Section title="Información de contacto" hint="Persona de contacto y datos comerciales — no afecta cálculos ni accesos">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label className={labelClass}>Cargo</label>
+          <input value={contactCargo} onChange={(e) => setContactCargo(e.target.value)} disabled={busy} placeholder="Ej: Jefe de planta" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Teléfono</label>
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} disabled={busy} placeholder="+593 99 812 4477" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Región</label>
+          <input value={region} onChange={(e) => setRegion(e.target.value)} disabled={busy} placeholder="Provincia o ciudad" className={inputClass} />
+        </div>
+        <div>
+          <label className={labelClass}>Dirección</label>
+          <input value={address} onChange={(e) => setAddress(e.target.value)} disabled={busy} placeholder="Dirección" className={inputClass} />
+        </div>
+      </div>
+      <button onClick={save} disabled={busy} className={secondaryBtnClass}>
+        Guardar contacto
+      </button>
+    </Section>
   );
 }
 
@@ -396,6 +456,46 @@ function PermissionsCard({
   );
 }
 
+function DeleteAccountModal({
+  name,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  name: string;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={loading ? undefined : onCancel} aria-hidden />
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-md bg-white border border-red-200 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-[#eef2f6]">
+          <h3 className="text-red-600 font-semibold text-sm">Eliminar cuenta</h3>
+          <button onClick={onCancel} disabled={loading} className="w-7 h-7 flex items-center justify-center text-[#829ab1] hover:text-[#334e68] disabled:opacity-40">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-5">
+          <p className="text-sm text-[#486581] leading-relaxed mb-5">
+            ¿Eliminar la cuenta de <strong className="text-[#102a43]">{name}</strong>? Se borrará de Convex y de Clerk.{" "}
+            <span className="text-red-600">Esta acción no se puede deshacer.</span>
+          </p>
+          <div className="flex gap-2 justify-end">
+            <button onClick={onCancel} disabled={loading} className={secondaryBtnClass}>
+              Cancelar
+            </button>
+            <button onClick={onConfirm} disabled={loading} className={dangerBtnClass}>
+              {loading ? "Eliminando…" : "Eliminar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TeamCard({
   org,
   members,
@@ -497,18 +597,16 @@ function TeamCard({
 
   return (
     <Section title="Equipo de la cuenta" hint={`${org.adminCount} admin · ${org.operatorCount} operador(es)`}>
-      <ConfirmDialog
-        isOpen={deleteTarget !== null}
-        title="Eliminar cuenta"
-        message={deleteTarget ? `¿Eliminar la cuenta de ${deleteTarget.name}? Se borrará de Convex y de Clerk. Esta acción no se puede deshacer.` : ""}
-        confirmLabel="Eliminar"
-        variant="danger"
-        loading={deleting}
-        onConfirm={confirmDelete}
-        onCancel={() => {
-          if (!deleting) setDeleteTarget(null);
-        }}
-      />
+      {deleteTarget && (
+        <DeleteAccountModal
+          name={deleteTarget.name}
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onCancel={() => {
+            if (!deleting) setDeleteTarget(null);
+          }}
+        />
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
         <div>
@@ -756,11 +854,16 @@ export function ClientDetail({ org, members, showToast, onBack }: ClientDetailPr
               <Pencil className="w-3.5 h-3.5 text-[#c4cfda] group-hover:text-[#0f4c91]" />
             </button>
           )}
-          <div className="flex items-center gap-3 mt-1 text-xs text-[#829ab1]">
-            <span className="flex items-center gap-1"><Crown className="w-3 h-3 text-amber-500" />{org.ownerName ?? org.ownerEmail ?? "—"}</span>
+          <div className="flex items-center gap-3 mt-1 text-xs text-[#829ab1] flex-wrap">
+            <span className="flex items-center gap-1"><Crown className="w-3 h-3 text-amber-500" />{org.ownerName ?? org.ownerEmail ?? "—"}{org.contactCargo ? ` · ${org.contactCargo}` : ""}</span>
             <span className="flex items-center gap-1"><Users className="w-3 h-3" />{org.adminCount} admin · {org.operatorCount} op</span>
             <span>Creada {formatDate(org.createdAt)}</span>
           </div>
+          {(org.contactPhone || org.address || org.region) && (
+            <div className="text-[0.7rem] text-[#829ab1] mt-0.5">
+              {[org.contactPhone, org.address, org.region].filter(Boolean).join("  ·  ")}
+            </div>
+          )}
         </div>
         <span className={`text-[0.7rem] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap shrink-0 ${st.className}`}>
           {st.label}
@@ -768,6 +871,7 @@ export function ClientDetail({ org, members, showToast, onBack }: ClientDetailPr
       </div>
 
       <SubscriptionCard org={org} showToast={showToast} />
+      <ContactInfoCard org={org} showToast={showToast} />
       <CommercialCard org={org} showToast={showToast} />
       <PermissionsCard org={org} showToast={showToast} />
       <TeamCard org={org} members={members} showToast={showToast} />

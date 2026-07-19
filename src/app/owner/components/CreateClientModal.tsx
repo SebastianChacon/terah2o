@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { X, UserPlus } from "lucide-react";
+import type { PlanRow } from "../types";
 
 interface CreateClientModalProps {
   onClose: () => void;
@@ -14,15 +17,34 @@ export function CreateClientModal({
   onCreated,
   showToast,
 }: CreateClientModalProps) {
+  const plans = useQuery(api.plans.listPlans) as PlanRow[] | undefined;
+
   const [orgName, setOrgName] = useState("");
   const [adminName, setAdminName] = useState("");
   const [adminEmail, setAdminEmail] = useState("");
+  const [cargo, setCargo] = useState("");
+  const [phone, setPhone] = useState("");
+  const [region, setRegion] = useState("");
+  const [address, setAddress] = useState("");
+  const [subType, setSubType] = useState<"operaciones" | "academia">("operaciones");
+  const [planId, setPlanId] = useState("");
+  const [trial, setTrial] = useState(true);
   const [busy, setBusy] = useState(false);
+
+  const planOptions = useMemo(
+    () => (plans ?? []).filter((p) => p.type === subType).sort((a, b) => a.order - b.order),
+    [plans, subType]
+  );
 
   const valid =
     orgName.trim() !== "" &&
     adminName.trim() !== "" &&
     /\S+@\S+\.\S+/.test(adminEmail.trim());
+
+  function changeSubType(next: "operaciones" | "academia") {
+    setSubType(next);
+    setPlanId("");
+  }
 
   async function handleCreate() {
     if (!valid) return;
@@ -35,6 +57,12 @@ export function CreateClientModal({
           orgName: orgName.trim(),
           adminName: adminName.trim(),
           adminEmail: adminEmail.trim(),
+          cargo: cargo.trim() || undefined,
+          phone: phone.trim() || undefined,
+          region: region.trim() || undefined,
+          address: address.trim() || undefined,
+          planId: planId || undefined,
+          trial,
         }),
       });
       const data = (await res.json()) as {
@@ -73,9 +101,9 @@ export function CreateClientModal({
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-md bg-white border border-[#dde4ec] rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-lg max-h-[90vh] flex flex-col bg-white border border-[#dde4ec] rounded-2xl shadow-2xl overflow-hidden"
       >
-        <div className="flex items-center justify-between p-5 border-b border-[#eef2f6]">
+        <div className="flex items-center justify-between p-5 border-b border-[#eef2f6] shrink-0">
           <h3 className="text-[#102a43] font-semibold text-sm flex items-center gap-2">
             <UserPlus className="w-4 h-4 text-[#1666c4]" />
             Nuevo cliente
@@ -88,42 +116,137 @@ export function CreateClientModal({
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 space-y-4">
+        <div className="p-5 space-y-4 overflow-y-auto">
           <p className="text-[#627d98] text-xs leading-relaxed">
-            Crea una organización nueva con su administrador dueño y un trial de
-            14 días. El admin recibe un correo y se vincula en su primer login.
+            Crea una organización nueva con su administrador dueño. El admin recibe
+            un correo y se vincula en su primer login.
           </p>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Empresa / nombre</label>
+              <input
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                placeholder="PTAP Ejemplo"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Persona de contacto</label>
+              <input
+                value={adminName}
+                onChange={(e) => setAdminName(e.target.value)}
+                placeholder="Juan Pérez"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Cargo</label>
+              <input
+                value={cargo}
+                onChange={(e) => setCargo(e.target.value)}
+                placeholder="Ej: Jefe de planta"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Teléfono</label>
+              <input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+593 99 812 4477"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Correo del administrador</label>
+              <input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => setAdminEmail(e.target.value)}
+                placeholder="admin@ptap.ec"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Región</label>
+              <input
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                placeholder="Provincia o ciudad"
+                disabled={busy}
+                className={fieldClass}
+              />
+            </div>
+          </div>
+
           <div>
-            <label className={labelClass}>Nombre de la organización</label>
+            <label className={labelClass}>Dirección</label>
             <input
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder="PTAP Ejemplo"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              placeholder="Dirección"
               disabled={busy}
               className={fieldClass}
             />
           </div>
-          <div>
-            <label className={labelClass}>Nombre del administrador</label>
-            <input
-              value={adminName}
-              onChange={(e) => setAdminName(e.target.value)}
-              placeholder="Juan Pérez"
-              disabled={busy}
-              className={fieldClass}
-            />
+
+          <div className="h-px bg-[#eef2f6]" />
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={labelClass}>Tipo de suscripción</label>
+              <select
+                value={subType}
+                onChange={(e) => changeSubType(e.target.value as "operaciones" | "academia")}
+                disabled={busy}
+                className={fieldClass}
+              >
+                <option value="operaciones">Operaciones</option>
+                <option value="academia">Academia</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Plan</label>
+              <select
+                value={planId}
+                onChange={(e) => setPlanId(e.target.value)}
+                disabled={busy || !plans}
+                className={fieldClass}
+              >
+                <option value="">Sin plan asignado</option>
+                {planOptions.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} — ${p.price}/mes
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
-          <div>
-            <label className={labelClass}>Correo del administrador</label>
+
+          <label className="flex items-center gap-2 text-xs text-[#334e68] cursor-pointer">
             <input
-              type="email"
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-              placeholder="admin@ptap.ec"
+              type="checkbox"
+              checked={trial}
+              onChange={(e) => setTrial(e.target.checked)}
               disabled={busy}
-              className={fieldClass}
+              className="w-4 h-4"
             />
-          </div>
+            Iniciar con 14 días de prueba gratuita
+          </label>
+
           <div className="flex gap-2 justify-end pt-1">
             <button
               onClick={onClose}
