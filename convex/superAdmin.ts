@@ -369,6 +369,10 @@ export const listOrganizations = query({
           contractNumber: o.contractNumber ?? null,
           contractMonths: o.contractMonths ?? null,
           plantProfile: o.plantProfile ?? null,
+          contactCargo: o.contactCargo ?? null,
+          contactPhone: o.contactPhone ?? null,
+          region: o.region ?? null,
+          address: o.address ?? null,
           subscription: sub
             ? {
                 status: sub.status,
@@ -937,6 +941,12 @@ export const createClientOrg = mutation({
     orgName: v.string(),
     adminName: v.string(),
     adminEmail: v.string(),
+    cargo: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    region: v.optional(v.string()),
+    address: v.optional(v.string()),
+    planId: v.optional(v.id("plans")),
+    trial: v.optional(v.boolean()), // default true (comportamiento histórico)
   },
   handler: async (ctx, args) => {
     await requireSuperAdmin(ctx);
@@ -954,6 +964,9 @@ export const createClientOrg = mutation({
     if (existing)
       throw new Error("Ya existe un usuario con ese correo electrónico");
 
+    const plan = args.planId ? await ctx.db.get(args.planId) : null;
+    if (args.planId && !plan) throw new Error("Plan no encontrado");
+
     const adminId = await ctx.db.insert("users", {
       email,
       name: adminName,
@@ -966,21 +979,61 @@ export const createClientOrg = mutation({
       adminUserId: adminId,
       maxOperators: 3,
       createdAt: Date.now(),
+      contactCargo: args.cargo?.trim() || undefined,
+      contactPhone: args.phone?.trim() || undefined,
+      region: args.region?.trim() || undefined,
+      address: args.address?.trim() || undefined,
+      // El plan elegido desbloquea sus páginas de inmediato — de lo contrario
+      // el admin quedaría sin acceso a nada (entitlements default-OFF).
+      ...(plan ? normalizePerms(plan.unlocks) : {}),
     });
 
     await ctx.db.patch(adminId, { organizationId: orgId });
 
+    const trial = args.trial ?? true;
     await ctx.db.insert("subscriptions", {
       organizationId: orgId,
-      status: "trialing",
-      plan: "starter",
-      trialEndsAt: Date.now() + 14 * 24 * 60 * 60 * 1000,
+      status: trial ? "trialing" : "active",
+      plan: plan ? legacyPlanFor(plan.key) : "starter",
+      planId: args.planId,
+      trialEndsAt: trial ? Date.now() + 14 * 24 * 60 * 60 * 1000 : undefined,
       createdAt: Date.now(),
     });
 
-    await logOwnerAction(ctx, orgId, `Cliente creado: ${orgName} (admin ${email})`);
+    await logOwnerAction(
+      ctx,
+      orgId,
+      `Cliente creado: ${orgName} (admin ${email})${plan ? ` · plan ${plan.name}` : ""}${trial ? " · trial 14d" : " · activa sin prueba"}`
+    );
 
     return { adminId, orgId, email, orgName };
+  },
+});
+
+// ── Editar datos de contacto comercial de una org ──────────────────────────
+export const setOrgContactInfo = mutation({
+  args: {
+    organizationId: v.id("organizations"),
+    contactCargo: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    region: v.optional(v.string()),
+    address: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx);
+
+    const org = await ctx.db.get(args.organizationId);
+    if (!org) throw new Error("Organización no encontrada");
+
+    await ctx.db.patch(args.organizationId, {
+      contactCargo: args.contactCargo?.trim() || undefined,
+      contactPhone: args.contactPhone?.trim() || undefined,
+      region: args.region?.trim() || undefined,
+      address: args.address?.trim() || undefined,
+    });
+
+    await logOwnerAction(ctx, args.organizationId, "Datos de contacto actualizados");
+    return args.organizationId;
   },
 });
 

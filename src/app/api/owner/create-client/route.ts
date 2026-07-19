@@ -2,15 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../../../../../convex/_generated/api";
+import type { Id } from "../../../../../convex/_generated/dataModel";
 import { sendInvitationEmail } from "@/lib/email/invitation";
 
 /**
  * POST /api/owner/create-client
- * Body: { orgName: string, adminName: string, adminEmail: string }
+ * Body: { orgName, adminName, adminEmail, cargo?, phone?, region?, address?, planId?, trial? }
  *
  * Panel Owner (super-admin global). Crea una nueva organización + su admin
- * dueño + suscripción trial, y envía el correo de invitación al admin.
- * El gate de super-admin lo hace la mutación createClientOrg de Convex.
+ * dueño + suscripción (trial o activa), y envía el correo de invitación al
+ * admin. El gate de super-admin lo hace la mutación createClientOrg de Convex.
  */
 export async function POST(req: NextRequest) {
   const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -28,11 +29,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const { orgName, adminName, adminEmail } = body as {
-    orgName?: string;
-    adminName?: string;
-    adminEmail?: string;
-  };
+  const { orgName, adminName, adminEmail, cargo, phone, region, address, planId, trial } =
+    body as {
+      orgName?: string;
+      adminName?: string;
+      adminEmail?: string;
+      cargo?: string;
+      phone?: string;
+      region?: string;
+      address?: string;
+      planId?: string;
+      trial?: boolean;
+    };
   if (!orgName || !adminName || !adminEmail) {
     return NextResponse.json(
       { error: "Se requieren orgName, adminName y adminEmail" },
@@ -49,6 +57,12 @@ export async function POST(req: NextRequest) {
       orgName: orgName.trim(),
       adminName: adminName.trim(),
       adminEmail: adminEmail.trim(),
+      cargo: cargo?.trim() || undefined,
+      phone: phone?.trim() || undefined,
+      region: region?.trim() || undefined,
+      address: address?.trim() || undefined,
+      planId: planId ? (planId as Id<"plans">) : undefined,
+      trial,
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error interno";

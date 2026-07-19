@@ -270,6 +270,12 @@ export default defineSchema({
     contractType: v.optional(v.union(v.literal("directa"), v.literal("sercop"))),
     contractNumber: v.optional(v.string()),
     contractMonths: v.optional(v.number()),
+    // Datos de contacto comercial (persona de contacto = adminUserId).
+    // Puramente informativos — no afectan cálculos ni accesos.
+    contactCargo: v.optional(v.string()),
+    contactPhone: v.optional(v.string()),
+    region: v.optional(v.string()),
+    address: v.optional(v.string()),
     plantProfile: v.optional(
       v.object({
         caudalLs: v.number(),
