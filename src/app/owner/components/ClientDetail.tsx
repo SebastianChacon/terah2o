@@ -22,7 +22,7 @@ import type { SubscriptionStatus, SubscriptionPlan } from "@/types/auth";
 
 const ENT_MAIN: { key: PermissionKey; label: string }[] = [
   { key: "canAccessOperaciones", label: "Operaciones (hub)" },
-  { key: "canAccessAsistencia", label: "Asistencia" },
+  { key: "canAccessAsistencia", label: "Calidad de Agua" },
   { key: "canAccessAcademia", label: "Academia" },
 ];
 const ENT_SUB: { key: PermissionKey; label: string }[] = [

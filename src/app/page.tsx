@@ -47,7 +47,7 @@ export default function HomePage() {
 
           <div className="flex flex-wrap gap-3 justify-center animate-[fadeUp_0.9s_0.35s_ease_both] opacity-0">
             <NavLink href="/operaciones">Operaciones</NavLink>
-            <NavLink href="/asistencia">Asistencia</NavLink>
+            <NavLink href="/asistencia">Calidad de Agua</NavLink>
             <NavLink href="/motor-inteligencia">
               Motor de Inteligencia Hidrometeorologica
             </NavLink>

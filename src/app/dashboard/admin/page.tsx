@@ -30,7 +30,7 @@ interface PermissionToggle {
 
 const MAIN_PERMISSION_TOGGLES: PermissionToggle[] = [
   { key: "canAccessOperaciones", label: "Operaciones (hub)" },
-  { key: "canAccessAsistencia", label: "Asistencia" },
+  { key: "canAccessAsistencia", label: "Calidad de Agua" },
   { key: "canAccessAcademia", label: "Academia" },
 ];
 

@@ -4,58 +4,56 @@ import { v } from "convex/values";
 export default defineSchema({
   // ── Tablas existentes (sin cambios excepto organizationId opcional) ────────
 
-  visitas: defineTable({
-    idInforme: v.string(),
-    tipoCliente: v.union(v.literal("CARTERA"), v.literal("POTENCIAL")),
-    org: v.string(),
-    telefono: v.string(),
-    correo: v.optional(v.string()),
-    autoridad: v.optional(v.string()),
-    tecnicoPlanta: v.optional(v.string()),
+  // Ensayos de la Consola de Vigilancia de Calidad del Agua (NTE INEN
+  // 1108:2020 / TULSMA Anexo 1 Tabla 1 para agua cruda). `results` guarda un
+  // valor crudo (string) por clave de parámetro (ver src/lib/calidad-agua/norma.ts);
+  // se interpreta según el tipo del parámetro (numérico, microbiológico, organoléptico).
+  waterQualityTests: defineTable({
+    code: v.string(),
+    point: v.union(v.literal("SALIDA"), v.literal("CRUDA"), v.literal("RED")),
+    planta: v.optional(v.string()),
+    operador: v.optional(v.string()),
+    sector: v.optional(v.string()),
     provincia: v.optional(v.string()),
     canton: v.optional(v.string()),
     caudal: v.optional(v.number()),
-    horasOperacion: v.optional(v.number()),
-    compliance: v.optional(v.number()),
-    observaciones: v.optional(v.string()),
-    params: v.array(
-      v.object({
-        name: v.string(),
-        raw: v.optional(v.number()),
-        treated: v.optional(v.number()),
-        limit: v.number(),
-        ok: v.boolean(),
-      })
-    ),
-    dosages: v.array(
-      v.object({
-        product: v.string(),
-        mgL: v.string(),
-        days: v.string(),
-      })
-    ),
-    comercial: v.object({
-      proveedor: v.optional(v.string()),
-      marketProducts: v.array(v.string()),
-      adquisicion: v.optional(v.string()),
-      contratacion: v.optional(v.string()),
-      fechaCompra: v.optional(v.string()),
-      comentarios: v.optional(v.string()),
-      cotizacion: v.array(
-        v.object({
-          prod: v.string(),
-          qty: v.string(),
-          price: v.string(),
-          total: v.string(),
-        })
-      ),
-      totalQuote: v.optional(v.string()),
-    }),
-    lat: v.optional(v.number()),
-    lng: v.optional(v.number()),
+    fecha: v.string(),
+    hora: v.optional(v.string()),
+    analista: v.optional(v.string()),
+    responsable: v.optional(v.string()),
+    metodo: v.optional(v.string()),
+    calibracion: v.optional(v.string()),
+    certificado: v.optional(v.string()),
+    producto: v.optional(v.string()),
+    diagnostico: v.optional(v.string()),
+    results: v.record(v.string(), v.string()),
+    pct: v.number(),
+    fail: v.number(),
     organizationId: v.optional(v.id("organizations")),
   })
-    .index("by_tipo", ["tipoCliente"])
+    .index("by_organizationId", ["organizationId"])
+    .index("by_point", ["point"]),
+
+  // Acciones CAPA (causa raíz / acción correctiva) derivadas de no
+  // conformidades en waterQualityTests. Una fila por parámetro no conforme
+  // de un ensayo — reemplaza el localStorage por-equipo del prototipo HTML
+  // original para que sea multiusuario y quede scoped por organización.
+  waterQualityCapaActions: defineTable({
+    testId: v.id("waterQualityTests"),
+    paramKey: v.string(),
+    categoria6M: v.optional(v.string()),
+    porques: v.optional(v.string()),
+    accion: v.optional(v.string()),
+    responsable: v.optional(v.string()),
+    estado: v.union(
+      v.literal("Abierta"),
+      v.literal("En proceso"),
+      v.literal("Cerrada"),
+      v.literal("Verificada")
+    ),
+    organizationId: v.optional(v.id("organizations")),
+  })
+    .index("by_testId", ["testId"])
     .index("by_organizationId", ["organizationId"]),
 
   plantSettings: defineTable({
