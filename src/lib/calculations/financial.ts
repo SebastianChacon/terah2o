@@ -20,16 +20,16 @@ export function calculateTotalExpenses(expenses: OperationalExpenses): number {
 }
 
 /**
- * Calcula el total de costos quimicos.
+ * Calcula el total de costos químicos.
  */
 export function calculateTotalChemicals(chemicals: ChemicalCost[]): number {
   return chemicals.reduce((sum, item) => sum + item.monthlyCost, 0);
 }
 
 /**
- * Calcula el costo mensual de un quimico.
- * Modo proyeccion: dose(mg/L) * flow(L/s) * 3.6 * hours * 30 / 1000 * price
- * Modo analisis: totalKg * price
+ * Calcula el costo mensual de un químico.
+ * Modo proyección: dose(mg/L) * flow(L/s) * 3.6 * hours * 30 / 1000 * price
+ * Modo análisis: totalKg * price
  */
 export function calculateChemicalMonthlyCost(
   mode: "projection" | "analysis",

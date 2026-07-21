@@ -10,7 +10,7 @@ import { sendInvitationEmail } from "@/lib/email/invitation";
  * Body: { email: string, name: string, organizationId: string }
  *
  * Usa el token de Clerk (template "convex") para autenticarse contra Convex.
- * La autorizacion real se valida en la mutacion createOperator de Convex.
+ * La autorización real se valida en la mutación createOperator de Convex.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
     const emailResult = await sendInvitationEmail({
       to: email.trim(),
       name: name.trim(),
-      orgName: orgName ?? "tu organizacion",
+      orgName: orgName ?? "tu organización",
       role: "operator",
     });
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Error interno";
-    const status = msg.includes("Limite") ? 422 : msg.includes("Solo un Admin") ? 403 : 500;
+    const status = msg.includes("Límite") ? 422 : msg.includes("Solo un Admin") ? 403 : 500;
     return NextResponse.json({ error: msg }, { status });
   }
 }

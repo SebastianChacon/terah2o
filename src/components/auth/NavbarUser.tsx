@@ -10,9 +10,9 @@ import { useState, useRef, useEffect } from "react";
 
 /**
  * Widget de perfil de usuario para el navbar.
- * - Sin sesion: muestra enlace "Ingresar →"
- * - Con sesion: chip con nombre, dot de estado y badge de plan
- * - Dropdown: perfil, panel admin (solo admins), cerrar sesion
+ * - Sin sesión: muestra enlace "Ingresar →"
+ * - Con sesión: chip con nombre, dot de estado y badge de plan
+ * - Dropdown: perfil, panel admin (solo admins), cerrar sesión
  */
 export function NavbarUser() {
   const { user, isLoading } = useCurrentUser();
@@ -59,7 +59,7 @@ export function NavbarUser() {
       <button
         onClick={() => setOpen(!open)}
         className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/[0.08] rounded-[3px] hover:border-blue-500/40 hover:bg-white/[0.07] transition-all group"
-        aria-label="Menu de usuario"
+        aria-label="Menú de usuario"
       >
         {/* Avatar */}
         <div className="w-5 h-5 bg-blue-500/20 rounded flex items-center justify-center text-blue-400 flex-shrink-0">
@@ -120,25 +120,25 @@ export function NavbarUser() {
 
           <hr className="border-white/[0.06] mx-2" />
 
-          {/* Cerrar sesion */}
+          {/* Cerrar sesión */}
           <div className="py-1">
             <button
               onClick={async () => {
                 setOpen(false);
-                // Limpiar cookie de suscripcion antes de salir
+                // Limpiar cookie de suscripción antes de salir
                 const secure = location.protocol === "https:" ? "; Secure" : "";
                 document.cookie = `__convexSubStatus=; path=/; max-age=0; SameSite=Lax${secure}`;
                 try {
                   await signOut();
                 } catch {
-                  // Clerk limpia su cookie automaticamente; proceder igual
+                  // Clerk limpia su cookie automáticamente; proceder igual
                 }
                 window.location.href = "/login";
               }}
               className="flex items-center gap-2.5 px-4 py-2 w-full text-[0.72rem] text-red-400/50 hover:text-red-400 hover:bg-white/[0.04] transition-colors text-left"
             >
               <LogOut className="w-3.5 h-3.5" />
-              Cerrar Sesion
+              Cerrar Sesión
             </button>
           </div>
         </div>

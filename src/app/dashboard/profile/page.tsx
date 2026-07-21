@@ -77,28 +77,28 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Card de organizacion */}
+        {/* Card de organización */}
         {myOrg && (
           <div className="bg-[#0a1120] border border-white/[0.07] rounded-2xl p-6 mb-5">
             <div className="flex items-center gap-2 mb-4">
               <Building2 className="w-4 h-4 text-blue-400" />
               <h2 className="text-white/60 text-xs font-mono uppercase tracking-widest">
-                Organizacion
+                Organización
               </h2>
             </div>
             <p className="text-white font-semibold mb-1">{myOrg.name}</p>
             <p className="text-white/30 text-xs font-mono">
-              Capacidad: {myOrg.maxOperators} operadores max.
+              Capacidad: {myOrg.maxOperators} operadores máx.
             </p>
           </div>
         )}
 
-        {/* Card de suscripcion */}
+        {/* Card de suscripción */}
         <div className="bg-[#0a1120] border border-white/[0.07] rounded-2xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <CreditCard className="w-4 h-4 text-blue-400" />
             <h2 className="text-white/60 text-xs font-mono uppercase tracking-widest">
-              Suscripcion
+              Suscripción
             </h2>
           </div>
 
@@ -110,14 +110,14 @@ export default function ProfilePage() {
               </p>
               <p className="text-white/30 text-xs capitalize">
                 {subscription?.status === "trialing" && trialDaysLeft !== null
-                  ? `Prueba gratuita · ${trialDaysLeft} dias restantes`
+                  ? `Prueba gratuita · ${trialDaysLeft} días restantes`
                   : subscription?.status === "active"
                   ? "Activo"
                   : subscription?.status === "past_due"
                   ? "Pago pendiente"
                   : subscription?.status === "canceled"
                   ? "Cancelado"
-                  : "Sin suscripcion activa"}
+                  : "Sin suscripción activa"}
               </p>
             </div>
           </div>

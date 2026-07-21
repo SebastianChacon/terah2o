@@ -5,8 +5,8 @@ import { api } from "../../../../convex/_generated/api";
 
 /**
  * GET /api/check-subscription
- * Devuelve el estado de suscripcion del usuario autenticado.
- * Util para validacion en el cliente antes de renderizar componentes criticos.
+ * Devuelve el estado de suscripción del usuario autenticado.
+ * Útil para validación en el cliente antes de renderizar componentes críticos.
  *
  * Response: { status: string, plan: string, isActive: boolean }
  */

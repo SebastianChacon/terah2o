@@ -36,7 +36,7 @@ export function useGeminiTts() {
       const message =
         err instanceof Error
           ? err.message
-          : "Fallo en la comunicacion con la IA";
+          : "Fallo en la comunicación con la IA";
       setError(message);
     } finally {
       setLoading(false);

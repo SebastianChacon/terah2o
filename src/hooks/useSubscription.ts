@@ -13,9 +13,9 @@ export interface UseSubscriptionResult {
 }
 
 /**
- * Hook de suscripcion.
- * Tambien escribe la cookie __convexSubStatus para que el middleware
- * pueda leerla en Edge Runtime sin llamadas asincronas.
+ * Hook de suscripción.
+ * También escribe la cookie __convexSubStatus para que el middleware
+ * pueda leerla en Edge Runtime sin llamadas asíncronas.
  */
 export function useSubscription(): UseSubscriptionResult {
   const { isAuthenticated, isLoading: userLoading } = useCurrentUser();
@@ -25,12 +25,12 @@ export function useSubscription(): UseSubscriptionResult {
     isAuthenticated ? {} : "skip"
   ) as Subscription | null | undefined;
 
-  // Sincronizar estado de suscripcion en cookie (leida por middleware)
+  // Sincronizar estado de suscripción en cookie (leída por middleware)
   useEffect(() => {
-    if (subscription === undefined) return; // aun cargando
+    if (subscription === undefined) return; // aún cargando
 
     const status = subscription?.status ?? "none";
-    // Cookie de sesion corta (sin httpOnly para que JS pueda escribirla)
+    // Cookie de sesión corta (sin httpOnly para que JS pueda escribirla)
     const maxAge = 60 * 60; // 1 hora
     const secure = location.protocol === "https:" ? "; Secure" : "";
     document.cookie = `__convexSubStatus=${status};path=/;max-age=${maxAge};SameSite=Lax${secure}`;

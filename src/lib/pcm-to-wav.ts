@@ -1,6 +1,6 @@
 /**
- * Convierte datos PCM en formato WAV para reproduccion de audio.
- * Basado en HIDROMETEOROLOGIA.HTML lineas 103-123.
+ * Convierte datos PCM en formato WAV para reproducción de audio.
+ * Basado en HIDROMETEOROLOGIA.HTML líneas 103-123.
  */
 export function pcmToWav(pcmBase64: string, sampleRate: number): Blob {
   const pcmString = atob(pcmBase64);

@@ -1,4 +1,4 @@
-export type PlantSize = "Pequena" | "Mediana" | "Grande";
+export type PlantSize = "Pequeña" | "Mediana" | "Grande";
 
 export interface PlantSettings {
   _id?: string;

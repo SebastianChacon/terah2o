@@ -91,7 +91,7 @@ function exportReport(params: {
     .join("");
 
   const html = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
-<title>TeraH2O · Reporte Hidrometeorologico · ${date}</title>
+<title>TeraH2O · Reporte Hidrometeorológico · ${date}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:#f0f6fd;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#0b1830;}
@@ -118,17 +118,17 @@ th{background:#e8f3fc;font-family:Arial,sans-serif;font-weight:700;letter-spacin
     <span class="sub">✦ Inteligencia Operativa</span>
   </div>
   <div style="text-align:right;">
-    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.06em;color:#0b1830;">Reporte Hidrometeorologico</div>
+    <div style="font-family:Arial,sans-serif;font-weight:700;font-size:15px;text-transform:uppercase;letter-spacing:0.06em;color:#0b1830;">Reporte Hidrometeorológico</div>
     ${params.plantName ? `<div style="font-family:Arial,sans-serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#3d7cc9;margin-top:3px;">${params.plantName}</div>` : ""}
     <div class="lbl" style="margin-top:4px;">${params.location} · ${date} · ${time}</div>
   </div>
 </div>
-<div class="sec"><div class="st">Indicadores Clave de Operacion</div>
+<div class="sec"><div class="st">Indicadores Clave de Operación</div>
 <div class="kpi-g">
   <div class="kpi-b" style="border-top-color:#2dd4bf;"><div class="lbl" style="color:#2dd4bf;">Dosis Pico</div><div class="kval">${params.peakDose} mg/L</div></div>
   <div class="kpi-b" style="border-top-color:#f59e0b;"><div class="lbl" style="color:#f59e0b;">Aforo Bomba</div><div class="kval">${params.flowMlMin} ml/min</div></div>
   <div class="kpi-b" style="border-top-color:#22c55e;"><div class="lbl" style="color:#22c55e;">Consumo Diario</div><div class="kval">${params.dailyCons} kg/d</div></div>
-  <div class="kpi-b" style="border-top-color:#3d7cc9;"><div class="lbl" style="color:#3d7cc9;">Autonomia</div><div class="kval">${params.autonomy > 99 ? "+99" : params.autonomy} dias</div></div>
+  <div class="kpi-b" style="border-top-color:#3d7cc9;"><div class="lbl" style="color:#3d7cc9;">Autonomía</div><div class="kval">${params.autonomy > 99 ? "+99" : params.autonomy} días</div></div>
 </div>
 <div class="kpi-g">
   <div class="kpi-b"><div class="lbl">Pico NTU</div><div class="kval">${params.maxNTU}</div></div>
@@ -136,24 +136,24 @@ th{background:#e8f3fc;font-family:Arial,sans-serif;font-weight:700;letter-spacin
   <div class="kpi-b"><div class="lbl">Riesgo Global</div><div class="kval">${params.rGlobal}%</div></div>
   <div class="kpi-b"><div class="lbl">INEN 1108</div><div class="kval" style="font-size:0.9rem;">${params.inenLabel}</div></div>
 </div></div>
-<div class="sec"><div class="st">Parametros de Entrada</div>
-<table><tr><th>Parametro</th><th>Valor</th><th>Parametro</th><th>Valor</th></tr>
-<tr><td class="lbl">Nombre de Planta</td><td style="font-weight:700;text-transform:uppercase;">${params.plantName || "No especificada"}</td><td class="lbl">Ubicacion</td><td>${params.location}</td></tr>
+<div class="sec"><div class="st">Parámetros de Entrada</div>
+<table><tr><th>Parámetro</th><th>Valor</th><th>Parámetro</th><th>Valor</th></tr>
+<tr><td class="lbl">Nombre de Planta</td><td style="font-weight:700;text-transform:uppercase;">${params.plantName || "No especificada"}</td><td class="lbl">Ubicación</td><td>${params.location}</td></tr>
 <tr><td class="lbl">Turbiedad Base</td><td>${params.ntuBase} NTU</td><td class="lbl">Caudal</td><td>${params.plantFlowLps} L/s</td></tr>
-<tr><td class="lbl">Coagulante</td><td>${params.chemical}</td><td class="lbl">Conc. Solucion</td><td>${params.avgConc}%</td></tr>
-<tr><td class="lbl">Lluvia Proyectada</td><td>${params.rainIntensity} mm/dia</td><td class="lbl">Duracion</td><td>${params.rainDuration} dias</td></tr>
+<tr><td class="lbl">Coagulante</td><td>${params.chemical}</td><td class="lbl">Conc. Solución</td><td>${params.avgConc}%</td></tr>
+<tr><td class="lbl">Lluvia Proyectada</td><td>${params.rainIntensity} mm/día</td><td class="lbl">Duración</td><td>${params.rainDuration} días</td></tr>
 <tr><td class="lbl">Severidad</td><td>${params.severityLabel}</td><td class="lbl">Stock</td><td>${params.stockKg} kg</td></tr>
 </table></div>
-<div class="sec"><div class="st">Condicion Meteorologica</div>
+<div class="sec"><div class="st">Condición Meteorológica</div>
 <table><tr><th>Variable</th><th>Valor</th><th>Variable</th><th>Valor</th></tr>
 <tr><td class="lbl">Temperatura</td><td>${params.weatherTemp}</td><td class="lbl">Humedad</td><td>${params.weatherHumidity}</td></tr>
-<tr><td class="lbl">Presion</td><td>${params.weatherPressure}</td><td class="lbl">Viento</td><td>${params.weatherWind}</td></tr>
-<tr><td class="lbl" colspan="2">Condicion</td><td colspan="2" style="text-transform:capitalize;">${params.weatherDesc}</td></tr>
+<tr><td class="lbl">Presión</td><td>${params.weatherPressure}</td><td class="lbl">Viento</td><td>${params.weatherWind}</td></tr>
+<tr><td class="lbl" colspan="2">Condición</td><td colspan="2" style="text-transform:capitalize;">${params.weatherDesc}</td></tr>
 </table></div>
-<div class="sec"><div class="st">Protocolo Preventivo Dinamico</div>
-<table><tr><th style="width:110px;">Categoria</th><th>Accion Recomendada</th></tr>${recsHtml || '<tr><td colspan="2">Sin protocolos activos.</td></tr>'}</table></div>
-<div class="disc"><strong style="font-size:11px;letter-spacing:0.08em;">⚗ VALIDACION OBLIGATORIA — PRUEBA DE JARRAS:</strong><br>
-Las dosificaciones son proyecciones estequiometricas. <strong>Toda dosis debe validarse mediante Prueba de Jarras antes de aplicar en planta</strong>, conforme a procedimientos estandar PTAP y norma INEN 1108. Este documento no sustituye el criterio del profesional responsable.</div>
+<div class="sec"><div class="st">Protocolo Preventivo Dinámico</div>
+<table><tr><th style="width:110px;">Categoría</th><th>Acción Recomendada</th></tr>${recsHtml || '<tr><td colspan="2">Sin protocolos activos.</td></tr>'}</table></div>
+<div class="disc"><strong style="font-size:11px;letter-spacing:0.08em;">⚗ VALIDACIÓN OBLIGATORIA — PRUEBA DE JARRAS:</strong><br>
+Las dosificaciones son proyecciones estequiométricas. <strong>Toda dosis debe validarse mediante Prueba de Jarras antes de aplicar en planta</strong>, conforme a procedimientos estándar PTAP y norma INEN 1108. Este documento no sustituye el criterio del profesional responsable.</div>
 <div class="foot">
   <div><span class="logo-t" style="font-size:14px;">TERA</span><span class="logo-h" style="font-size:14px;">H2O</span></div>
   <div class="lbl" style="font-size:9px;">© 2026 Servicios Profesionales Tera · ${date} · ${time}</div>
@@ -179,7 +179,7 @@ export default function MotorInteligenciaPage() {
   /* ── config ── */
   const [plantName, setPlantName] = useState("");
   const [locMode, setLocMode] = useState<"city" | "coords">("city");
-  const [location, setLocation] = useState("Samborondon, EC");
+  const [location, setLocation] = useState("Samborondón, EC");
   const [coordLat, setCoordLat] = useState("");
   const [coordLon, setCoordLon] = useState("");
   const [chemical, setChemical] = useState("Alumbre");
@@ -248,34 +248,34 @@ export default function MotorInteligenciaPage() {
     if (ntu === 0 && rainIntensity === 0) return items;
 
     if (ntu < 20)
-      items.push({ title: "Analitica", context: "Estable", content: "Muestreo estandar cada 2 horas. Turbimetro en linea operativo." });
+      items.push({ title: "Analítica", context: "Estable", content: "Muestreo estándar cada 2 horas. Turbímetro en línea operativo." });
     else if (ntu < 50)
-      items.push({ title: "Analitica", context: "Inestabilidad Ligera", content: "Muestreo horario. Vigilar floculacion. Reportar al jefe de turno." });
+      items.push({ title: "Analítica", context: "Inestabilidad Ligera", content: "Muestreo horario. Vigilar floculación. Reportar al jefe de turno." });
     else if (ntu < 100)
-      items.push({ title: "Analitica", context: "Alerta Operativa", content: "Muestreo cada 30 min. Ajustar mezcla rapida. Notificar jefe de planta." });
+      items.push({ title: "Analítica", context: "Alerta Operativa", content: "Muestreo cada 30 min. Ajustar mezcla rápida. Notificar jefe de planta." });
     else
-      items.push({ title: "Analitica", context: "Crisis de Calidad", content: "Muestreo continuo cada 15 min. Protocolo de emergencia activo." });
+      items.push({ title: "Analítica", context: "Crisis de Calidad", content: "Muestreo continuo cada 15 min. Protocolo de emergencia activo." });
 
     let doseNote = `Aforar bombas a ${flowMlMin} ml/min con ${chemical} (${peakDose} mg/L).`;
     if (chemical === "Alumbre" && ntu > 80) doseNote += " Monitorear alcalinidad. Ajustar cal si pH < 6.5.";
-    if (chemical === "PAC") doseNote += " Alta eficiencia: evitar sobredosificacion. Verificar turbiedad ≤1 NTU.";
-    if (chemical === "Ferrico") doseNote += " Controlar color residual y pH post-coagulacion.";
-    items.push({ title: "Dosificacion", context: `${chemical} · Validar jarras`, content: doseNote });
+    if (chemical === "PAC") doseNote += " Alta eficiencia: evitar sobredosificación. Verificar turbiedad ≤1 NTU.";
+    if (chemical === "Ferrico") doseNote += " Controlar color residual y pH post-coagulación.";
+    items.push({ title: "Dosificación", context: `${chemical} · Validar jarras`, content: doseNote });
 
     if (autonomy < 5)
-      items.push({ title: "Inventario", context: "Compra Urgente", content: `Autonomia critica: ${autonomy} dias. Emitir orden de compra inmediata.` });
+      items.push({ title: "Inventario", context: "Compra Urgente", content: `Autonomía crítica: ${autonomy} días. Emitir orden de compra inmediata.` });
     else if (autonomy < 10)
-      items.push({ title: "Inventario", context: "Reposicion Proxima", content: `Autonomia de ${autonomy} dias. Programar reposicion en 3 dias.` });
+      items.push({ title: "Inventario", context: "Reposición Próxima", content: `Autonomía de ${autonomy} días. Programar reposición en 3 días.` });
 
     if (rainIntensity > 30)
-      items.push({ title: "Captacion", context: "Lluvia Extrema", content: "Limpieza inmediata de rejillas. Vigilar arrastre de solidos." });
+      items.push({ title: "Captación", context: "Lluvia Extrema", content: "Limpieza inmediata de rejillas. Vigilar arrastre de sólidos." });
     else if (rainIntensity > 5)
-      items.push({ title: "Entorno Hidrico", context: "Lluvia Activa", content: "Vigilar cambios en color/turbiedad en punto de toma. Mayor frecuencia de muestreo." });
+      items.push({ title: "Entorno Hídrico", context: "Lluvia Activa", content: "Vigilar cambios en color/turbiedad en punto de toma. Mayor frecuencia de muestreo." });
 
     if (ntu > 100)
       items.push({ title: "Procesos", context: "Alta Carga NTU", content: "Purga continua de sedimentadores. Lavados preventivos de filtros por turno." });
     if (ntu > 150)
-      items.push({ title: "INEN 1108", context: "Riesgo Incumplimiento", content: "Turbiedad supera umbral critico. Activar contingencia y notificar autoridad sanitaria." });
+      items.push({ title: "INEN 1108", context: "Riesgo Incumplimiento", content: "Turbiedad supera umbral crítico. Activar contingencia y notificar autoridad sanitaria." });
 
     return items;
   })();
@@ -296,13 +296,13 @@ export default function MotorInteligenciaPage() {
       const latNum = parseFloat(coordLat);
       const lonNum = parseFloat(coordLon);
       if (isNaN(latNum) || isNaN(lonNum)) {
-        showToast("Ingrese latitud y longitud validas", "error");
+        showToast("Ingrese latitud y longitud válidas", "error");
         return;
       }
       data = await fetchWeatherByCoords(latNum, lonNum);
     } else {
       if (!location.trim()) {
-        showToast("Ingrese una ubicacion valida", "error");
+        showToast("Ingrese una ubicación válida", "error");
         return;
       }
       data = await fetchWeather(location);
@@ -314,7 +314,7 @@ export default function MotorInteligenciaPage() {
       );
       showToast(`✓ Clima de ${data.cityName} sincronizado`, "success");
     } else {
-      showToast("Error al obtener datos climaticos", "error");
+      showToast("Error al obtener datos climáticos", "error");
     }
   };
 
@@ -327,11 +327,11 @@ export default function MotorInteligenciaPage() {
       plantName ? `Planta de tratamiento: ${plantName}.` : "",
       `Planta monitoreada: ${loc}.`,
       `Estado normativo: ${inenLabel}.`,
-      `Riesgo hidrico global: ${rGlobal} por ciento.`,
+      `Riesgo hídrico global: ${rGlobal} por ciento.`,
       `Turbiedad pico proyectada: ${prediction.maxNTU} NTU.`,
       `Dosis de coagulante sugerida: ${peakDose} miligramos por litro.`,
       `Aforo de bomba dosificadora: ${flowMlMin} mililitros por minuto.`,
-      `Autonomia quimica disponible: ${autonomy > 99 ? "mas de 99" : autonomy} dias.`,
+      `Autonomía química disponible: ${autonomy > 99 ? "más de 99" : autonomy} días.`,
       recommendations.length > 0 ? `Protocolos preventivos activos: ${recText}` : "",
       "Aviso importante. Toda dosis calculada debe validarse mediante prueba de jarras, conforme a norma INEN mil ciento ocho.",
     ]
@@ -356,7 +356,7 @@ export default function MotorInteligenciaPage() {
       ? "Moderada"
       : severityMultiplier === 6
       ? "Intensa"
-      : "Saturacion Cuenca";
+      : "Saturación Cuenca";
 
   return (
     <div className="min-h-screen bg-[#08101e] text-[#e8f2fc]">
@@ -384,7 +384,7 @@ export default function MotorInteligenciaPage() {
             <div className="w-px h-9 bg-[rgba(61,124,201,0.22)]" />
             <div>
               <p className="font-bold text-[0.9rem] tracking-[0.08em] uppercase text-[#e8f2fc]">
-                Motor Hidrometeorologico
+                Motor Hidrometeorológico
               </p>
               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                 {plantName && (
@@ -481,7 +481,7 @@ export default function MotorInteligenciaPage() {
           <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
             <div className="px-4 py-2.5 border-b border-[rgba(61,124,201,0.22)] flex items-center justify-between">
               <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">
-                Monitoreo Atmosferico
+                Monitoreo Atmosférico
               </span>
               <span className={`text-[9px] font-bold tracking-[0.16em] uppercase px-2 py-0.5 rounded-sm border ${rainStatus.cls}`}>
                 {rainStatus.label}
@@ -509,10 +509,10 @@ export default function MotorInteligenciaPage() {
             <div className="border-t border-[rgba(61,124,201,0.22)] grid grid-cols-2">
               {[
                 { label: "Humedad", val: weather ? `${weather.humidity}%` : "--%" },
-                { label: "Presion", val: weather?.pressure ? `${weather.pressure} hPa` : "-- hPa" },
+                { label: "Presión", val: weather?.pressure ? `${weather.pressure} hPa` : "-- hPa" },
                 { label: "Nubosidad", val: weather?.cloudCover !== undefined ? `${weather.cloudCover}%` : "--%" },
                 { label: "Visibilidad", val: weather?.visibility !== undefined ? `${weather.visibility} km` : "-- km" },
-                { label: "Sensacion", val: weather?.feelsLike !== undefined ? `${weather.feelsLike}°C` : "--°C" },
+                { label: "Sensación", val: weather?.feelsLike !== undefined ? `${weather.feelsLike}°C` : "--°C" },
                 { label: "Viento", val: weather?.windSpeed !== undefined ? `${weather.windSpeed} km/h` : "-- km/h" },
               ].map(({ label, val }, i) => (
                 <div
@@ -529,7 +529,7 @@ export default function MotorInteligenciaPage() {
           {/* Plant config */}
           <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
             <div className="px-4 py-2.5 border-b border-[rgba(61,124,201,0.22)]">
-              <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Configuracion de Planta</span>
+              <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Configuración de Planta</span>
             </div>
             <div className="px-4 py-3 flex flex-col gap-2.5">
               {/* Plant name */}
@@ -549,7 +549,7 @@ export default function MotorInteligenciaPage() {
               {/* Location mode toggle */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)]">Ubicacion</label>
+                  <label className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)]">Ubicación</label>
                   <div className="flex border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden">
                     <button
                       onClick={() => setLocMode("city")}
@@ -656,7 +656,7 @@ export default function MotorInteligenciaPage() {
                     value={plantSize}
                     onChange={(e) => setPlantSize(e.target.value)}
                   >
-                    <option className="bg-[#0c1828]" value="Pequena">Rural</option>
+                    <option className="bg-[#0c1828]" value="Pequeña">Rural</option>
                     <option className="bg-[#0c1828]" value="Mediana">Urbana</option>
                     <option className="bg-[#0c1828]" value="Grande">Metro</option>
                   </select>
@@ -697,7 +697,7 @@ export default function MotorInteligenciaPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Caudal de Operacion (L/s)</label>
+                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Caudal de Operación (L/s)</label>
                 <input
                   type="number"
                   className="w-full bg-[rgba(5,10,22,0.9)] border border-[rgba(61,124,201,0.2)] text-[#3d7cc9] px-2.5 py-1.5 rounded-sm text-xl font-bold outline-none focus:border-[#3d7cc9] transition-colors"
@@ -711,11 +711,11 @@ export default function MotorInteligenciaPage() {
           {/* Simulation */}
           <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
             <div className="px-4 py-2.5 border-b border-[rgba(61,124,201,0.22)]">
-              <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Simulacion de Evento</span>
+              <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Simulación de Evento</span>
             </div>
             <div className="px-4 py-3 flex flex-col gap-2.5">
               <div>
-                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Intensidad Lluvia (mm/dia)</label>
+                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Intensidad Lluvia (mm/día)</label>
                 <input
                   type="number"
                   className="w-full bg-[rgba(5,10,22,0.9)] border border-[rgba(61,124,201,0.2)] text-[#3d7cc9] px-2.5 py-1.5 rounded-sm text-sm font-semibold outline-none focus:border-[#3d7cc9] transition-colors"
@@ -724,7 +724,7 @@ export default function MotorInteligenciaPage() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Duracion (dias)</label>
+                <label className="block text-[10px] font-semibold tracking-[0.18em] uppercase text-[rgba(61,124,201,0.45)] mb-1">Duración (días)</label>
                 <input
                   type="number"
                   className="w-full bg-[rgba(5,10,22,0.9)] border border-[rgba(61,124,201,0.2)] text-[#3d7cc9] px-2.5 py-1.5 rounded-sm text-sm font-semibold outline-none focus:border-[#3d7cc9] transition-colors"
@@ -742,7 +742,7 @@ export default function MotorInteligenciaPage() {
                   <option className="bg-[#0c1828]" value={1}>Base (Ligera)</option>
                   <option className="bg-[#0c1828]" value={2.5}>Moderada</option>
                   <option className="bg-[#0c1828]" value={6}>Intensa</option>
-                  <option className="bg-[#0c1828]" value={15}>Saturacion Cuenca</option>
+                  <option className="bg-[#0c1828]" value={15}>Saturación Cuenca</option>
                 </select>
               </div>
             </div>
@@ -756,8 +756,8 @@ export default function MotorInteligenciaPage() {
           <div className="bg-[rgba(61,124,201,0.05)] border border-l-[3px] border-[rgba(61,124,201,0.22)] border-l-[#3d7cc9] rounded-sm px-4 py-2.5 flex items-start gap-2.5">
             <span className="text-[#3d7cc9] text-base flex-shrink-0 mt-0.5">⚗</span>
             <p className="text-[11px] tracking-[0.04em] leading-relaxed text-[rgba(180,210,240,0.75)]">
-              <strong className="text-[#3d7cc9] tracking-[0.1em]">VALIDACION REQUERIDA —</strong>{" "}
-              Las dosis son proyecciones estequiometricas del Motor TeraH2O.{" "}
+              <strong className="text-[#3d7cc9] tracking-[0.1em]">VALIDACIÓN REQUERIDA —</strong>{" "}
+              Las dosis son proyecciones estequiométricas del Motor TeraH2O.{" "}
               <strong className="text-[#e8f2fc]">Toda dosis debe validarse mediante Prueba de Jarras antes de aplicar en planta</strong>,
               conforme a procedimientos PTAP y norma INEN 1108.
             </p>
@@ -795,11 +795,11 @@ export default function MotorInteligenciaPage() {
                 Stock: {stockKg} kg
               </div>
             </div>
-            {/* Autonomia */}
+            {/* Autonomía */}
             <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm p-4 relative overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
-              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9] mb-1.5">Autonomia Quimica</div>
+              <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9] mb-1.5">Autonomía Química</div>
               <div className="font-bold text-[1.85rem] leading-none text-[#3d7cc9]" style={{ fontFamily: "Arial, sans-serif" }}>
-                {autonomy > 99 ? "+99" : autonomy} <span className="text-[0.85rem] opacity-55 font-normal">dias</span>
+                {autonomy > 99 ? "+99" : autonomy} <span className="text-[0.85rem] opacity-55 font-normal">días</span>
               </div>
               <div className="h-0.5 bg-[rgba(61,124,201,0.1)] rounded mt-2 overflow-hidden">
                 <div
@@ -815,7 +815,7 @@ export default function MotorInteligenciaPage() {
             {/* Risk index */}
             <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
               <div className="px-4 py-2.5 border-b border-[rgba(61,124,201,0.22)] flex items-center justify-between">
-                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Indice de Riesgo Hidrico Compuesto</span>
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Índice de Riesgo Hídrico Compuesto</span>
                 <span className={`text-[9px] font-bold tracking-[0.16em] uppercase px-2 py-0.5 border rounded-sm ${inenColor} border-current bg-current/10`}>
                   {inenLabel}
                 </span>
@@ -840,14 +840,14 @@ export default function MotorInteligenciaPage() {
             {/* Ambient conditions */}
             <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm overflow-hidden hover:border-[rgba(61,124,201,0.6)] transition-colors">
               <div className="px-4 py-2.5 border-b border-[rgba(61,124,201,0.22)]">
-                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Condicion Ambiental</span>
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">Condición Ambiental</span>
               </div>
               <div className="px-4">
                 {[
                   { label: "Prob. Lluvia 3h", val: weather ? `${weather.pop}%` : "--%", cls: "text-amber-400" },
                   { label: "Delta Turbiedad", val: `+${deltaNTU} NTU`, cls: "text-cyan-400" },
                   { label: "Pico Proyectado", val: `${prediction.maxNTU} NTU`, cls: "text-[#e8f2fc]" },
-                  { label: "Sensacion", val: weather?.feelsLike !== undefined ? `${weather.feelsLike}°C` : "--°C", cls: "text-[#e8f2fc]" },
+                  { label: "Sensación", val: weather?.feelsLike !== undefined ? `${weather.feelsLike}°C` : "--°C", cls: "text-[#e8f2fc]" },
                 ].map(({ label, val, cls }, i, arr) => (
                   <div
                     key={label}
@@ -873,7 +873,7 @@ export default function MotorInteligenciaPage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <div className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9] mb-0.5">
-                  Dinamica NTU + Lluvia — Proyeccion 7 Dias
+                  Dinámica NTU + Lluvia — Proyección 7 Días
                 </div>
                 <div className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[rgba(61,124,201,0.3)]">
                   Motor predictivo TeraH2O · Validar con prueba de jarras
@@ -890,7 +890,7 @@ export default function MotorInteligenciaPage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-3.5 h-0 border-t-2 border-dashed border-red-400/50" />
-                  <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[rgba(61,124,201,0.45)]">Limite</span>
+                  <span className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[rgba(61,124,201,0.45)]">Límite</span>
                 </div>
               </div>
             </div>
@@ -901,7 +901,7 @@ export default function MotorInteligenciaPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(61,124,201,0.05)" />
                   <XAxis dataKey="name" tick={{ fill: "rgba(61,124,201,0.45)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis yAxisId="ntu" orientation="left" tick={{ fill: "rgba(61,124,201,0.45)", fontSize: 10 }} axisLine={false} tickLine={false} label={{ value: "NTU", angle: -90, position: "insideLeft", fill: "rgba(45,212,191,0.55)", fontSize: 10, fontWeight: 700 }} />
-                  <YAxis yAxisId="rain" orientation="right" tick={{ fill: "rgba(245,158,11,0.5)", fontSize: 10 }} axisLine={false} tickLine={false} label={{ value: "mm/dia", angle: 90, position: "insideRight", fill: "rgba(245,158,11,0.45)", fontSize: 10 }} />
+                  <YAxis yAxisId="rain" orientation="right" tick={{ fill: "rgba(245,158,11,0.5)", fontSize: 10 }} axisLine={false} tickLine={false} label={{ value: "mm/día", angle: 90, position: "insideRight", fill: "rgba(245,158,11,0.45)", fontSize: 10 }} />
                   <Tooltip
                     contentStyle={{ background: "rgba(8,16,30,0.97)", border: "1px solid rgba(61,124,201,0.28)", borderRadius: 3, color: "#e8f2fc" }}
                     formatter={(value, name) =>
@@ -932,7 +932,7 @@ export default function MotorInteligenciaPage() {
           <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm p-4 hover:border-[rgba(61,124,201,0.6)] transition-colors">
             <div className="flex justify-between items-center mb-3">
               <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">
-                Proyeccion de Stock Quimico — kg / dia
+                Proyección de Stock Químico — kg / día
               </span>
               <span className="text-[10px] font-semibold tracking-[0.1em] uppercase text-[rgba(61,124,201,0.3)]">
                 Consumo pico proyectado
@@ -960,14 +960,14 @@ export default function MotorInteligenciaPage() {
           <div className="bg-[#0c1828] border border-[rgba(61,124,201,0.22)] rounded-sm p-4 hover:border-[rgba(61,124,201,0.6)] transition-colors">
             <div className="flex justify-between items-center mb-3">
               <span className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[#3d7cc9]">
-                Protocolo Dinamico Preventivo
+                Protocolo Dinámico Preventivo
               </span>
               <button
                 onClick={handleSpeak}
                 disabled={ttsLoading}
                 className="border border-[rgba(61,124,201,0.22)] text-[#3d7cc9] text-[10px] font-bold px-3 py-1 uppercase tracking-[0.15em] rounded-sm hover:bg-[rgba(61,124,201,0.15)] transition-all disabled:opacity-50"
               >
-                {ttsLoading ? "Conectando..." : "✦ Oir Protocolo IA"}
+                {ttsLoading ? "Conectando..." : "✦ Oír Protocolo IA"}
               </button>
             </div>
 

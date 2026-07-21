@@ -31,19 +31,19 @@ export async function sendInvitationEmail(params: {
 
   const html = `
     <div style="font-family: system-ui, sans-serif; max-width: 520px; color: #0f172a;">
-      <h2 style="color: #2563eb;">TeraH2O — Invitacion</h2>
+      <h2 style="color: #2563eb;">TeraH2O — Invitación</h2>
       <p>Hola <strong>${params.name}</strong>,</p>
       <p>
         Fuiste invitado como <strong>${roleLabel}</strong> en
         <strong>${params.orgName}</strong>.
       </p>
-      <p>Para acceder, crea tu cuenta o inicia sesion con este correo:</p>
+      <p>Para acceder, crea tu cuenta o inicia sesión con este correo:</p>
       <p style="font-family: monospace; background: #f1f5f9; padding: 8px 12px; border-radius: 6px;">
         ${params.to}
       </p>
       <p>
         <a href="${loginUrl}" style="display: inline-block; background: #2563eb; color: #fff; padding: 10px 18px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-          Ir a iniciar sesion
+          Ir a iniciar sesión
         </a>
       </p>
       <p style="color: #64748b; font-size: 13px;">
@@ -61,7 +61,7 @@ export async function sendInvitationEmail(params: {
     body: JSON.stringify({
       from,
       to: [params.to],
-      subject: `Invitacion a TeraH2O — ${params.orgName}`,
+      subject: `Invitación a TeraH2O — ${params.orgName}`,
       html,
     }),
   });

@@ -22,7 +22,7 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "TERAH2O | Inteligencia Operativa",
   description:
-    "Plataforma de optimizacion y control para plantas de tratamiento de agua potable.",
+    "Plataforma de optimización y control para plantas de tratamiento de agua potable.",
 };
 
 // Without this, mobile browsers render at ~980px desktop width and zoom out,
