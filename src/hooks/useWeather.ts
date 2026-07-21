@@ -15,7 +15,7 @@ export function useWeather() {
       const response = await fetch(
         `/api/weather?location=${encodeURIComponent(location)}`
       );
-      if (!response.ok) throw new Error("Error de conexion climatica");
+      if (!response.ok) throw new Error("Error de conexión climática");
       const data: WeatherData = await response.json();
       setWeather(data);
       return data;
@@ -35,7 +35,7 @@ export function useWeather() {
       setError(null);
       try {
         const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
-        if (!response.ok) throw new Error("Error de conexion climatica");
+        if (!response.ok) throw new Error("Error de conexión climática");
         const data: WeatherData = await response.json();
         setWeather(data);
         return data;

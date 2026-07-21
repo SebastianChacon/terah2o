@@ -118,7 +118,7 @@ export function buildMemoriaFinancieraHTML(data: MemoriaFinancieraData): string 
     ? `<script>window.onload=function(){window.print()}<\/script>`
     : "";
 
-  return `<html><head><meta charset="utf-8"><title>Memoria de Gestion Financiera - ${instName}</title>
+  return `<html><head><meta charset="utf-8"><title>Memoria de Gestión Financiera - ${instName}</title>
     <style>body{font-family:sans-serif;color:#0a192f;padding:40px;font-size:11px}
     .header{border-bottom:5px solid #f59e0b;padding-bottom:10px;margin-bottom:25px;display:flex;justify-content:space-between}
     h1{font-size:22px;margin:0;font-style:italic;text-transform:uppercase}
@@ -130,8 +130,8 @@ export function buildMemoriaFinancieraHTML(data: MemoriaFinancieraData): string 
     th{background:#0a192f;color:white;padding:10px;font-size:10px;text-transform:uppercase}
     td{border:1px solid #e2e8f0;padding:8px;text-align:center}
     .footer{background:#0a192f;color:white;padding:30px;border-radius:15px;text-align:center;margin-top:40px}</style></head><body>
-    <div class="header"><div><h1>Memoria de Gestion Financiera</h1>
-    <p><b>Institucion:</b> ${instName}</p><p><b>Fecha:</b> ${dateLabel}</p></div>
+    <div class="header"><div><h1>Memoria de Gestión Financiera</h1>
+    <p><b>Institución:</b> ${instName}</p><p><b>Fecha:</b> ${dateLabel}</p></div>
     <div style="background:#0a192f;color:white;padding:6px 12px;border-radius:6px;font-size:10px;text-transform:uppercase;font-weight:900;height:fit-content">MODO: ${mode.toUpperCase()}</div></div>
     <div class="grid">
       <div class="card"><b>Volumen Mes</b><span style="font-size:16px;font-weight:900">${volumeMonth.toFixed(0)} m³</span></div>
@@ -143,13 +143,13 @@ export function buildMemoriaFinancieraHTML(data: MemoriaFinancieraData): string 
     ${hrRowsHtml}
     <tr style="font-weight:900;background:#f8fafc"><td colspan="3" style="text-align:right">Subtotal Personal</td><td>${fmtUSD(totalLabor)}</td></tr>
     </tbody></table>
-    <h3>Matriz Quimica</h3>
+    <h3>Matriz Química</h3>
     <table><thead><tr><th>Nombre</th><th>Cantidad</th><th>Precio</th><th>Gasto</th></tr></thead><tbody>${chemRows}
-    <tr style="font-weight:900;background:#f8fafc"><td colspan="3" style="text-align:right">Subtotal Quimicos</td><td>${fmtUSD(totalChemicals)}</td></tr>
+    <tr style="font-weight:900;background:#f8fafc"><td colspan="3" style="text-align:right">Subtotal Químicos</td><td>${fmtUSD(totalChemicals)}</td></tr>
     </tbody></table>
     <h3>Gastos Operativos</h3>
     <table><thead><tr><th>Concepto</th><th>Monto Mensual</th></tr></thead><tbody>
-    <tr><td>Energia Electrica</td><td>${fmtUSD(expenses?.energy ?? 0)}</td></tr>
+    <tr><td>Energía Eléctrica</td><td>${fmtUSD(expenses?.energy ?? 0)}</td></tr>
     <tr><td>Internet / Conectividad</td><td>${fmtUSD(expenses?.internet ?? 0)}</td></tr>
     <tr><td>Caja Chica</td><td>${fmtUSD(expenses?.pettyCash ?? 0)}</td></tr>
     <tr><td>Mantenimiento / Otros</td><td>${fmtUSD(expenses?.maintenance ?? 0)}</td></tr>
@@ -159,17 +159,17 @@ export function buildMemoriaFinancieraHTML(data: MemoriaFinancieraData): string 
     <div class="grid">
       <div class="card"><b>Tarifa Aplicada</b><span style="font-size:16px;font-weight:900">${fmtUSD(userRate)}/m³</span></div>
       <div class="card"><b>Tarifa Equilibrio</b><span style="font-size:16px;font-weight:900">$${breakEvenRate.toFixed(4)}/m³</span></div>
-      <div class="card"><b>Recaudacion Proyectada</b><span style="font-size:16px;font-weight:900">${fmtUSD(revenue)}</span></div>
+      <div class="card"><b>Recaudación Proyectada</b><span style="font-size:16px;font-weight:900">${fmtUSD(revenue)}</span></div>
     </div>
     ${
       aiResponse
-        ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANALISIS IA</h4><div>${aiResponse.replace(
+        ? `<div style="background:#fdfaff;border:1px solid #ddd6fe;border-radius:8px;padding:20px;margin-top:25px"><h4 style="margin-top:0;color:#8b5cf6;text-transform:uppercase;font-size:11px">ANÁLISIS IA</h4><div>${aiResponse.replace(
             /\n/g,
             "<br>"
           )}</div></div>`
         : ""
     }
-    <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversion Mensual Total</p>
+    <div class="footer"><p style="margin:0;font-size:11px;opacity:.8;font-weight:700;text-transform:uppercase">Inversión Mensual Total</p>
     <h2 style="font-size:42px;margin:10px 0">${fmtUSD(grandTotal)}</h2>
     <div style="display:inline-block;padding:8px 20px;border-radius:50px;background:${
       profit >= 0 ? "#10b981" : "#f43f5e"

@@ -14,7 +14,7 @@ export interface UsePermissionsResult {
 /**
  * Hook de permisos.
  * - Los admins reciben permisos completos directamente desde la query Convex.
- * - Los operadores reciben sus flags especificos.
+ * - Los operadores reciben sus flags específicos.
  * - can(key) devuelve true si el usuario tiene ese permiso (o es admin).
  */
 export function usePermissions(): UsePermissionsResult {

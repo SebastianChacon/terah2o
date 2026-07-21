@@ -3,7 +3,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 // ── Roles ─────────────────────────────────────────────────────────────────
 export type UserRole = "admin" | "operator";
 
-// ── Estados de suscripcion ────────────────────────────────────────────────
+// ── Estados de suscripción ────────────────────────────────────────────────
 export type SubscriptionStatus = "trialing" | "active" | "past_due" | "canceled";
 export type SubscriptionPlan = "starter" | "pro";
 
@@ -18,7 +18,7 @@ export interface UserProfile {
   createdAt: number;
 }
 
-// ── Organizacion ──────────────────────────────────────────────────────────
+// ── Organización ──────────────────────────────────────────────────────────
 export interface Organization {
   _id: Id<"organizations">;
   name: string;
@@ -36,7 +36,7 @@ export interface Organization {
   canAccessFinanzas?: boolean;
 }
 
-// ── Suscripcion ───────────────────────────────────────────────────────────
+// ── Suscripción ───────────────────────────────────────────────────────────
 export interface Subscription {
   _id: Id<"subscriptions">;
   organizationId: Id<"organizations">;

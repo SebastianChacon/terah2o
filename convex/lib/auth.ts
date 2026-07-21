@@ -23,7 +23,7 @@ export async function getAuthenticatedUser(ctx: AnyCtx) {
   // Happy path: encontrado por clerkId y tiene org → retornar directo
   if (byClerk?.organizationId) return byClerk;
 
-  // 2. Fallback por email: maneja duplicados de migracion y upserts incompletos.
+  // 2. Fallback por email: maneja duplicados de migración y upserts incompletos.
   // identity.email puede ser null si el JWT template de Clerk no incluye el claim email.
   // byClerk.email es el valor guardado por upsertCurrentUser (con client email como fallback).
   const email = identity.email ?? byClerk?.email;
@@ -39,7 +39,7 @@ export async function getAuthenticatedUser(ctx: AnyCtx) {
 }
 
 /**
- * Como getAuthenticatedUser pero lanza si no esta autenticado.
+ * Como getAuthenticatedUser pero lanza si no está autenticado.
  */
 export async function requireAuthUser(ctx: AnyCtx) {
   const user = await getAuthenticatedUser(ctx);

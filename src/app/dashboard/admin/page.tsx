@@ -35,11 +35,11 @@ const MAIN_PERMISSION_TOGGLES: PermissionToggle[] = [
 ];
 
 const SUBMODULE_PERMISSION_TOGGLES: PermissionToggle[] = [
-  { key: "canAccessConsolaTecnica", label: "Consola Tecnica" },
+  { key: "canAccessConsolaTecnica", label: "Consola Técnica" },
   { key: "canAccessHojaOperativa", label: "Hoja Operativa" },
   { key: "canAccessStock", label: "Stock & Kardex" },
   { key: "canAccessFinanzas", label: "Finanzas" },
-  { key: "canAccessBitacora", label: "Bitacora" },
+  { key: "canAccessBitacora", label: "Bitácora" },
 ];
 
 const EMPTY_PERMS: OperatorPermissions = {
@@ -152,7 +152,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (submittingRef.current) return;
     if (!myOrg?._id) {
-      showToast("Cargando datos de organizacion, intenta de nuevo", "error");
+      showToast("Cargando datos de organización, intenta de nuevo", "error");
       return;
     }
 
@@ -183,7 +183,7 @@ export default function AdminDashboardPage() {
       setShowCreateForm(false);
 
       if (data.emailSent) {
-        showToast(`Operador creado. Invitacion enviada a ${email}.`, "success");
+        showToast(`Operador creado. Invitación enviada a ${email}.`, "success");
       } else {
         showToast(
           `Operador creado. Debe registrarse en /login con ${email}.${data.emailSkipReason ? ` (${data.emailSkipReason})` : ""}`,
@@ -202,7 +202,7 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (invitingRef.current) return;
     if (!myOrg?._id) {
-      showToast("Cargando datos de organizacion, intenta de nuevo", "error");
+      showToast("Cargando datos de organización, intenta de nuevo", "error");
       return;
     }
 
@@ -314,7 +314,7 @@ export default function AdminDashboardPage() {
         title="Eliminar operador"
         message={
           deleteTarget
-            ? `¿Eliminar a ${deleteTarget.name}? Esta accion no se puede deshacer.`
+            ? `¿Eliminar a ${deleteTarget.name}? Esta acción no se puede deshacer.`
             : ""
         }
         confirmLabel="Eliminar"
@@ -342,9 +342,9 @@ export default function AdminDashboardPage() {
         </nav>
 
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Panel de Administracion</h1>
+          <h1 className="text-2xl font-bold text-white mb-1">Panel de Administración</h1>
           <p className="text-white/30 text-sm">
-            {myOrg?.name ?? "Mi Organizacion"} ·{" "}
+            {myOrg?.name ?? "Mi Organización"} ·{" "}
             <span className="text-blue-400/70">{operatorCount}/{maxOperators} operadores</span>
             {" · "}
             <span className="text-violet-400/70">{adminCount}/{maxAdmins} administradores</span>
@@ -370,7 +370,7 @@ export default function AdminDashboardPage() {
               </button>
             ) : (
               <span className="text-[0.65rem] font-mono text-amber-400/60 uppercase tracking-widest">
-                Limite de admins ({adminCount}/{maxAdmins})
+                Límite de admins ({adminCount}/{maxAdmins})
               </span>
             )}
           </div>
@@ -393,7 +393,7 @@ export default function AdminDashboardPage() {
                     value={adminName}
                     onChange={(e) => setAdminName(e.target.value)}
                     required
-                    placeholder="Ing. Juan Perez"
+                    placeholder="Ing. Juan Pérez"
                     className="w-full bg-white/4 border border-white/8 rounded-lg px-3 py-2 text-white text-xs placeholder-white/20 focus:outline-none focus:border-violet-500/40 transition-all"
                   />
                 </div>
@@ -420,7 +420,7 @@ export default function AdminDashboardPage() {
                   disabled={invitingAdmin}
                   className="px-4 py-2 bg-violet-500/20 border border-violet-500/30 text-violet-400 text-[0.68rem] font-bold uppercase tracking-widest rounded-lg hover:bg-violet-500/30 disabled:opacity-50 transition-all"
                 >
-                  {invitingAdmin ? "Enviando..." : "Enviar invitacion"}
+                  {invitingAdmin ? "Enviando..." : "Enviar invitación"}
                 </button>
                 <button
                   type="button"
@@ -444,7 +444,7 @@ export default function AdminDashboardPage() {
                     {admin.name ?? "Sin nombre"}
                     {admin._id === user?._id && (
                       <span className="ml-2 text-[0.6rem] font-mono text-violet-400/80 uppercase">
-                        (tu)
+                        (tú)
                       </span>
                     )}
                   </p>
@@ -454,7 +454,7 @@ export default function AdminDashboardPage() {
             ))}
             {coAdmins.length === 0 && !showInviteAdminForm && (
               <p className="text-white/30 text-sm text-center py-4">
-                Puedes invitar un co-administrador para gestionar la organizacion.
+                Puedes invitar un co-administrador para gestionar la organización.
               </p>
             )}
           </div>
@@ -479,7 +479,7 @@ export default function AdminDashboardPage() {
               </button>
             ) : (
               <span className="text-[0.65rem] font-mono text-amber-400/60 uppercase tracking-widest">
-                Limite alcanzado ({operatorCount}/{maxOperators})
+                Límite alcanzado ({operatorCount}/{maxOperators})
               </span>
             )}
           </div>
@@ -543,7 +543,7 @@ export default function AdminDashboardPage() {
           {operators.length === 0 ? (
             <div className="text-center py-8">
               <UserCog className="w-8 h-8 text-white/10 mx-auto mb-3" />
-              <p className="text-white/30 text-sm">Aun no has agregado operadores.</p>
+              <p className="text-white/30 text-sm">Aún no has agregado operadores.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -587,10 +587,10 @@ export default function AdminDashboardPage() {
                         </button>
                       </div>
                     </div>
-                    {/* Modulos principales */}
+                    {/* Módulos principales */}
                     <div className="mb-2">
                       <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
-                        Modulos principales
+                        Módulos principales
                       </p>
                       <div className="grid grid-cols-3 gap-2">
                         {MAIN_PERMISSION_TOGGLES.map(({ key, label }) => {
@@ -623,10 +623,10 @@ export default function AdminDashboardPage() {
                         })}
                       </div>
                     </div>
-                    {/* Sub-modulos de Operaciones */}
+                    {/* Sub-módulos de Operaciones */}
                     <div>
                       <p className="text-white/20 text-[0.6rem] font-mono uppercase tracking-widest mb-1.5">
-                        Sub-modulos de Operaciones
+                        Sub-módulos de Operaciones
                       </p>
                       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                         {SUBMODULE_PERMISSION_TOGGLES.map(({ key, label }) => {

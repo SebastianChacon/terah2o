@@ -10,7 +10,7 @@ interface SubscriptionModalProps {
 }
 
 /**
- * Modal de upgrade de suscripcion.
+ * Modal de upgrade de suscripción.
  * Se muestra cuando un usuario intenta acceder a una funcionalidad premium.
  */
 export function SubscriptionModal({ isOpen, onClose, reason }: SubscriptionModalProps) {
@@ -64,9 +64,9 @@ export function SubscriptionModal({ isOpen, onClose, reason }: SubscriptionModal
           {/* Features */}
           <div className="space-y-3 mb-6">
             {[
-              { icon: Zap, text: "Consola Tecnica y Hoja Operativa" },
+              { icon: Zap, text: "Consola Técnica y Hoja Operativa" },
               { icon: Shield, text: "Stock & Kardex + Finanzas PTAP" },
-              { icon: Star, text: "Academia y Bitacora Maestra" },
+              { icon: Star, text: "Academia y Bitácora Maestra" },
             ].map(({ icon: Icon, text }) => (
               <div key={text} className="flex items-center gap-3">
                 <div className="w-7 h-7 bg-blue-500/10 border border-blue-500/20 rounded flex items-center justify-center flex-shrink-0">

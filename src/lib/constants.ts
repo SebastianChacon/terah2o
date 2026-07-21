@@ -13,8 +13,8 @@ export const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIC
 
 export const HR_ROLES = [
   { role: "Operadores", defaultQty: 2, defaultSalary: 450 },
-  { role: "Ingenieria", defaultQty: 1, defaultSalary: 900 },
-  { role: "Administracion", defaultQty: 1, defaultSalary: 600 },
+  { role: "Ingeniería", defaultQty: 1, defaultSalary: 900 },
+  { role: "Administración", defaultQty: 1, defaultSalary: 600 },
   { role: "Contabilidad", defaultQty: 1, defaultSalary: 500 },
 ];
 
