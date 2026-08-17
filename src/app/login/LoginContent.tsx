@@ -10,6 +10,7 @@ import { useSubscription } from "@/hooks/useSubscription";
 import Link from "next/link";
 
 type FlowMode = "signIn" | "signUp";
+type AuthView = "auth" | "resetRequest" | "resetCode";
 
 function parseClerkError(err: unknown): string {
   if (err && typeof err === "object" && "errors" in err) {
@@ -21,10 +22,93 @@ function parseClerkError(err: unknown): string {
       if (code === "form_identifier_not_found") return "No existe cuenta con ese correo. Regístrate primero.";
       if (code === "form_identifier_exists") return "Ya existe una cuenta con ese correo. Inicia sesión.";
       if (code === "session_exists") return "Ya tienes sesión activa.";
+      // ── Recuperación de contraseña ──────────────────────────────────────
+      if (code === "form_code_incorrect") return "Código incorrecto. Revisa el correo e intenta de nuevo.";
+      if (code === "verification_expired") return "El código expiró. Solicita uno nuevo.";
+      if (code === "verification_failed") return "Demasiados intentos fallidos. Solicita un código nuevo.";
+      if (code === "form_password_length_too_short") return "La contraseña debe tener al menos 8 caracteres.";
+      if (code === "form_password_validation_failed") return "La contraseña no cumple los requisitos de seguridad.";
+      if (code === "strategy_for_user_invalid") return "Esta cuenta no admite recuperación por correo. Contacta al administrador.";
+      if (code === "too_many_requests" || code === "rate_limit_exceeded") return "Demasiados intentos. Espera un minuto e intenta de nuevo.";
       return errors[0].message ?? "Error de autenticación.";
     }
   }
   return "Error de autenticación. Verifica tus datos e intenta de nuevo.";
+}
+
+const inputClass =
+  "w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-base placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all";
+const passwordInputClass = inputClass + " pr-10";
+const labelClass = "block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5";
+const submitClass =
+  "w-full py-3 bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-[0.15em] rounded-lg transition-all shadow-lg shadow-blue-500/20 mt-2";
+
+/** Input de contraseña con ojo mostrar/ocultar. Definido a nivel de módulo para
+ *  que React no lo remonte (y pierda el foco) en cada render del formulario. */
+function PasswordField({
+  value,
+  onChange,
+  testId,
+  toggleTestId,
+  autoComplete,
+  placeholder = "••••••••",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  testId: string;
+  toggleTestId: string;
+  autoComplete: string;
+  placeholder?: string;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? "text" : "password"}
+        name="password"
+        data-testid={testId}
+        autoComplete={autoComplete}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        minLength={8}
+        placeholder={placeholder}
+        className={passwordInputClass}
+      />
+      <button
+        type="button"
+        data-testid={toggleTestId}
+        aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+        onClick={() => setShow((v) => !v)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+      >
+        {show ? (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
+    </div>
+  );
+}
+
+function Banner({ tone, testId, children }: { tone: "error" | "info"; testId: string; children: React.ReactNode }) {
+  const styles =
+    tone === "error"
+      ? "bg-red-500/10 border-red-500/20 text-red-400"
+      : "bg-blue-500/10 border-blue-500/20 text-blue-300";
+  return (
+    <div className={`border rounded-lg px-4 py-3 ${styles}`} data-testid={testId}>
+      <p className="text-xs">{children}</p>
+    </div>
+  );
 }
 
 export default function LoginContent() {
@@ -59,8 +143,14 @@ export default function LoginContent() {
   const [loading, setLoading] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const [subWaitTimedOut, setSubWaitTimedOut] = useState(false);
+
+  // ── Recuperación de contraseña ────────────────────────────────────────────
+  // "auth" = pestañas Ingresar/Registrarse; las otras dos son sub-pantallas.
+  const [view, setView] = useState<AuthView>("auth");
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [info, setInfo] = useState<string | null>(null);
 
   // Estado de suscripcion del usuario recien autenticado. useSubscription tambien
   // fija la cookie __convexSubStatus que lee el proxy.
@@ -157,7 +247,7 @@ export default function LoginContent() {
         if (result.status === "complete") {
           await completeSession(result.createdSessionId, setSignInActive, undefined, email);
         } else if (result.status === "needs_new_password") {
-          setError("Debes restablecer tu contraseña. Contacta al administrador.");
+          setError('Debes crear una contraseña nueva. Usa "¿Olvidaste tu contraseña?" para recibir un código.');
         } else {
           setError("No se pudo completar el inicio de sesión. Intenta de nuevo.");
         }
@@ -183,6 +273,73 @@ export default function LoginContent() {
     }
   }
 
+  // ── Recuperación de contraseña ────────────────────────────────────────────
+  function goToView(next: AuthView) {
+    setView(next);
+    setError(null);
+    setInfo(null);
+    if (next === "auth" || next === "resetRequest") {
+      setResetCode("");
+      setNewPassword("");
+    }
+  }
+
+  // Paso A — Clerk envía un código de 6 dígitos al correo.
+  async function sendResetCode(): Promise<boolean> {
+    if (!signInLoaded) return false;
+    setError(null);
+    setInfo(null);
+    setLoading(true);
+    try {
+      await signIn!.create({
+        strategy: "reset_password_email_code",
+        identifier: email,
+      });
+      setInfo(`Enviamos un código de 6 dígitos a ${email}. Revisa tu bandeja y el correo no deseado.`);
+      return true;
+    } catch (err: unknown) {
+      setError(parseClerkError(err));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleResetRequest(e: React.FormEvent) {
+    e.preventDefault();
+    if (await sendResetCode()) setView("resetCode");
+  }
+
+  // Paso B — validar código y fijar la contraseña nueva. Si Clerk responde
+  // "complete" la sesión ya queda creada: se reutiliza completeSession para que
+  // la navegación siga saliendo del único useEffect (evita doble router.replace).
+  async function handleResetConfirm(e: React.FormEvent) {
+    e.preventDefault();
+    if (!signInLoaded) return;
+    setError(null);
+    setInfo(null);
+    setLoading(true);
+    try {
+      const result = await signIn!.attemptFirstFactor({
+        strategy: "reset_password_email_code",
+        code: resetCode,
+        password: newPassword,
+      });
+
+      if (result.status === "complete") {
+        await completeSession(result.createdSessionId, setSignInActive, undefined, email);
+      } else if (result.status === "needs_second_factor") {
+        setError("Tu cuenta usa verificación en dos pasos. Contacta al administrador para completar el restablecimiento.");
+      } else {
+        setError("No se pudo restablecer la contraseña. Solicita un código nuevo.");
+      }
+    } catch (err: unknown) {
+      setError(parseClerkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (!signInLoaded || !signUpLoaded || redirecting) {
     return (
       <div className="min-h-screen bg-[#05051a] flex items-center justify-center">
@@ -196,11 +353,7 @@ export default function LoginContent() {
     );
   }
 
-  const inputClass =
-    "w-full bg-white/[0.04] border border-white/[0.1] rounded-lg px-4 py-2.5 text-white text-base placeholder-white/20 focus:outline-none focus:border-blue-500/50 focus:bg-white/[0.06] transition-all";
-  const passwordInputClass = inputClass + " pr-10";
-
-  // ── Pantalla principal signIn / signUp ───────────────────────────────────
+  // ── Pantalla principal signIn / signUp / recuperación ────────────────────
   return (
     <div className="min-h-screen bg-[#05051a] flex items-center justify-center px-4">
       <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_50%_30%,rgba(59,130,246,0.06)_0%,transparent_70%)]" />
@@ -219,6 +372,8 @@ export default function LoginContent() {
         </div>
 
         <div className="bg-[#0a1120] border border-white/[0.08] rounded-2xl p-8 shadow-2xl shadow-black/40">
+          {view === "auth" && (
+          <>
           <div className="flex gap-1 mb-6 p-1 bg-white/[0.03] rounded-lg border border-white/[0.06]">
             {(["signIn", "signUp"] as const).map((m) => (
               <button
@@ -260,40 +415,25 @@ export default function LoginContent() {
               <label className="block text-[0.68rem] font-mono uppercase tracking-widest text-white/40 mb-1.5">
                 Contraseña
               </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  data-testid="password-input"
-                  autoComplete={mode === "signIn" ? "current-password" : "new-password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={8}
-                  placeholder="••••••••"
-                  className={passwordInputClass}
-                />
-                <button
-                  type="button"
-                  data-testid="toggle-password"
-                  aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
-                >
-                  {showPassword ? (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                      <line x1="1" y1="1" x2="23" y2="23" />
-                    </svg>
-                  ) : (
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                  )}
-                </button>
-              </div>
+              <PasswordField
+                value={password}
+                onChange={setPassword}
+                testId="password-input"
+                toggleTestId="toggle-password"
+                autoComplete={mode === "signIn" ? "current-password" : "new-password"}
+              />
+              {mode === "signIn" && (
+                <div className="flex justify-end mt-2">
+                  <button
+                    type="button"
+                    data-testid="forgot-password-link"
+                    onClick={() => goToView("resetRequest")}
+                    className="text-[0.66rem] font-mono uppercase tracking-widest text-blue-400/70 hover:text-blue-400 transition-colors"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </button>
+                </div>
+              )}
             </div>
 
             {mode === "signUp" && (
@@ -307,20 +447,130 @@ export default function LoginContent() {
               </div>
             )}
 
-            {error && (
-              <div className="bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
-                <p className="text-red-400 text-xs">{error}</p>
-              </div>
-            )}
+            {error && <Banner tone="error" testId="auth-error">{error}</Banner>}
 
             {/* Requerido por Clerk Smart CAPTCHA en flujos de registro personalizados */}
             {mode === "signUp" && <div id="clerk-captcha" />}
 
-            <button type="submit" disabled={loading}
-              className="w-full py-3 bg-blue-500 hover:bg-blue-400 disabled:bg-blue-500/40 disabled:cursor-not-allowed text-white font-bold text-sm uppercase tracking-[0.15em] rounded-lg transition-all shadow-lg shadow-blue-500/20 mt-2">
+            <button type="submit" disabled={loading} className={submitClass}>
               {loading ? "Procesando..." : mode === "signIn" ? "Ingresar" : "Crear cuenta"}
             </button>
           </form>
+          </>
+          )}
+
+          {/* ── Paso A: pedir el código al correo ─────────────────────────── */}
+          {view === "resetRequest" && (
+            <form onSubmit={handleResetRequest} className="space-y-4" data-testid="reset-request-form">
+              <div className="mb-2">
+                <h2 className="text-white text-sm font-bold uppercase tracking-widest">
+                  Restablecer contraseña
+                </h2>
+                <p className="text-white/40 text-xs mt-1.5 leading-relaxed">
+                  Escribe el correo de tu cuenta y te enviaremos un código de 6 dígitos
+                  para crear una contraseña nueva.
+                </p>
+              </div>
+
+              <div>
+                <label className={labelClass}>Correo electrónico</label>
+                <input
+                  type="email"
+                  name="email"
+                  data-testid="reset-email-input"
+                  autoComplete="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  placeholder="admin@ptap.ec"
+                  className={inputClass}
+                />
+              </div>
+
+              {error && <Banner tone="error" testId="reset-error">{error}</Banner>}
+
+              <button type="submit" disabled={loading} data-testid="reset-request-submit" className={submitClass}>
+                {loading ? "Enviando..." : "Enviar código"}
+              </button>
+
+              <button
+                type="button"
+                data-testid="reset-back-link"
+                onClick={() => goToView("auth")}
+                className="w-full text-center text-[0.66rem] font-mono uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors pt-1"
+              >
+                Volver a ingresar
+              </button>
+            </form>
+          )}
+
+          {/* ── Paso B: código + contraseña nueva ─────────────────────────── */}
+          {view === "resetCode" && (
+            <form onSubmit={handleResetConfirm} className="space-y-4" data-testid="reset-code-form">
+              <div className="mb-2">
+                <h2 className="text-white text-sm font-bold uppercase tracking-widest">
+                  Código de verificación
+                </h2>
+              </div>
+
+              {info && <Banner tone="info" testId="reset-info">{info}</Banner>}
+
+              <div>
+                <label className={labelClass}>Código de 6 dígitos</label>
+                <input
+                  type="text"
+                  name="code"
+                  data-testid="reset-code-input"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ""))}
+                  required
+                  placeholder="000000"
+                  className={inputClass + " tracking-[0.5em] font-mono"}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Contraseña nueva</label>
+                <PasswordField
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  testId="new-password-input"
+                  toggleTestId="toggle-new-password"
+                  autoComplete="new-password"
+                />
+                <p className="text-white/25 text-[0.65rem] mt-1.5">Mínimo 8 caracteres.</p>
+              </div>
+
+              {error && <Banner tone="error" testId="reset-error">{error}</Banner>}
+
+              <button type="submit" disabled={loading} data-testid="reset-confirm-submit" className={submitClass}>
+                {loading ? "Restableciendo..." : "Restablecer contraseña"}
+              </button>
+
+              <div className="flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  data-testid="reset-resend"
+                  disabled={loading}
+                  onClick={() => { void sendResetCode(); }}
+                  className="text-[0.66rem] font-mono uppercase tracking-widest text-blue-400/70 hover:text-blue-400 disabled:text-white/20 transition-colors"
+                >
+                  Reenviar código
+                </button>
+                <button
+                  type="button"
+                  data-testid="reset-back-link"
+                  onClick={() => goToView("auth")}
+                  className="text-[0.66rem] font-mono uppercase tracking-widest text-white/30 hover:text-white/60 transition-colors"
+                >
+                  Volver a ingresar
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
         <p className="text-center text-white/20 text-[0.62rem] font-mono mt-6 tracking-wide">
