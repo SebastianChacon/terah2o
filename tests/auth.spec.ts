@@ -27,9 +27,12 @@ test.describe("login flow (Clerk)", () => {
     await page.locator("input[type='password']").fill("contraseña-incorrecta-xyz");
     await page.locator("button[type='submit']").click();
 
-    // Esperar error (Clerk responde en ~2-4s)
-    const error = page.locator("text=/contraseña|credencial|error/i");
+    // Esperar error (Clerk responde en ~2-4s). Se apunta al banner por testid:
+    // un locator por texto también engancha el label "Contraseña" y el enlace
+    // "¿Olvidaste tu contraseña?", y pasaría sin que haya error real.
+    const error = page.getByTestId("auth-error");
     await expect(error).toBeVisible({ timeout: 8000 });
+    await expect(error).toContainText(/contraseña|credencial|error/i);
     expect(page.url()).toContain("/login");
   });
 

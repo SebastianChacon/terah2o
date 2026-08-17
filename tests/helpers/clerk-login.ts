@@ -32,6 +32,69 @@ export async function getClerkUserIdByEmail(email: string): Promise<string> {
   return users[0].id;
 }
 
+function clerkKey(): string {
+  const env = { ...loadEnvLocal(), ...process.env };
+  const key = env.CLERK_SECRET_KEY;
+  if (!key) throw new Error("CLERK_SECRET_KEY no configurada");
+  return key;
+}
+
+async function clerkApi(path: string, init: RequestInit = {}): Promise<Response> {
+  return fetch(`https://api.clerk.com/v1${path}`, {
+    ...init,
+    headers: {
+      Authorization: `Bearer ${clerkKey()}`,
+      "Content-Type": "application/json",
+      ...(init.headers ?? {}),
+    },
+  });
+}
+
+/**
+ * Garantiza que exista un usuario de Clerk con ese correo y esa contraseña.
+ * Idempotente: si ya existe solo le fija la contraseña (deja el test con un
+ * estado inicial conocido). Se reutiliza la misma cuenta entre corridas para no
+ * dejar usuarios huérfanos en Clerk ni docs huérfanos en Convex.
+ */
+export async function ensureClerkUser(email: string, password: string): Promise<string> {
+  const res = await clerkApi(`/users?email_address=${encodeURIComponent(email)}&limit=1`);
+  const found = (await res.json()) as Array<{ id: string }>;
+
+  if (found[0]?.id) {
+    const upd = await clerkApi(`/users/${found[0].id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ password, skip_password_checks: true }),
+    });
+    if (!upd.ok) throw new Error(`No se pudo fijar contraseña inicial: ${await upd.text()}`);
+    return found[0].id;
+  }
+
+  const created = await clerkApi("/users", {
+    method: "POST",
+    body: JSON.stringify({
+      email_address: [email],
+      password,
+      skip_password_checks: true,
+      first_name: "Reset",
+      last_name: "E2E",
+    }),
+  });
+  if (!created.ok) throw new Error(`No se pudo crear usuario de prueba: ${await created.text()}`);
+  const user = (await created.json()) as { id: string };
+  return user.id;
+}
+
+/** Comprueba contra Clerk si esa contraseña es la vigente del usuario. */
+export async function verifyClerkPassword(userId: string, password: string): Promise<boolean> {
+  const res = await clerkApi(`/users/${userId}/verify_password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+  if (res.ok) return true;
+  if (res.status === 400 || res.status === 422) return false;
+  throw new Error(`verify_password falló (${res.status}): ${await res.text()}`);
+}
+
 /** Crea sign-in token (bypass Client Trust en E2E). */
 export async function createClerkSignInToken(userId: string): Promise<string> {
   const env = { ...loadEnvLocal(), ...process.env };

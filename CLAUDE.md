@@ -234,6 +234,17 @@ etiquetas visibles en Owner/Admin ya dicen "Calidad de Agua".
    - `subStatus = "active" | "trialing"` → permite acceso
    - `/owner` y `/api/owner` → requieren login pero saltan el gate de suscripción
 
+### Recuperación de contraseña (`/login`)
+Flujo nativo de Clerk `reset_password_email_code`, dentro del mismo `LoginContent.tsx`
+(sub-vistas `resetRequest` → `resetCode`, sin rutas ni tablas nuevas):
+1. `signIn.create({ strategy: "reset_password_email_code", identifier })` → Clerk envía código de 6 dígitos.
+2. `signIn.attemptFirstFactor({ strategy, code, password })` → `status: "complete"` crea sesión.
+3. Se reutiliza `completeSession()`; la navegación sigue saliendo del **único** `useEffect`
+   (no agregar `router.replace` aquí — ver el bug de race condition en Vercel más abajo).
+
+⚠️ E2E: los *test emails* de Clerk (`algo+clerk_test@example.com`) solo funcionan en instancias
+de desarrollo (`pk_test`/`sk_test`) y su código de verificación es siempre `424242`.
+
 **Rutas públicas:** `/`, `/login`, `/pricing`, `/motor-inteligencia`
 
 **Prefijos bypass:** `/_next`, `/favicon`, `/api/gemini`, `/api/weather`, `/api/gemini-tts`
