@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TERAH2O — Inteligencia operativa para la gestión del agua potable</title>
+<meta name="description" content="TERAH2O digitaliza y optimiza la operación de plantas de tratamiento de agua potable con inteligencia operativa. Sistema, herramientas de ingeniería y academia. Servicios Profesionales Tera · Cuenca, Ecuador.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2563EB;
+    --blue-accent:#4A8FE7;
+    --navy:#0F1F3D;
+    --navy-deep:#0D1321;
+    --green:#007A4D;
+    --green-screen:#00D68F;
+    --amber:#B06000;
+    --border:#D0DAF0;
+    --page:#F5F7FA;
+    --card:#FFFFFF;
+    --tint-blue:#EBF1FB;
+    --tint-green:#EAF5EE;
+    --ink:#0F1F3D;
+    --ink-soft:#51617C;
+    --ink-mute:#7E8DA6;
+    --wa:#25D366;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Outfit',system-ui,sans-serif;font-weight:300;color:var(--ink);background:var(--card);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  a{color:inherit;text-decoration:none}
+  h1,h2,h3,h4{font-weight:800;line-height:1.1;letter-spacing:-.02em;color:var(--ink)}
+  .wrap{max-width:1200px;margin:0 auto;padding:0 32px}
+  .eyebrow{font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--blue)}
+  .eyebrow.on-dark{color:var(--blue-accent)}
+  .spark{font-style:normal}
+
+  .logo{font-family:Arial,Helvetica,sans-serif;font-weight:700;letter-spacing:.02em;font-size:1.4rem;color:var(--ink)}
+  .logo .h2o{color:var(--blue)}
+  .logo.on-dark{color:#fff}
+  .logo.on-dark .h2o{color:var(--blue-accent)}
+
+  .btn{display:inline-flex;align-items:center;gap:9px;cursor:pointer;border:none;font-family:'Outfit';font-weight:600;font-size:.95rem;padding:14px 28px;transition:background .2s,transform .15s,box-shadow .2s,color .2s,border-color .2s}
+  .btn svg{width:18px;height:18px}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:#1d51c9;transform:translateY(-1px)}
+  .btn-outline{background:transparent;color:var(--blue);border:1.5px solid var(--border)}
+  .btn-outline:hover{border-color:var(--blue);background:var(--tint-blue)}
+  .btn-white{background:#fff;color:var(--navy)}
+  .btn-white:hover{background:var(--tint-blue)}
+  .btn-ghost-light{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+  .btn-ghost-light:hover{border-color:#fff;background:rgba(255,255,255,.08)}
+  .link-arrow{font-weight:600;color:var(--blue);display:inline-flex;gap:7px;align-items:center;transition:gap .2s}
+  .link-arrow:hover{gap:11px}
+
+  /* UTILITY BAR */
+  .util{background:var(--navy-deep);color:#b9c6de}
+  .util .wrap{display:flex;justify-content:space-between;align-items:center;height:38px}
+  .util .u-left{font-family:'Space Mono';font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:#8ea1c0}
+  .util .u-right{display:flex;gap:22px;font-size:.78rem}
+  .util .u-right a{color:#c3d0e6;transition:color .2s}
+  .util .u-right a:hover{color:#fff}
+
+  /* HEADER */
+  header{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  nav{display:flex;align-items:center;justify-content:space-between;height:72px}
+  .nav-left{display:flex;align-items:baseline;gap:14px}
+  .nav-parent{font-family:'Space Mono';font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-mute)}
+  .navlinks{display:flex;gap:32px;align-items:center}
+  .navlinks a{font-size:.95rem;font-weight:500;color:var(--ink-soft);transition:color .2s}
+  .navlinks a:hover{color:var(--blue)}
+
+  /* HERO */
+  .hero{position:relative;background:
+      radial-gradient(1100px 520px at 78% -20%,rgba(74,143,231,.35),transparent 60%),
+      radial-gradient(760px 620px at 6% 120%,rgba(37,99,235,.22),transparent 55%),
+      linear-gradient(160deg,#12274d 0%,#0d1321 70%);
+    color:#fff;overflow:hidden}
+  .hero .wrap{position:relative;z-index:2;padding:128px 32px 132px}
+  .hero-inner{max-width:800px}
+  .hero .eyebrow{display:inline-flex;align-items:center;gap:8px;margin-bottom:26px}
+  .hero h1{font-size:clamp(2.6rem,6vw,4.4rem);font-weight:600;color:#fff;letter-spacing:-.03em}
+  .hero h1 .hl{color:var(--blue-accent)}
+  .hero p.lead{font-size:clamp(1.1rem,2vw,1.32rem);font-weight:300;color:#cdd9ee;max-width:640px;margin:26px 0 38px}
+  .hero-cta{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+  .hero-cta .txt{color:#fff;font-weight:600;display:inline-flex;gap:7px;align-items:center;transition:gap .2s}
+  .hero-cta .txt:hover{gap:11px}
+
+  /* PURPOSE */
+  .purpose{background:var(--card);border-bottom:1px solid var(--border)}
+  .purpose .wrap{max-width:900px;text-align:center;padding:72px 32px}
+  .purpose p{font-size:clamp(1.25rem,2.6vw,1.7rem);font-weight:300;line-height:1.5;color:var(--ink)}
+  .purpose p b{font-weight:700;color:var(--blue)}
+
+  /* SECTION SHELL */
+  .section{padding:92px 0}
+  .section.pg{background:var(--page)}
+  .section.tint{background:var(--tint-blue)}
+  .section.tint-g{background:var(--tint-green)}
+  .sec-head{max-width:660px;margin-bottom:52px}
+  .sec-head.center{margin-inline:auto;text-align:center}
+  .sec-head h2{font-size:clamp(2rem,4vw,2.9rem);font-weight:800;margin:16px 0 18px}
+  .sec-head p{font-size:1.12rem;font-weight:300;color:var(--ink-soft)}
+
+  /* FEATURE BLOCKS */
+  .feature{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+  .feature.rev .f-text{order:2}
+  .feature + .feature{margin-top:88px}
+  .f-text h2{font-size:clamp(1.9rem,3.6vw,2.5rem);margin:14px 0 18px}
+  .f-text p{font-size:1.08rem;font-weight:300;color:var(--ink-soft);margin-bottom:18px}
+  .f-list{list-style:none;display:grid;gap:12px;margin:22px 0 30px}
+  .f-list li{display:flex;gap:12px;align-items:flex-start;font-size:1rem}
+  .f-list .ck{color:var(--green);flex:0 0 auto;margin-top:3px}
+  .f-list .ck svg{width:16px;height:16px;display:block}
+
+  /* PANEL */
+  .panel{background:var(--navy-deep);padding:26px;color:#fff;box-shadow:0 30px 70px -34px rgba(15,31,61,.55);position:relative;overflow:hidden;border:1px solid #1a2b4a}
+  .panel-glow{position:absolute;top:-40px;right:-40px;width:180px;height:180px;background:radial-gradient(circle,rgba(74,143,231,.4),transparent 70%)}
+  .panel-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;position:relative;z-index:1}
+  .panel-h .pt{font-family:'Space Mono';font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:#8ea1c0}
+  .panel-h .live{font-family:'Space Mono';font-size:.62rem;letter-spacing:.1em;color:var(--green-screen);display:flex;align-items:center;gap:7px}
+  .panel-h .live::before{content:"";width:7px;height:7px;background:var(--green-screen)}
+  .log{position:relative;z-index:1;display:grid;gap:1px;background:rgba(255,255,255,.08);overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+  .log-row{background:#12213e;display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:13px 16px}
+  .log-row .t{font-family:'Space Mono';font-size:.72rem;color:var(--blue-accent)}
+  .log-row .d{font-size:.9rem;color:#cdd9ee;font-weight:400}
+  .log-row .ok{color:var(--green-screen);display:flex}
+  .log-row .ok svg{width:16px;height:16px}
+  .panel-chips{display:flex;gap:8px;margin-top:16px;position:relative;z-index:1;flex-wrap:wrap}
+  .panel-chips .pc{font-family:'Space Mono';font-size:.64rem;letter-spacing:.08em;color:#dfe7f5;border:1px solid rgba(255,255,255,.16);padding:6px 11px}
+  .chart-panel svg.chart{width:100%;height:150px;display:block;position:relative;z-index:1;margin-top:14px}
+  .chart-legend{display:flex;gap:16px;margin-top:14px;position:relative;z-index:1}
+  .chart-legend .cl{font-family:'Space Mono';font-size:.6rem;letter-spacing:.08em;color:#8ea1c0;display:flex;align-items:center;gap:6px}
+  .chart-legend .cl i{width:14px;height:2px;background:var(--blue-accent);display:inline-block}
+  .chart-legend .cl.g i{background:var(--green-screen)}
+
+  /* STAT BAND */
+  .stats{background:var(--navy);color:#fff;padding:64px 0}
+  .stats .sh{text-align:center;margin-bottom:40px}
+  .stats .sh .eyebrow{color:var(--blue-accent)}
+  .stats .sh h2{color:#fff;font-size:clamp(1.6rem,3vw,2.2rem);margin-top:12px}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+  .stat{text-align:center;padding:0 10px}
+  .stat .sv{font-family:'Outfit';font-weight:900;font-size:clamp(1.9rem,3.6vw,2.6rem);line-height:1;color:#fff}
+  .stat .sv.green{color:var(--green-screen)}
+  .stat .sk{font-family:'Space Mono';font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:#94a5c4;margin-top:12px}
+  .stat + .stat{border-left:1px solid rgba(255,255,255,.12)}
+
+  /* TOOLS */
+  .free-note{display:inline-flex;align-items:center;gap:10px;margin-top:16px;font-family:'Space Mono';font-size:.76rem;color:var(--ink-soft);background:var(--tint-green);border:1px solid #cfe8db;padding:10px 16px}
+  .free-note .dot{width:8px;height:8px;background:var(--green-screen);flex:0 0 auto}
+  .tools-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .tool{background:var(--card);border:1px solid var(--border);padding:28px;display:flex;flex-direction:column;transition:transform .2s,box-shadow .25s,border-color .2s}
+  .tool:hover{transform:translateY(-4px);box-shadow:0 24px 50px -30px rgba(15,31,61,.4);border-color:var(--blue)}
+  .tool .t-tag{font-family:'Space Mono';font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--blue);display:inline-flex;align-items:center;gap:6px}
+  .tool h4{font-size:1.26rem;margin:12px 0 10px}
+  .tool p{font-size:.96rem;font-weight:300;color:var(--ink-soft);flex:1}
+  .tool .t-foot{display:flex;align-items:center;justify-content:space-between;margin-top:20px;padding-top:18px;border-top:1px solid var(--border)}
+  .tool .free{font-family:'Space Mono';font-size:.64rem;letter-spacing:.06em;color:var(--green);background:var(--tint-green);padding:5px 10px}
+  .tool .go{font-size:.9rem;font-weight:600;color:var(--blue);display:inline-flex;gap:6px;transition:gap .2s}
+  .tool:hover .go{gap:10px}
+  .tool.ia{background:var(--navy-deep);border-color:var(--navy)}
+  .tool.ia h4{color:#fff}
+  .tool.ia p{color:#aebbd4}
+  .tool.ia .t-tag{color:var(--green-screen)}
+  .tool.ia .t-foot{border-top-color:rgba(255,255,255,.12)}
+  .tool.ia .free{color:var(--navy-deep);background:var(--green-screen)}
+  .tool.ia .go{color:var(--green-screen)}
+
+  /* SERVICES */
+  .svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}
+  .svc{background:var(--card);padding:38px;transition:background .2s}
+  .svc:hover{background:var(--tint-blue)}
+  .svc .s-tag{font-family:'Space Mono';font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--blue)}
+  .svc h4{font-size:1.45rem;margin:14px 0 12px}
+  .svc p{font-size:1rem;font-weight:300;color:var(--ink-soft);margin-bottom:18px}
+
+  /* ACADEMY */
+  .academy{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+  .academy .a-text h2{font-size:clamp(1.9rem,3.6vw,2.5rem);margin:14px 0 16px}
+  .academy .a-text p{font-size:1.08rem;font-weight:300;color:var(--ink-soft);margin-bottom:24px}
+  .mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .mod{background:var(--card);border:1px solid var(--border);padding:26px}
+  .mod .m-ic{width:46px;height:46px;background:var(--tint-blue);color:var(--blue);display:grid;place-items:center;margin-bottom:14px}
+  .mod .m-ic svg{width:24px;height:24px}
+  .mod h4{font-size:1.2rem;margin-bottom:6px}
+  .mod p{font-size:.9rem;font-weight:300;color:var(--ink-soft)}
+  .mod .tagm{font-family:'Space Mono';font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-top:12px;display:block}
+
+  /* IMPACT */
+  .impact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:12px}
+  .imp{background:var(--card);border:1px solid var(--border);padding:32px}
+  .imp .i-ic{width:50px;height:50px;background:var(--tint-green);color:var(--green);display:grid;place-items:center;margin-bottom:16px}
+  .imp .i-ic svg{width:26px;height:26px}
+  .imp h4{font-size:1.2rem;margin-bottom:10px}
+  .imp p{font-size:.96rem;font-weight:300;color:var(--ink-soft)}
+  .ods-note{margin-top:36px;text-align:center;font-family:'Space Mono';font-size:.8rem;letter-spacing:.06em;color:var(--green);background:var(--card);border:1px solid #cfe8db;padding:16px 22px;display:inline-block}
+
+  /* BROCHURE */
+  .brochure{background:linear-gradient(120deg,var(--blue) 0%,#1746b8 100%);color:#fff;padding:52px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:center;position:relative;overflow:hidden}
+  .brochure .b-glow{position:absolute;right:-60px;top:-60px;width:280px;height:280px;background:radial-gradient(circle,rgba(255,255,255,.14),transparent 70%)}
+  .brochure .b-eyebrow{font-family:'Space Mono';font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:#cfe0ff;position:relative;z-index:1}
+  .brochure h3{color:#fff;font-size:clamp(1.5rem,3vw,2.1rem);margin:12px 0 10px;position:relative;z-index:1}
+  .brochure p{font-weight:300;color:#dfe9ff;max-width:520px;position:relative;z-index:1}
+  .brochure .b-cta{position:relative;z-index:1}
+
+  /* CTA / FORM */
+  .cta{background:linear-gradient(120deg,var(--navy) 0%,#12294e 100%);color:#fff;position:relative;overflow:hidden}
+  .cta .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;padding:82px 32px}
+  .cta h2{color:#fff;font-size:clamp(1.9rem,3.6vw,2.6rem);margin:14px 0 18px}
+  .cta .c-lead{font-size:1.08rem;font-weight:300;color:#cdd9ee;margin-bottom:30px}
+  .cta .contactline{display:flex;gap:14px;align-items:center;font-size:1rem;color:#eaf1fb;margin-bottom:16px;font-weight:400}
+  .cta .contactline .ic{width:40px;height:40px;flex:0 0 auto;background:rgba(0,214,143,.12);border:1px solid rgba(0,214,143,.3);color:var(--green-screen);display:grid;place-items:center}
+  .cta .contactline .ic svg{width:20px;height:20px}
+  .cta .contactline .ct{font-family:'Space Mono';font-size:.92rem}
+  form{background:#fff;padding:32px;box-shadow:0 30px 70px -30px rgba(0,0,0,.5)}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:.8rem;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:12px 14px;border:1px solid var(--border);font-family:'Outfit';font-size:.95rem;color:var(--ink);background:var(--page);transition:border-color .2s,box-shadow .2s}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.14);background:#fff}
+  .field textarea{resize:vertical;min-height:84px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  form .btn-primary{width:100%;justify-content:center;padding:14px;margin-top:4px}
+  .form-msg{display:none;margin-top:14px;padding:12px 14px;background:var(--tint-green);color:var(--green);font-size:.9rem;font-family:'Space Mono'}
+  .form-msg.show{display:block}
+
+  /* QUOTE */
+  .quote-band{background:var(--navy-deep);color:#fff;text-align:center;padding:84px 0}
+  .quote-band .spark{font-size:1.4rem}
+  .quote-band p{max-width:760px;margin:22px auto 0;font-size:clamp(1.3rem,2.6vw,1.85rem);font-weight:300;line-height:1.4;color:#eaf1fb}
+  .quote-band p b{font-weight:700;color:var(--blue-accent)}
+
+  /* CREDENTIALS (discreet, no heading) */
+  .creds-band{background:var(--card);border-top:1px solid var(--border);padding:48px 0}
+  .creds-band .r-inner{display:flex;align-items:center;justify-content:center;gap:44px;flex-wrap:wrap}
+  .creds-band .award-logo{height:50px;width:auto;opacity:.8}
+  .creds-band .creds{display:flex;gap:30px;flex-wrap:wrap;align-items:center;justify-content:center}
+  .creds-band .cred{font-family:'Space Mono';font-size:.72rem;letter-spacing:.08em;color:var(--ink-soft);text-align:center;line-height:1.5}
+  .creds-band .cred b{display:block;color:var(--ink);font-weight:700;font-size:.8rem}
+  .creds-band .divider{width:1px;height:40px;background:var(--border)}
+
+  /* FOOTER */
+  footer{background:var(--navy-deep);color:#a9b8d2;padding:66px 0 32px}
+  .foot-top{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:40px;padding-bottom:42px;border-bottom:1px solid rgba(255,255,255,.1)}
+  .foot-brand .logo{font-size:1.5rem}
+  .foot-brand .fb-parent{font-family:'Space Mono';font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:#7e8da6;margin-top:8px}
+  .foot-brand p{font-size:.92rem;font-weight:300;margin-top:16px;max-width:280px;color:#94a5c4}
+  .foot-brand .addr{font-family:'Space Mono';font-size:.74rem;color:#8ea1c0;margin-top:16px;line-height:1.7}
+  .foot-col h5{font-family:'Space Mono';font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:#fff;margin-bottom:18px;font-weight:700}
+  .foot-col a{display:block;font-size:.92rem;font-weight:300;color:#a9b8d2;margin-bottom:11px;transition:color .2s}
+  .foot-col a:hover{color:#fff}
+  .foot-bottom{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding-top:24px}
+  .foot-bottom .legal{font-family:'Space Mono';font-size:.7rem;letter-spacing:.06em;color:#7e8da6;line-height:1.8}
+  .foot-social{display:flex;gap:12px}
+  .foot-social a{width:36px;height:36px;border:1px solid rgba(255,255,255,.16);display:grid;place-items:center;color:#a9b8d2;transition:border-color .2s,color .2s}
+  .foot-social a svg{width:18px;height:18px}
+  .foot-social a:hover{border-color:var(--blue-accent);color:#fff}
+
+  /* WHATSAPP FLOAT (icon only, square) */
+  .wa-float{position:fixed;left:22px;bottom:22px;z-index:80;width:56px;height:56px;display:grid;place-items:center;background:var(--wa);box-shadow:0 14px 34px -10px rgba(37,211,102,.6);transition:transform .18s,box-shadow .2s}
+  .wa-float:hover{transform:translateY(-2px);box-shadow:0 18px 40px -10px rgba(37,211,102,.7)}
+  .wa-float svg{width:30px;height:30px}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+  .reveal.in{opacity:1;transform:none}
+
+  /* RESPONSIVE */
+  @media(max-width:940px){
+    .feature,.academy,.cta .wrap{grid-template-columns:1fr;gap:40px}
+    .feature.rev .f-text{order:0}
+    .tools-grid,.impact-grid{grid-template-columns:1fr 1fr}
+    .stat-row{grid-template-columns:1fr 1fr;gap:0}
+    .stat{padding:22px 10px}
+    .stat + .stat{border-left:none}
+    .stat:nth-child(even){border-left:1px solid rgba(255,255,255,.12)}
+    .stat:nth-child(3),.stat:nth-child(4){border-top:1px solid rgba(255,255,255,.12)}
+    .navlinks{display:none}
+    .util .u-left{display:none}
+    .foot-top{grid-template-columns:1fr 1fr}
+    .brochure{grid-template-columns:1fr;text-align:left}
+  }
+  @media(max-width:620px){
+    .wrap{padding:0 20px}
+    .section{padding:62px 0}
+    .tools-grid,.svc-grid,.impact-grid,.mod-grid,.row2,.stat-row{grid-template-columns:1fr}
+    .stat + .stat{border-left:none;border-top:1px solid rgba(255,255,255,.12)}
+    .stat:nth-child(even){border-left:none}
+    .foot-top{grid-template-columns:1fr}
+    .cta .wrap{padding:56px 20px}
+    .brochure{padding:34px}
+    .creds-band .divider{display:none}
+  }
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;scroll-behavior:auto}
+    .reveal{opacity:1;transform:none;transition:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- UTILITY -->
+<div class="util">
+  <div class="wrap">
+    <div class="u-left">Servicios Profesionales Tera · Cuenca, Ecuador</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="wrap">
+    <nav>
+      <div class="nav-left">
+        <a href="#" class="logo">TERA<span class="h2o">H2O</span></a>
+      </div>
+      <div class="navlinks">
+        <a href="#sistema">Sistema</a>
+        <a href="#herramientas">Herramientas</a>
+        <a href="#servicios">Servicios</a>
+        <a href="#academia">Academia</a>
+        <a href="#impacto">Impacto</a>
+        <a href="#contacto">Contacto</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <span class="eyebrow on-dark"><span class="spark">✨</span> Inteligencia Operativa</span>
+      <h1>Hacia una gestión del agua más segura y <span class="hl">eficiente.</span></h1>
+      <p class="lead">Digitalizamos y optimizamos la operación de plantas de tratamiento de agua potable. Sustituimos la incertidumbre por ciencia: un motor de cálculo que respalda cada decisión con datos trazables.</p>
+      <div class="hero-cta">
+        <a href="#sistema" class="btn btn-primary">Conocer el sistema</a>
+        <a href="#herramientas" class="txt">Explorar herramientas →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PURPOSE -->
+<div class="purpose">
+  <div class="wrap">
+    <p>Detrás de cada planta hay un equipo que trabaja para que el agua llegue segura a su comunidad. TERAH2O existe para acompañarlo: <b>convertimos la incertidumbre en decisiones claras y trazables</b>, para que cuidar el agua no dependa de la suerte ni de un solo experto de turno.</p>
+  </div>
+</div>
+
+<!-- FEATURE: SYSTEM -->
+<section class="section" id="sistema">
+  <div class="wrap">
+    <div class="feature reveal">
+      <div class="f-text">
+        <span class="eyebrow">Sistema insignia</span>
+        <h2>El sistema TERAH2O</h2>
+        <p>Un entorno operativo que caracteriza el agua cruda, valida la dosis en la matriz digital de jarras y registra cada turno. No reemplaza el criterio del ingeniero — lo potencia con datos trazables y cálculo dinámico.</p>
+        <ul class="f-list">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Dosis sugerida por análisis estequiométrico, antes de aplicar.</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Balance de cloro y cumplimiento de la norma INEN 1108.</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Bitácora inalterable y auditable las 24 horas.</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Datos cifrados y respaldados en infraestructura certificada ISO 27001.</li>
+        </ul>
+        <a href="https://app.terah2o.com" class="link-arrow">Conocer el sistema →</a>
+      </div>
+      <div class="panel">
+        <div class="panel-glow"></div>
+        <div class="panel-h">
+          <span class="pt">Bitácora · registro trazable</span>
+          <span class="live">Auditable</span>
+        </div>
+        <div class="log">
+          <div class="log-row"><span class="t">08:12</span><span class="d">Parámetros del agua cruda validados</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          <div class="log-row"><span class="t">10:40</span><span class="d">Dosis registrada y sellada</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          <div class="log-row"><span class="t">14:05</span><span class="d">Balance de cloro recalculado</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+          <div class="log-row"><span class="t">18:30</span><span class="d">Cierre de turno confirmado</span><span class="ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span></div>
+        </div>
+        <div class="panel-chips">
+          <span class="pc">Trazabilidad 100%</span>
+          <span class="pc">INEN 1108</span>
+          <span class="pc">Historial 24/7</span>
+          <span class="pc">Datos cifrados</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FEATURE: IA -->
+    <div class="feature rev reveal">
+      <div class="f-text">
+        <span class="eyebrow"><span class="spark">✨</span> Gestión preventiva</span>
+        <h2>Motor hidrometeorológico</h2>
+        <p>El sistema cruza el histórico de operación con el pronóstico climático. Ante una precipitación alta proyectada, calcula la variación esperada de turbiedad y sugiere una dosificación preventiva — para actuar con antelación, no a la reacción.</p>
+        <ul class="f-list">
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Anticipa picos de turbiedad por lluvias o estiajes.</li>
+          <li><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Sugiere dosis preventivas con base técnica.</li>
+        </ul>
+        <a href="#herramientas" class="link-arrow">Probar el motor →</a>
+      </div>
+      <div class="panel chart-panel">
+        <div class="panel-glow"></div>
+        <div class="panel-h">
+          <span class="pt">Proyección · 72 horas</span>
+          <span class="live">IA activa</span>
+        </div>
+        <svg class="chart" viewBox="0 0 400 150" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <line x1="0" y1="120" x2="400" y2="120" stroke="rgba(255,255,255,.1)"/>
+          <line x1="0" y1="80" x2="400" y2="80" stroke="rgba(255,255,255,.06)"/>
+          <line x1="0" y1="40" x2="400" y2="40" stroke="rgba(255,255,255,.06)"/>
+          <path d="M0,100 C60,90 90,50 140,45 C190,40 210,70 260,80 C310,90 350,72 400,66" fill="none" stroke="#4A8FE7" stroke-width="2.5"/>
+          <path d="M0,110 C60,105 90,95 140,88 C190,82 210,90 260,92 C310,94 350,90 400,86" fill="none" stroke="#00D68F" stroke-width="2.5" stroke-dasharray="5 5"/>
+        </svg>
+        <div class="chart-legend">
+          <span class="cl"><i></i> Turbiedad proyectada</span>
+          <span class="cl g"><i></i> Dosis preventiva sugerida</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STAT BAND -->
+<section class="stats">
+  <div class="wrap">
+    <div class="sh">
+      <span class="eyebrow on-dark">Trazabilidad como estándar</span>
+      <h2>Cada dato, registrado y auditable</h2>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="sv green">100%</div><div class="sk">Registros auditables</div></div>
+      <div class="stat"><div class="sv">24/7</div><div class="sk">Historial disponible</div></div>
+      <div class="stat"><div class="sv">INEN 1108</div><div class="sk">Norma integrada</div></div>
+      <div class="stat"><div class="sv green">0</div><div class="sk">Hojas de cálculo dispersas</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TOOLS -->
+<section class="section pg" id="herramientas">
+  <div class="wrap">
+    <div class="sec-head center">
+      <span class="eyebrow">Herramientas de ingeniería</span>
+      <h2>Calculadoras y simuladores</h2>
+      <p>Las mismas rutinas de cálculo que sostienen el sistema, disponibles para cualquier ingeniero u operador. Sin instalar nada.</p>
+      
+    </div>
+    <div class="tools-grid">
+      <a  class="tool reveal" href="https://filtros-de-arena.vercel.app" target="_blank" rel="noopener noreferrer">
+        <span class="t-tag">Hidráulica de filtros</span>
+        <h4>Pérdida de carga en filtros</h4>
+        <p>Caída de presión en medios granulares mediante la ecuación de Ergun: velocidad, porosidad y diámetro de partícula.</p>
+        <div class="t-foot"><span class="go">Abrir →</span></div>
+      </a>
+      <a  class="tool reveal" href="https://calculadora-gradiente.vercel.app" target="_blank" rel="noopener noreferrer">
+        <span class="t-tag">Mezcla y floculación</span>
+        <h4>Gradientes de floculación</h4>
+        <p>Velocidad de agitación, gradiente G y Gt para dimensionar mezcla rápida y floculación.</p>
+        <div class="t-foot"><span class="go">Abrir →</span></div>
+      </a>
+      <!-- TODO: pendiente — José Alfredo (14-ago-2026): 'aún no está listo, ya luego lo meto' -->
+<a href="#" class="tool reveal">
+        <span class="t-tag">Ingeniería</span>
+        <h4>Dimensionamiento preliminar de PTAP</h4>
+        <p>Estima el tamaño de las unidades de una planta a partir del caudal y el tipo de agua a tratar.</p>
+        <div class="t-foot"><span class="go">Abrir →</span></div>
+      </a>
+      <a  class="tool reveal" href="https://simulador-neon.vercel.app" target="_blank" rel="noopener noreferrer">
+        <span class="t-tag">Simulación</span>
+        <h4>Simulador de potabilización</h4>
+        <p>Modela la línea de tratamiento completa y estima dosis y calidad de salida.</p>
+        <div class="t-foot"><span class="go">Abrir →</span></div>
+      </a>
+      <a  class="tool ia reveal" href="https://app.terah2o.com/motor-inteligencia">
+        <span class="t-tag"><span class="spark">✨</span> Inteligencia artificial</span>
+        <h4>Motor hidrometeorológico</h4>
+        <p>Anticipa la variación de turbiedad cruzando el pronóstico climático con el histórico de operación.</p>
+        <div class="t-foot"><span class="go">Abrir →</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section class="section" id="servicios">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="eyebrow">Servicios Profesionales Tera</span>
+      <h2>Ingeniería que acompaña</h2>
+      <p>Más allá del software, trabajamos junto a tu equipo. Somos aliados, no proveedores.</p>
+    </div>
+    <div class="svc-grid reveal">
+      <div class="svc">
+        <span class="s-tag">Consultoría</span>
+        <h4>Asesoría técnica y operativa</h4>
+        <p>Diagnóstico de procesos, ajuste de dosificación y resolución de problemas de calidad en planta.</p>
+        <a href="#contacto" class="link-arrow">Solicitar →</a>
+      </div>
+      <div class="svc">
+        <span class="s-tag">Ingeniería</span>
+        <h4>Dimensionamientos preliminares</h4>
+        <p>Estimación preliminar de unidades y capacidad para orientar proyectos de tratamiento y potabilización.</p>
+        <a href="#contacto" class="link-arrow">Solicitar →</a>
+      </div>
+      <div class="svc">
+        <span class="s-tag">Optimización</span>
+        <h4>Optimización de procesos</h4>
+        <p>Evaluación de plantas existentes y propuestas de mejora en eficiencia química y operación.</p>
+        <a href="#contacto" class="link-arrow">Solicitar →</a>
+      </div>
+      <div class="svc">
+        <span class="s-tag">Formación</span>
+        <h4>Capacitación especializada</h4>
+        <p>Programas prácticos para que cualquier turno opere con criterio de ingeniero.</p>
+        <a href="#academia" class="link-arrow">Ver academia →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ACADEMY -->
+<section class="section tint" id="academia">
+  <div class="wrap">
+    <div class="academy reveal">
+      <div class="a-text">
+        <span class="eyebrow">Academia TERAH2O</span>
+        <h2>Programa de capacitación especializada</h2>
+        <p>Formación aplicada en tratamiento y potabilización, con las mismas herramientas del sistema. Del concepto químico a la operación real. Disponible en dos modalidades.</p>
+        <a href="https://app.terah2o.com/academia" class="btn btn-primary">Conocer el programa →</a>
+      </div>
+      <div class="mod-grid">
+        <div class="mod">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14"/><path d="M8 21h8M12 17v4"/></svg></div>
+          <h4>Online</h4>
+          <p>Formación a distancia, a tu ritmo, con acompañamiento y casos prácticos.</p>
+          <span class="tagm">Modalidad 01</span>
+        </div>
+        <div class="mod">
+          <div class="m-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h4>Presencial</h4>
+          <p>Sesiones en sitio con tu equipo, aplicadas a la realidad de tu planta.</p>
+          <span class="tagm">Modalidad 02</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPACT -->
+<section class="section tint-g" id="impacto">
+  <div class="wrap">
+    <div class="sec-head center reveal">
+      <span class="eyebrow" style="color:var(--green)">Impacto ambiental</span>
+      <h2>Eficiencia que deja huella positiva</h2>
+      <p>Optimizar la química del agua no solo ahorra: reduce el impacto ambiental y acerca el agua segura a más comunidades.</p>
+    </div>
+    <div class="impact-grid reveal">
+      <div class="imp">
+        <div class="i-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/></svg></div>
+        <h4>Impacto ambiental verificable</h4>
+        <p>Cada agente coagulante optimizado es una reducción medible en la huella de carbono asociada a su producción y transporte.</p>
+      </div>
+      <div class="imp">
+        <div class="i-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 7h18M7 7l-3 6a3 3 0 0 0 6 0l-3-6zM17 7l-3 6a3 3 0 0 0 6 0l-3-6z"/></svg></div>
+        <h4>Costo/beneficio para el usuario</h4>
+        <p>La suscripción se define con un análisis financiero gratuito previo: el acceso a tecnología hídrica no es un privilegio económico.</p>
+      </div>
+      <div class="imp">
+        <div class="i-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5S6 9 6 14a6 6 0 0 0 12 0c0-5-6-11.5-6-11.5z"/></svg></div>
+        <h4>Agua segura como derecho</h4>
+        <p>Cada parámetro validado es, en última instancia, la protección de la salud de una comunidad.</p>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div class="ods-note">Contribuimos a los Objetivos de Desarrollo Sostenible 2030 — en particular el ODS 6: Agua limpia y saneamiento.</div>
+    </div>
+  </div>
+</section>
+
+<!-- BROCHURE -->
+<section class="section pg">
+  <div class="wrap">
+    <div class="brochure reveal">
+      <div class="b-glow"></div>
+      <div>
+        <span class="b-eyebrow">Documento del producto</span>
+        <h3>Sistema de Gestión Hídrica TERAH2O</h3>
+        <p>Descarga el brochure con la arquitectura del sistema, sus módulos y beneficios. Ideal para compartir con tu equipo técnico o dirección.</p>
+      </div>
+      <div class="b-cta">
+        <a href="TERAH2O-Brochure.pdf" download class="btn btn-white"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Descargar brochure (PDF)</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="cta" id="contacto">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow on-dark">Hablemos</span>
+      <h2>Solicita una demostración o una asesoría</h2>
+      <p class="c-lead">Cuéntanos sobre tu planta o tu proyecto. Respondemos con una propuesta concreta y un análisis financiero previo, sin costo.</p>
+      <div class="contactline"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="ct">Oficina: 07 573 0108</span></div>
+      <div class="contactline"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg></span><span class="ct">Móvil: +593 096 034 2771</span></div>
+      <div class="contactline"><span class="ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg></span><span class="ct">WhatsApp: +1 608 448 9126</span></div>
+      <div class="contactline"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16"/><path d="m2 6 10 7 10-7"/></svg></span><span class="ct">teraserviciosprofesionales@outlook.com</span></div>
+      <div class="contactline"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span><span class="ct">Oficina Matriz: Av. Remigio Crespo, Edificio Ceiva, Piso 3, Oficina 304 · Cuenca</span></div>
+    </div>
+    <form id="reqForm" onsubmit="return sendForm(event)">
+      <div class="row2">
+        <div class="field"><label for="nombre">Nombre</label><input id="nombre" type="text" required></div>
+        <div class="field"><label for="org">Institución</label><input id="org" type="text"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="email">Correo</label><input id="email" type="email" required></div>
+        <div class="field"><label for="tel">Teléfono</label><input id="tel" type="tel"></div>
+      </div>
+      <div class="field">
+        <label for="interes">¿Qué te interesa?</label>
+        <select id="interes">
+          <option>Demostración del sistema TERAH2O</option>
+          <option>Asesoría técnica y operativa</option>
+          <option>Dimensionamientos preliminares</option>
+          <option>Optimización de procesos</option>
+          <option>Academia / capacitación</option>
+          <option>Otro</option>
+        </select>
+      </div>
+      <div class="field"><label for="msg">Mensaje</label><textarea id="msg" placeholder="Cuéntanos qué necesitas…"></textarea></div>
+      <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+      <div class="form-msg" id="formMsg">Gracias. Conecta este formulario a tu correo o CRM para recibir las solicitudes.</div>
+    </form>
+  </div>
+</section>
+
+<!-- QUOTE -->
+<div class="quote-band">
+  <div class="wrap">
+    <span class="spark">✨</span>
+    <p>Donde hay datos trazables, hay decisiones más certeras. <b>Donde hay decisiones certeras, hay agua segura.</b></p>
+  </div>
+</div>
+
+<!-- CREDENTIALS (discreet, no heading) -->
+<section class="creds-band">
+  <div class="wrap">
+    <div class="r-inner">
+      <img class="award-logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAdQAAAC6CAYAAAAXrrzyAAAACXBIWXMAAAsSAAALEgHS3X78AAAgAElEQVR4nO2dCbQWxbXvi/vM0jiC5hqNolwFFCM+UUFUJhkEZ5wQBxBFBeOIPmNEUQZR44QRURRREFCDMkSMgB7QiCKDY0iY1FyNY957uYmY3Otad731vfVvTx2bPjV1d/V0zv+3Vq/zne+rrqquqq5dtWvXrha1Wq0mCCGEEJKKf2HxEUIIIemhQCWEEEI8QIFKCCGEeIAClRBCCPEABSohhBDiAQpUQgghxAMUqIQQQogHKFAJIYQQD1CgEkIIIR6gQCWEEEI8QIFKCCGEeIAClRBCCPEABSohhBDiAQpUQgghxAMUqIQQQogHKFAJIYQQD1CgEkIIIR6gQCWEEEI8QIFKCCGEeIAClRBCCPEABSohhBDiAQpUQgghxAMUqIQQQogHKFAJIYQQD1CgEkIIIR6gQCWEEEI8QIFKCCGEeIAClRBCCPHANlUqxGfmzAn+HnBgB9Hp8MMKzw8hhBAiKZ1AfWnxYlFXt0xs3LRRfPWXr8S76/5gDN9+v/3Ej3ffXbRv10706tVLDD7vvNzySgghhEha1Gq1WtGlASE6Y+YM8frKleLL//1/UsW1ww+3E4PPPEtMnTbNW/4IIYQQG4XOUCeOHy8eeWxaaiEapn3btmLnnXfxFh8hhBDiQiECFWuhEyZOFJv/9KfUcXXqeLDo1aOX6Nu3jzju+OO95I8QQgiJS+4C9dzBZ4tnF/4mdTxYOx1z001cMyWEEFIKcltD/erLL0WfPn2ss1Ksgf7zv761htm4foPYY889PeeSEEIISUYu+1DfffsdJ2GKWacLPY7pRmFKCCGkVGSu8sXM9Ni+va2zTqyF2rbISHbccQd/GSSEEEI8kKlAlWpekzCF+vaE/v1jrau+//t1nnLYNJn68HSx9OU6sX7jJrF5w/tbPWP7Dv9T7P2TPcWxPXuKm8f83OvzF5UuqT5//vOn4smZT4uP/vQnsXL1GvH1lm/EXz7fWqP14732E7vsvJM4+sguYv/99mM78sTrK1aJ+QsWBv3qZ198GUQq398WLbYT7Q48IHh392ndWgy/aJjo1r1r5Z85M2oZ0vmIw2vbbLut8Tr5xBOtYVTXO2+9nWXWY9O+Q6eaEP/i7Xr4ocdi5wH3/HCHf3XOA8JOGP/L1M9eVLomhg0b4ZyfFi22r33yyZ8TpdO7zwmx6tyE7zYkL5RFGtI8kw20nbhlGL5wb5J3RZKmzNGOcT/KN257LkNdI89J8vHjvdrWRo26IVmBN3EyE6jXX3udVSiOuPjiWuvWeycSqBDEZQKNzOeLEbeTSNspJaWodG3EEai4knYQEMZx0jHRnATqvOcWen1exIU44+IzD2gLA08b7DQ4K7KuV7z2ppf0MaBIM5hpimRilAQjpElTHjSGwZrplm+2JHbqsLiuLkinLETVU3nSp++JYvmyJYlTxL2dj+wZ+76i0s2CFW+8GTvW2ybcJWo1s20AacyFF44UZ5x5eqNlgTQgLsSJuIsCbWHhgrmiTZsDg7ZRRubP+43o0bOPl7L/r3/+VVz2s0vFaaefw1ZeTyYCdcTIS42/Y9302mtGpd6Pet1116a6vymADiSNUJO8teb1WC9GUelmBfKBdbw4vPK73xWe76qBQdiMGdm5BUXcSKNIIFjH3HKjuPbaX5SqdrBWeuZZ53ofBL655q3Y705TxbtAhRckm7UufO0+v+j51GmtWLWq4QSa5giMgHx2ThhdI04bRaWbNfffP8U5BXQgPgYUzYm0Gg1XkEbRQhVMmnR3Kdq1ZPiIn3kXpjAUW7Nyudhnn9Ze460q3gXqow5O6ceOHy9eXLrUS3r33T/JSzxVZNJkuwCAlR4sbHHhsw2XOItKN2t+u+Ql5xTiCF/iT6PhCtIqUv0rKUO7FvWDYBc17w932E0c0aWbGDbskuDCZ937S2HaGK/bZrCmiVmjieP79hWvLl9u3ZfqnOa6PwSz1DK7IJTm/nHYffcfGUO7vCB4GeY9O7uhwWNWdeFF5o4NcSLukZcNL1W6eYA8QC3msi0gyZprWjA4SUKrVi0LK1ORQKOB9+X4fn3EkV06b/X96jVrxa+fnR+s3bmANBFHmjYFoaLiz59+Kt5ctdaaF7QprFuefsapsdL1XdfPzptvvA9C85prrhT33Xen8neor6c++njD80Lw5i1MIV82bdwQfN51113L6bvdp6GVi2XvlAceCKx7k1j2ltXiF1ZzJmu4pFsyTNisa2GBp0vXZpFssr4tKt24xLXyjWMliedLahlpwmZ5WRRpnsml3uNajcbZpoW0syxzbD2xWXqr2lTedW2rAxcrd7R7vKN43iQW1UlZ+uKLyi2Y2CHy9OzZueXDBa8C1WXfqWu4ONcuLXfJqHjcwAued0doe4lNLwg6AdO9iLts6cYlqUC1dcAAz0iB6pYv17JCRx1n4ImwR3Tp4RS3qU36KHPbM6oGinnXdZo6jOJLmMKXACZhmGDhguCMctu4cVZZgDBlwatAhWAzPTgEqUu4JFeR5C1Q0aDTCibbCF/10hSVbhJMAtU2KIDGwYRrR06B6jY7dRnEpIkf5arDV5nHTb9sAjULLZoOCFLdpArfS8HqIkzLJlS9GSVBv21bF227//7BX1/rpxJsw2lOLHphsfFpj+3dy1oaR3XtbPxdlUZR6fpmu+13CNZ5dUx/fIb2N6wHY4uNCmmIRb4D69G2/dkos+eenpW4xHCvzehNro0TPVdfk48bx5cWLw58u+t2guD7QeeeI3r36iXG3n67c7wIO3H8eI85TYY3gSoXi03svNPOgX9f3+D0mTIDa0M4MDjgoMMaLnyHhf4kLzoMIkzA56YNWxhVGkWl6xsYVnQ/5ihtrDB80WGy7j114CmZ571KwD+sjQsuGJLKNyzuRRw2XPKSFNvWGPjBLRrbQA9b19BHwYAqKyBMISxtEyr8bjNuVQGh+tDkyYWWdC7Ht4X5/XvveY9z3LjiRyYmYG2IWQ1GyvLCd9in1r3HMWKPvdvF2gQuHVjriFpHqrCFUaVRVLpZAGtG3cwGAlfXsZise4ecNziXvFcFl0Ms4Gw9LS5xZHWgBjQWYyeqLWMlLgPNrDnowAOsKaCPgrcp9EcY8PsWrqOuuy62drJ7165i1vTpwTV29GirNnL0LWMCwV0UuQtU36bOKOROhx/mNc64bP7gg1T3Qy0G4YqG7NKIcRKHiYMP/qk1DlsYVRpFpZsVJhX1rDnPNPrOpO7FNoK4WyPi0qLF/4h9QRtSFLbBEbbH+Di5BHEgLhO+B2qYlcLDF9wM2tTaSQYNvuv6ulFXO6eN58GAH8J1+x13D54zrcp85CWXWM/DVvHO+++JXr17B9sib7rlFrFx/QbjudkQ2BePuDQTTagL3gQq9gXlDYQpCrlo/va3v3vJARoyXIPZhKrtBXbppGxhVGkUlW5W4Cg5HUtfWtboF5O69+yzTs8t31Xhg42bjDn96YHtvT2JLS5bXnTohBd82EJNavM81LvPgFIcd4Y8DDxtUOz7oK3Bc0KTBoGdxPMThNszzz0bzC6HDxki1ryxUvz3t9+KT//934P/TUBAnnvO965J99hzT7Fs2TKjUIV/+PA9JiDofeJNoLrMPL+oHzXAMX5ayiJMfYMXFEKVRhTZg/M0TWrfaOdhUvf6UF02NWzCxqcq1BZXEYcYoG098fjU3NPVsWD+06mM5rBUhYEEBGuc/um+e+4N7FxeqVsupk6b1qBRhHDE/79dsMCoysV6aljwSaFqu+fn1/0vY76gGp4+K7lBnAqvKl+boHzv99952JHWvklAIf7q7rubpDCV4OWH302SPSZDorB3GZO6F50UD10mYQLr5WefKp1bvpeX/CaYNacBghUn1riusZ5z7rni+Rde0C7NYTI296mnjQISgi9scASharsHJ57phCqEKVTDe+7+r6nKIopXgdqrh3nbBKbi2F5z/fU3JIof03wU4s+uvDJhDrMF6zhorHBX9vBDj4pPPvlY1Gr/r+Ga99x8MWrU9U6jROmyjGSLyZDoleWvNnw2qXtPHHAca4k0gH4AwjTrNfUkQMAvq/tt0D9h3T8pUpPm0ke52LhAqN4+foIxTNTgyEUQQ6jimSFY4aIWQvmUk04KrI0hjw49xPM2N5+bWr/84gur04Zzzh4UhI3rLenYnj2D+MsInBHYnAFEcfEgo3ODl2ajfZp4iko3CTZPSWFMzibg3almceYQ3hSfZsN+FodOm5waZF1fNiceKFNf2JxtIC9Zlznicj2ovix1jfadxlFJGqccKmzuayFfou4G4ziAiF6+XRd6dY6PaTiOZjPppXHKDBapbxs/QZx42mlO8cKhPlQGZSXJSBTbNmDMZHIavnL1GuX3mOGaHNS7OOO2jSxVs+ii0s2a/sf1CQwvVODM06EXnKNV90IjkZdaT+eo3USRjvFb77O32LxB7zz+j3+07113xRYX8pKEcHu0HQox5JzBwbq8D/Kqa+QXF5Y0npz5dNDeoZlxXXOGESG2/Omc6sflrnvvERs3bRSL6+qUd8JIacjw4WLCxImi+zHHBN+teOONRGlhidL7oSpexXP9LBVOi11mqfhbdsf3WWJzsq5z5Wcb3bo6GI872i0q3STEmaGaDjdAHZjikjNY1zIy0dRcDw48bbD1Xh+uJm0uMXEhLyrilLktrOlgiChlrWsJ2rXrLNqnpkHi29979DqoQ4dMNJ7e96FilvrYI48a9drPLvxNoMt+6plfG82fsWDscr5qVcHMxjQj040SbZu0ccyVDVsYVRpFpZs1pn2MqIOZM9UaFxie+JqRNEUO79TJ+lRTHn409ZO7xOGSFxvTH3nIGAKW4bfeOjF1OmUA7XrT+nfEhPF3WF07+tQ0SJ5/fpFRNqiAzBl1+RVWQyNoPGElDFnlm0wcO7gsFssFZtOeohP6D8jkoatOy112MT7BH9bbG7jNxZ8qjaLSzQOcv6lDN7Chq0EzUJXbwBm5aYzvcK/LweUuebGBgZfNQhaDr6a05Q2CFeekmnA9nzYOLvtNw0DWQOZAZRx4rxo9OhCcUOvK66yBpwZ7YLF8mJlc8T7nDWE6VUAuMONkAUy9MQUv87E8LkDdA6MEqEBcjZRMhhs6lS9Pm7ETR+VbczjT1jWvVVX56lSVLme/mrCdnyvqDVuSnHaCe1zORTWdsxu3zJGm7bQiFxVo2VW+UdK0gbTgaDeTsStkDGRNGchUoEpgSaUTrCgoHDquEqpyrbXMhIVouIHp1mzC2Dpx03pimnNJbRbGWZ2HmibduMQVqLWYlpdJrUZN5N3Jov2hnCDQdELAdoatbc3btmaeVKgirOvB5aa1/SRl7nLWrs2eoCiBinJD2nEGrrZBle5d8AnkA+SEPDsVFyyCyyJIJbkIVIk8UBZbYKIjDghP/A4jpLCwLetWGZcDjqMGK1Fs95uEsm3krzOQcBnVm0b0RaUblyQCNc7B4botTWUXqGEh6iIEbG3Upc5ct2WgfbhsO0EY28BOXrbZYtIyt7Vl23aSIgRqeBCC8rP1TxLbu+TLkLApkKtAjQIBitmrPLVdzkjDe5HKbOXrMkJGY4wKGHRqLp2MaRTpYtmI/IVVzy6DAF3HWnS6cUkiUF3Um/LSqfSzFKj4PemFenPREKDcUA+u+xNdBCDKylUAinrBisEk4kZecOEzvnNR8Yafx7b0krS+bDN3W9lkXddRdDN6hDe9d2gPtrrTDS6bI4UKVBMQtHIWW1anDq4zGjRI2dhd1VQuahRXFaVM2zVsWdONQxKBWnOcTZnyWjbHDvJCp5lkndh2udoKxJn9+7pcZmBZ1hfee50aO+u6DuOiHkd/g7aP9wYXPrsOXuI6tWnKlFagAhgsSaGKv5jFlk2wZvViuHQGLrPFuJfL2kpR6cYhqUB16fjTzDxM5NHJuhgJuV5xVfQua4++LtdZU5r6clkfTrr/1Udd12KuNefRBpo6pRaoNY1bKRgvYdYKAStdR+GvdCiBvzCCwiUXr327mJLEVWf5bqQ+O6k4qpui0vWVPxO2+jQZz5RdoPpsr0lmJnkI1TjtKe1apssARVVOeQlUF9V00iuOI4vmQukFKtZZXTxfYK0VQhOWYKatOhDEENI+Z7qYXfnqpJKM+HzMOqqUrgtpBKrpuWz5LbtArcWwvDVdaQZB6OR9D0JFTEMbH/VVcxygJPE65quusypvCFPfWqWmQOkFKtS+SZzoY1Zq2rvkW4UszdHTNFKXrTY6XNy86a40Qq2odG2kEaimUb2tw66CQK2lHASmaacSvC++1c9JZks+rG1dZt1xXVT6rOua5/JG3jkzVVN6gQqhF9dPo3QYEV6D1V1QDyOcL7C+FscSUThY2rmCOOKslyCfVU7XRBqBWtOofV32yVZFoNYSdLKot7gzQBuY4SEPSYQ77oFwT2MU40OgumwJi6pH865rCcoKZZakvH31U02ZFrXAC0Y5gWtC1xNpokhXVABn3+GUAltYuEz0BVyiLXphcXBizAcbN23lvg7nEOL0i6OP7CKGXzTM++HUSHvWnGfE+o2bGqUN38Hwl9u/X18x8rLhTSJdkg64ypv++IzAdST8soZdyaHe9v7JnuLYnj0z91s89eHpga9n5GPLN980Ot0Fedl5p53EwQd1EEd26cx2lBLZR8nyDr+zso9C3e/TunUm/VRTpLQCFUe8HXhQB6MgtAFBuXH9BvHq8uXBkT8m4FB5zeo19B1MCCEkEZk4x/fBpZdckkqYivqz884955zgzDs4SjaB09vH3nJLKZ6dEEJI9SjtDPUH25mPDIrDbxcsCELb1MeY0f79b3/3li4hhJDmQ2lnqD6ZMXNGsD5qOycPM9pn5syp2uMRQggpAc1CoH740UfB37b77W8N+8477+aQI0IIIU2N0grU7l39WZS9u+4Pwd/27dpZw27Z8rW3dAkhhDQfSitQf3HDDSXIBSGEEOJGaQUq1jzHjh6de7qHHHJI7mkSQgipPqVeQ73pllu8CtV33rOvjx519DHe0iOEENJ8KL1REoTqrOnTgy0tSenU8eDgzs0ffmiMAeE6HX5YHo9FCCGkiVEJK184ZoBrwKRCte3++4uHJk+2OooYNvSChDkkhBDS3KnMthmsqSYVqt2O6SaemzfPGAZWxT+78soUOSSEENKcqdQ+VAjVqQ9OiXUPBHDbtm3FilWrtGHa77efeOrppz3kkBBCSHOlco4doP4ddfkVzuFP6N9f3HzLGO3vWDddtmwZneITQghJRamPbzOxzz6tA4f2NuAUf3FdnTLUWQNPFU8982vnNHGc3Pz58zN+MkIIIVnSq1evYHLmm22qWmuDzzpbTJryoDEM1L0qYYrvbx8/Ifaa6dq1a5223hBCCCk3WQjUys5Q4cTedsapChgfYb2UKl5CCCE+aRbO8UX9rBRrr8tffZXClBBCiHcqq/L9qP4EGRdgxTvp3nsDK2FCCCEkCyorUFevWeMUDkZJj06bxlkpIYSQTKnsGmrLVi2tno+g4r3r3ntyyxMhhJDmSyXXULF9xSZM4VSfwpQQQkheVFKg1tUtM/4OYQqn+oQQQkheVFKgbty0Ufsb1LwUpoQQQvKmkgL1q798pfweBkhU8xJCCCmCJrMPFVtjYM1LCCGEFEGTEajYZ8qtMYQQQoqiSQhUqHrptIEQQkiRVFKgHnZop4bPcClIVS8hhJCiqaRAbd26dcPnHsd0o6qXEEJI4VRSoHbu3Lnh87hx43NL95orrxQ/2G4763VIx47i6K5dxYVDh4r7773PW7ytdt01iPe4fn3F2DFjxBeff+4lXt01a+bMreLD/7b8udKmTRtjXNcojtbTPY8rKC/UB+oF5Yh6knFE68xWtiYWv/BCQxrhfOL/M04b6NQmoiA+1bMj367oyk/G4bu9xIkzq7aNdibLHfe85eiyNKvyCJNFOyEFU6sou7TcpXZQhw65Zv7qK66obbPttrGvfffdt/bkjBne423ZqlVwr+945RXNM/633TPpnnut5fjiokXWeFTPpXseG2tXr66dPvDUoLzilC3uwb2uIOxRRx7pFD/ahEtZSRC3Li7XPHY8+GDl/bfefLOxfJO2lzRxZtm2UUem99FHGrryqGXcTkixVNYoafCZZ4kTjz+hBDmx8/lXX4mLRowIRt4++cd//qeYMm1aMKItCytef82ak7lz5+aWW5R5vwEDxPOLlwTl5QrC4h7c61JvmG0g7Nr33nNKAW3i+ptGBzMRl9nwEV26iA7t2il/mz1rlvV+zMw2fPCB8rdLR450yHG+ZNm2UUd4HzEbTqOJSELW7YQUS2UF6tRp0yrnxOFXU6bEUjm5gpdTpSItguW/swvUV16zh/EBOqGJd98dS5BGwb2IA3HpQEd32RVXJE7nJ3vt5RTu9IHqPOCMXxs6oXvK8QOc0y+CLNv2KyteFwMGDMhNUOXVTkhxVPb4tjJx+SWXNOTm66+/Fm+/+65yNoAXCR0bZhsuhOMF6zduEGvffkf5Qs6cM0f8/Be/cHrpOh96qFP6P9ptt9iljLxh7eea665V/o4ROkbdWYNOGDNMXyAuxHn/5MmNYrzrzju1z4RZ5Y477CD+8c9/NmoTEGbzFix0ziFmkhDuURAvBmqmdrVm7Vrl9wMHnmZNN4v2klfb3rB5s1GAoezOPOMMsXLVKue8Jy2PvNoJKZCmonLHusSwIUOCtYl+ffs0rAv5JM4anm69EfmLEifezz/7TLsWFl2zSbrmqMNlDRUX1h51oI5c4kizhmrLJ9alEFe4vPAZ3+G3uOtiqvUwrAFirThMeO3MVEYm0LZdy0uCNqMrhyTlG4cytG2UO8Kb1tBV/YXv8siznZBiaBKOHeQ62ey5cwMVEVQ5GMnDerGodYchF1wQjCyjuK6d6MAo/Zd33KH89e233vKU+3RgNqcr9zzUvQ8//LD2N8yMPv7442CmiTqS4DO+w2/nDxoUK25VnQ486SRx/EknbfUdZpCYCd10/fWJZxwnDFDbDehmoODRqVOV3w88+eREeciKrNo2yh11+9STT4odt99eGWaGwzp0WvJsJ6QYKiNQoSpUAVUX1iZVah2pzimK1nu3ziTl6AtYNCpjGVUnrlL36gxtkoI0dIMWCFOVyjbKE08+2UglKUHcurboytgJExLfC1W6SiggX7pBzMpVbyq/P3/IkFTPkQVZtm3EDaGqAu2ybNtU0rQTUgyVEajnDh2qNE64447bjWsk6Gh8W9e68ulnnzYKqRshx6Fs1n69e/Vq9J2qE1dZ9+oMbZKisyDea489nISpBGFxj4poGqpw0JZkZUwzUCN0VIMYtBVobKJgHdB1LT9Psm7bEKoqzRF4//102iMbebcTkj+VMUqSZvSwaIRaSI5k3373+5cAqjrMLjBrvWj48IbFfd0IPUsgxFVGMR3at0+dKowbVPTv39/pfpcXuGXLls4jZMx0pkTcP6ITR+cYNiRRqXt1hjZJ2bR5s/LOYQlmY7hHlbdoGod3OlR8rqhrlMnCRYvEsT16iEGDBnmbfSGu2YqBg6qd69S9x/Xr55ye7/ZiIm3bdgGGWKp3U9d2oiQtj7zbCSmAqqxd64wwdAYWYcMUGDr4QGekgO/Dl86wIq2xDYwXYKTgYmBiitflUhlP6Yx9ahpjmbChh8qZA+5R1W2actIZnsRx0CDROVNAGi7hVHWEZ4DxTVp0bSwat6pekH9VHny3F9c6q3ls26641Kvv8iiinZB8qaxREkZ1cCsmVag/iahTwgYnug3tPvMSvnTpQeUD839Xoq7MTjnzTO1WkAnjxmX5iFaO7npUoyDhGdPSpUsb/a66Jy069X8S9abunmgaCAcDEhtYp0P7+GnHjqmXIVRqdqGYkWIrSqN7e/YofE9jGdt2mv3KLhTRTki+VEagwkgkuv6Ihidfgi8ixi5hP5q+DV+SgLw//OCDmXRkeEnDA4giUHnbgdpXOrKIOh9AeTQlows8y/PPPee0R1E6i0izdqYbmIUHMTCyUQmJi4dfnDjdvClD2/ZJ3u2E5EtlBCqMRF5eskQc272b8ncIV+nNBp343fd870Vpjz1+nFs+VeDlgXWh77URzHgff+SRUggmDBRUdQNHFiq3d5glZYHOkCiJZa7uHl0aqF9sd0CHCcMXmwEaZiE2B+o6dOUdNkBSuYFE3quwRpdl29YZPunq1Td5thOSL5XylASVyUsv1wWNa8yttzbaggGVker0kSxUiybwgsD46ID27TMzMkAaK994I9GM97+//dZ7fkR9OUctSnVu8bp3y0agQvWv8kYDlXPcelCpqUH7dm2N9x0f2luIWeLcZ+dqt/LMmj0r8QwMe1JVFrzSU5XKDWSSvadZtRcdadq2C3Of+bUyVHTZSIev8sirnZD8qOQaKhoWNuCr1MBRoO7NegaHFyx8/e0//iMYgT6RclYq41Sph6AO0llEFgXUvtH6wMwUFoxhEEbnmjAtXUJH+4VBHuJsyUBYuLxTcdCBHZzjwXPKTfoqVGucceJWtX/MTHXq3rLsPS2ybesOcNC1nTzIsp2Q/Ki0pySbGhjCdMkSf/5ci+KBBx5QpgxVUBbO9pOCGYVKlRudMer2UfpAJzCQhyuvuNw5BYTVGakkEUoY1KnW8tMawqjKGzNT1Z5KvCdl23uad9uGGl9n/ORza05SsmonJB8q73pQqoGxHoEZK0a86Dgw0vv9unVN4oQGPKPOc89VV12Ve35MuKhyBxlc+6UFZaXbuI+O1HZkF35DGF2ni7hVQgkdNVxdxl2rTbtupzIwCg5hUOxTzXvpw4U82zbqBg5iVKDfyGNtuah2QvKhSfjyFfXrEZixQm0CAdvU3HbBqlPncq5MLtN0akhJHkYxN944WpsHrDliOwIM2FBuWI/Hhc/4Dr+p1iVFvaoacUeRHTXU29KjV1RoY/uDajuVbT3WBsrSpbMts1V11m0bM90Lhw4NthdxrRAAAA58SURBVOboZnqXXXZZ6nRsFNlOSD7w+LaKgJn21ZdfrvTcc//kB8SgwWc7z8bjHNoc51grCdSQuhleHg7ZMevRlZUIHR4e93g3xBmdncpOUnbU0qMXLrk+iC1dumO7fMwaUaZRT1VR0lhVZ91esmzbtuPbRL2HtTgGP0nKowzthGQPBWqFwAzjpZdfbmQJiJcQRhyuvmrTnnhjA2pfnbDKyyhGzsZ8uTXEEkJ0hmc7MNpWzuhIfcwaVa4fo6TZe5p1exEFtm2o8J/QOMz3lUZZ2gnJniaj8m0u6FRTZTJQ0ql9YWyRp1EMOqG7J96e6kAC3Is4VB0aZk1w1pEkfpTFc/PmJc5XGJSpzjBPplWFvad5tm3UGdZu8zgerSzthGRP5QQq1lSgcsF+01a77hqse6kW+LEuFnZt1lTQnbMqSmagpLLk1bnLyxII9z+uWxeo9eJ0aLLDxb2mLT4QVDJ+V1B/sD73aTBnUgkWUe5JyKttIw3sDohz+lBaytJOSLZUSqDCsOD6m0Y3qEjkWhjWJpqTz8vJD07RGnGUpRxUlrxx/Bj7BB0S1Hro0KC6RUel2v+I7/AbwiAsOlyXzkzG/8lHHwX3YrYYNRRC3BDQb772WjAr8t1JYgatGzAUVe5J8N22EVe4XlFHKP8itg+VoZ2QbGkBV/xVKGPMOC8aMcIYJrzOFQ2ft7cXQgghzYvKzFAXLlxgDQMDFPq8JIQQUgSVEajhg8ShFoHaBLPO6Kbwq0aNSuQInRBCCElDZQRqeH8WrAHl2gLWucL+L7GuijXVv/7fvxaST0IIIc2TSm6biQpLrJtGheq4ibcVkDNCCCHNlcoI1LBV5uMznmik1oVQDat/6UyaEEJInlRGoB7Xr1/DZ/i6hF/O6En2UP/q9rERQgghWVIZgYoZaHTvYJs2/9YoHPZuUagSQgjJm0qtocIFV1io7vaj3ZThsDlcdaYgIYQQkhWVcewQBntNly9bZnRqDYfUy+rqGv6Pc5oEIYQQEpdKClRCCCGkbPC0GUIIIcQDlT0PFdtmli5dKtZv3CD+8c0/gu/23HMP0Xrv1qJ///6VOK6KlJuwFfnhRxzBZQNCiJHKqXxxfBtO8dedbC/BKQ7XXHmV8egtQkztDCcbifpjtPI4N5MQUm0qJVAxY8Bhw3GAs4c8zz0k1QcGbT/t2DFwDkJhSghxpTJrqLDsjStMRf1p/zyBhsRh2LALKEwJIbGpjkCdPWur/9HZPf7II8GJM+EL30UdO0TvJcTESy/XBW2JwpQQEotaRWjZqlVtm223Da6rr7jCmmmEkeFxb9a8uGhRbdiQIbWjjjxyq7zif3y/dvVqpxyE8336wFOtYeJc4XJLep+KW2++udavb59ax4MP3qrM8ey4F2XjypMzZjSUYzgPshzxuw3b89jqJBzWV52lAXEibpRxEibdc28Qx7777tuQT3yW9fP5Z59pY5X3uCLjdiHtc0l09Yx84EI6KAPXuFzzbyqbOPGokO9UuM7wfuE7/GbKv+tF/FOZNdQfbLddw2fMQm0Wl1DzXjRiRMP/mHFkwVtr1oirrrpKrH3vPWvsx3bvJmbMmNlw9JyKVrvu2uDYf8fttxd/XLeuUfgka8kisp4cLs8490XzsXDRIquBmKg/3GDMzTdrra9htT3httucytEWV5xnwylFcGupu9+l3bjUWVLC67lx40aZ3nDjjYHva1FvqHdsjx7B502bN4svvvoqqDvEO/Ckk5SOUtq0aROEcX1/UHZI5+OPPzaGS/NcujTls0m2fLNFfPDhRw3PD+9pv7zjDuMOANf8C0vZxIknTLjOUC4d2rcXB7RvH4RAncn3Q/csurJQYXKMQxJSlUFKGWeoGPWG8xUeSWL0H56xhWdHOjDydJkdIhziiV7RdKJXeGRrCxu+VCNiObtQPR+u8MjaNntD/HHLEeF1I/Vo+YWv6EwNV3T2EmeG6lpnSZHtGDOTOHFDK4AywoXZuG4WimeX5auaxWU1Q036XEnSxLOjDGQbM6VV5AxVlgnyqcujfBYZLlqvaWfGJB2VEajyxQt3zir1H76LdvZpVUoqZIcV7UijakQ0ePmioOMyqX5VgiPOyxFHEMRVa4aJli/yqBJueFb58uPZVJ26rhyjYcPlGBaqKnWyy7OFnyHaPuKUTdo6syHVlrX6QaVL3GFh6qJuR9nqBidZCdQkz5U2zXBb06mAixKo6Lfke+JSZ3gXVHVGgVoslRGossEluVzW3eISneXY0nD5PdzBhzvqOOs/WQtU5CU6izStwdXqOzJdmHA5ugiAqABWdR4uz4b86MK5lo2POjMhyxqDklpoEGBaQ6uFhLyPPGQhUJM+V5o0JbLOdOGLEqgI6zoAMkGBWiyVsfLFmmn4AHFXcI9vDzdjx4zZat3QJQ3b7wsXLmj4fHTXo0TvXr0a/n9xyYup8usTHO4uwRrPkiVLrGtfWOdRhYmW4wXnnWf1cIXfEU6C++GEIS4+1jizrrO5z84N/g4aNCj4e/Hwi4O/L738svYelAXW37BeX1anJkmeyxd4D1E2aDfR85SLAvlAfrCOTQ9vFadqIwCMblXrcyq1m48Ruoqw+tnH+ixUo9H4wt/hcrESznqGGs1T2rXCsNo17qg63Aaia7MuzxZe+8SMLu79vupMB2Yq2yjW3OXsUzeTkW3TV9v3PUNN+lxp0nTNQ9y4fM1Qpf1D2tlp3HSJfyrnyxejblxF+vLd/MGHDZ9797Rb09mYPev7fbIyviO6dAlG0q+seD34f8qDD2ZmlWcbqUsL39fr8yJBOacBFpiSwzsdGismhP988ZLgczgeG7DKRnnPnDOnIWR4ZulK1nU2d+53s7gunTtv9T3yihnoY9MfU7ZxtE1oDko7O034XD5B/LCE/cLBOj0PkA/kh7PTJgAHKfHxOUurRSyYw6PU8CxKZdEXJekM1XZJokZBOqIWxy5rlXHL0ZSXOM+mWgN2eUZfdWaKX6X9QHzyN1XcvmcovmeoSZ8rTZoqdM9VxAzVZ525tvustHfNHR7fVjBYR5R7GKOj1EtHjgxmGwBhHp06tRmWUHbAo5bLGnCUrOsMGgPcq9J+IK+dDz8s+P2uO+9MVDZYZ8V+xeiFfZVZkvVzke9Amzx/0CDj1a17N5ZWBlT2+LYiQYOVxjSffvZpqpzMX/i9e7uBJ5+81W/oZND5PF+v2pwxa1YjJwQ+cN2037Jly63+h/oUas4ox/Xrt5VKT+eEApvT5ab7uOUYDo94dEhDNiwNvBJSWbs4B9GRdZ0tf/XV7+IeeJry9yHnDwmeBU41og43IMx33mknY/zoTM+vNwiSzK5XxWZJmufKArzHZSCLfNBpQ0FUbYYOVYVUKUI9BIMU1WJ+dJuNT9IY05jyKB0ZhK8423OyNkqSxhzyct3moEsrTTmGVa6uRklRN25x81vLoM6iyC0lpvyFnyWqupPfxzWI0tWBL5Vv2udKkqYOGiWRrKiUyvfCoUODMyql+y2ohzATOHfo0EANlxfdu32vskpjfh/edgEwW8Ozha+oW7/oPXkijTkkmH3BhVxSwjOVOOUoVYcS3YwnyoRx47Yq6yT1lnWdye02iFellpWXTCO6PUfOmGEQ5YP27doGsbic2CTDyHt8PpdPJv3q/iC2qGGUqJ8tfr1li1NqCOdjdinzMTcHLQHJmKoMVVwcO4RnTFnOUGsRDzkuG7KRt/BMJepYIM7lw6l70rKJutrDNo00xlJRT0NxHGCYZhm69KJbnnSGPar7s6izMHLmJD0H2S4Zd7jthY174sxSdTMbafwVx91nNKyP50qSdxU2xw6yfbi2Q50XtrgzRTp2aBpURqDqfMdGL/kiZC1Qox57pP/NaAeNTi2cd+lXNWylansBZCcpw+s6tzwEai2G68GaQk2s+t3FhSP+9+F6EPGY1MWm+7OoszDSTaPriTWy85cehyRy0OPixUqieyZX61tTOF/PFTfvUVxcD0rVtM1dqW2/b1zBFtf1IMIgbPS9o0AtlsoI1PDIFbMS+dLqOtmsBWqt/iUwOXVXOaCQnVz4N5fONizEdM4kkgpUm3N81SxQN8AxObTX5UslVGXHoCtH02jell60zUTj0d2fRZ2FkWXgOksJz/x0z2hytB4Nq+uIw/6YVbNefCfrWyUEfT6XCpsQieMcvxbSmugGALJebevwWTjHl+F0vpopUIulMgI13MlF1TFRNSQaWtTnbFagQZv2XYYv2dlE8xtHHSgvnWPsJALV5VKBF9vFa1VY2OpAGbiWI2YHpjJzKYfoAM12f1Z1JgmfvhIHWWaqDjjsVUyqW9EGcclTd6SQsXXiUQMyGY/JY1Uto+eKEs1T+BnDAzvX2R8EsLwP5YK8Iz78leVlm/3r8hS9oiB/4TqTZ/dGz1rWPYtrunHOaCbuVFKgqtQsKqGah0CVqA4YDx+yHW68YcERp6MJdw5x1w5NYZMKVAnKHp2X6gg5PF+cQ8ZN5ejaCbjkO6rB0B2+LsmqzqLh4h7k4GI9qzusWh6+7WqtjbxF45Fx6PKd5XNJdG123wQHjIdBmwhrSPYNHcqeNE+u75Xq0H7fB4zTuYN/KnPA+NFdu1oP1zUdvJ3VAeOEEEIIqMy2GTgLkMD0/pQzz2y07QGbweH9hhBCCMmbyghUeJvpfOjWDtTbtPm3RuHmLVhIoUoIISR3KuXY4bl587YSqrv9aDdluMkPTjG6oyOEEEJ8U5k11DDwyLJ82TKjv0p48FlWV9fwv+9DxgkhhJAwlRSohBBCSNng8W2EEEKIByhQCSGEEA9QoBJCCCEeoEAlhBBCPECBSgghhHiAApUQQgjxAAUqIYQQ4gEKVEIIIcQDFKiEEEKIByhQCSGEEA9QoBJCCCEeoEAlhBBCPECBSgghhHiAApUQQgjxAAUqIYQQ4gEKVEIIIcQDFKiEEEKIByhQCSGEkLQIIf4/OYAiSlq0vvIAAAAASUVORK5CYII=" alt="500 Mejores · Premios Verdes 2026 · Categoría Agua Dulce">
+      <div class="divider"></div>
+      <div class="creds">
+        <div class="cred"><b>SENADI</b> PI registrada</div>
+        <div class="cred"><b>SERCOP</b> Proveedor público</div>
+        <div class="cred"><b>Google Cloud</b> ISO 27001</div>
+        <div class="cred"><b>INEN 1108</b> Norma integrada</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <div class="logo on-dark">TERA<span class="h2o">H2O</span></div>
+        <div class="fb-parent">Servicios Profesionales Tera</div>
+        <p>Inteligencia operativa para la gestión hídrica en los países andinos, desde Ecuador.</p>
+        <div class="addr">Oficina Matriz:<br>Av. Remigio Crespo, Edificio Ceiva, Piso 3, Oficina 304<br>Cuenca — Ecuador</div>
+      </div>
+      <div class="foot-col">
+        <h5>Producto</h5>
+        <a href="https://app.terah2o.com">El sistema</a>
+        <a href="#herramientas">Herramientas y simuladores</a>
+        <a href="#academia">Academia</a>
+        <a href="#servicios">Consultoría</a>
+      </div>
+      <div class="foot-col">
+        <h5>Servicios</h5>
+        <a href="#servicios">Asesoría técnica</a>
+        <a href="#servicios">Dimensionamientos preliminares</a>
+        <a href="#servicios">Optimización de procesos</a>
+        <a href="#academia">Capacitación</a>
+      </div>
+      <div class="foot-col">
+        <h5>Contacto</h5>
+        <a href="tel:075730108">Oficina: 07 573 0108</a>
+        <a href="tel:0960342771">Móvil: +593 096 034 2771</a>
+        <a href="tel:+16084489126">+1 608 448 9126</a>
+        <a href="mailto:teraserviciosprofesionales@outlook.com">Correo</a>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <div class="legal">
+        © 2026 Servicios Profesionales Tera<br>
+        WWW.TERAH2O.COM · Marca y documento — propiedad estratégica confidencial
+      </div>
+      <div class="foot-social">
+        <a href="#" aria-label="Facebook · Servicios Profesionales Tera"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.4 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.05V9.41c0-3.02 1.79-4.69 4.53-4.69 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.88v2.26h3.32l-.53 3.49h-2.79V24C19.61 23.1 24 18.1 24 12.07z"/></svg></a>
+        <a href="https://instagram.com/terah2o" aria-label="Instagram · @TERAH2O"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.7 3.7 0 0 1-1.38-.9 3.7 3.7 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16zm0 1.62c-3.15 0-3.52.01-4.76.07-1.15.05-1.77.24-2.19.4-.55.22-.94.47-1.35.88-.41.41-.66.8-.88 1.35-.16.42-.35 1.04-.4 2.19-.06 1.24-.07 1.61-.07 4.76s.01 3.52.07 4.76c.05 1.15.24 1.77.4 2.19.22.55.47.94.88 1.35.41.41.8.66 1.35.88.42.16 1.04.35 2.19.4 1.24.06 1.61.07 4.76.07s3.52-.01 4.76-.07c1.15-.05 1.77-.24 2.19-.4.55-.22.94-.47 1.35-.88.41-.41.66-.8.88-1.35.16-.42.35-1.04.4-2.19.06-1.24.07-1.61.07-4.76s-.01-3.52-.07-4.76c-.05-1.15-.24-1.77-.4-2.19a3.6 3.6 0 0 0-.88-1.35 3.6 3.6 0 0 0-1.35-.88c-.42-.16-1.04-.35-2.19-.4-1.24-.06-1.61-.07-4.76-.07zm0 2.76a5.46 5.46 0 1 1 0 10.92 5.46 5.46 0 0 1 0-10.92zm0 9a3.54 3.54 0 1 0 0-7.08 3.54 3.54 0 0 0 0 7.08zm6.95-9.22a1.28 1.28 0 1 1-2.55 0 1.28 1.28 0 0 1 2.55 0z"/></svg></a>
+        <a href="#" aria-label="LinkedIn · @TERAH2O"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM9 9h3.8v1.7h.05c.53-1 1.83-2.05 3.77-2.05C20.4 8.65 22 10.7 22 14.1V21h-4v-6.1c0-1.45-.03-3.3-2-3.3-2 0-2.3 1.57-2.3 3.2V21H9z"/></svg></a>
+        <a href="https://tiktok.com/@terah2o" aria-label="TikTok · @TERAH2O"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.6 5.82a4.28 4.28 0 0 1-1.06-2.82h-3.3v13.02a2.59 2.59 0 0 1-2.59 2.5 2.59 2.59 0 0 1 0-5.18c.27 0 .53.04.77.12v-3.35a5.9 5.9 0 0 0-.77-.05A5.94 5.94 0 1 0 15.6 16v-6.66a7.56 7.56 0 0 0 4.4 1.4V7.44a4.29 4.29 0 0 1-3.4-1.62z"/></svg></a>
+        <a href="https://threads.net/@terah2o" aria-label="Threads · @TERAH2O"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007c-3.581-.024-6.334-1.205-8.184-3.509C2.35 18.44 1.5 15.586 1.472 12.01v-.017c.03-3.579.879-6.43 2.525-8.482C5.845 1.205 8.6.024 12.18 0h.014c2.746.02 5.043.725 6.826 2.098 1.677 1.29 2.858 3.13 3.509 5.467l-2.04.569c-1.104-3.96-3.898-5.984-8.304-6.015-2.91.022-5.11.936-6.54 2.717C4.307 6.504 3.616 8.914 3.589 12c.027 3.086.718 5.496 2.056 7.164 1.43 1.781 3.631 2.695 6.54 2.717 2.628-.02 4.363-.628 5.803-2.033 1.642-1.604 1.613-3.574 1.089-4.773-.308-.706-.868-1.293-1.617-1.747-.19 1.348-.618 2.446-1.278 3.271-.879 1.098-2.06 1.71-3.522 1.71-1.101 0-2.106-.354-2.836-1.001-.874-.778-1.336-1.878-1.301-3.097.034-1.164.518-2.226 1.365-2.99.836-.756 1.906-1.145 3.183-1.157h.166c.75 0 1.437.06 2.05.18-.055-.6-.213-1.077-.478-1.42-.408-.527-1.07-.797-1.968-.804h-.028c-.71 0-1.677.196-2.295 1.13l-1.732-1.164c.828-1.247 2.17-1.933 3.999-1.933h.04c3.058.02 4.881 1.895 5.062 5.147.104.044.208.089.31.135 1.475.694 2.556 1.744 3.129 3.036.799 1.804.846 4.748-1.548 7.084-1.828 1.784-4.05 2.591-7.204 2.615zm1.03-9.75c-.163 0-.328.005-.497.014-1.6.09-2.596.83-2.556 1.9.043 1.115 1.267 1.634 2.446 1.57 1.084-.058 2.5-.48 2.74-3.281a6.667 6.667 0 0 0-2.13-.204z"/></svg></a>
+        <a href="https://wa.me/16084489126" aria-label="WhatsApp"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884"/></svg></a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- WHATSAPP FLOAT (icon only, square) -->
+<a class="wa-float" href="https://wa.me/16084489126" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+  <svg viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.548 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<script>
+  const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+  function sendForm(e){e.preventDefault();document.getElementById('formMsg').classList.add('show');return false;}
+</script>
+</body>
+</html>
