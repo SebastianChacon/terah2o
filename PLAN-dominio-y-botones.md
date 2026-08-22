@@ -22,7 +22,7 @@ Lo hecho en esta sesión:
 - **Portada cableada.** Su `index.html` (recuperado del export con adjuntos) ya
   traía las 5 tarjetas construidas con `href="#"`. Se cablearon 4; la de
   dimensionamiento se dejó sin cablear, como pidió. 19/19 aserciones en verde en
-  navegador real. Queda en `~/Desktop/dev/terah2o-portada/` junto al brochure
+  navegador real. Vive en `portada/` de este mismo repo, junto al brochure
   renombrado a `TERAH2O-Brochure.pdf` (el nombre que su HTML ya esperaba).
 
 ---
@@ -106,8 +106,15 @@ convivir con `src/proxy.ts` (Clerk corre en **cada** request por el matcher
 
 **1.1 — Proyecto de la portada**
 
-Repo nuevo (p. ej. `TERAH2O/portada`) con el `index.html` + el brochure PDF como
-asset. Import en Vercel, framework `Other`, sin build command.
+Los archivos ya están versionados en `portada/` de este repo. En Vercel se crea
+un **proyecto aparte apuntando al mismo repo**, con **Root Directory = `portada`**,
+framework `Other`, sin build command.
+
+Un repo, dos proyectos Vercel. Se conserva lo que importaba de separarlos —
+despliegues independientes y cero contacto con `src/proxy.ts` — sin partir el
+historial en dos repos. `portada/` es inerte para Next.js: solo se compilan
+`src/app` y `src/pages`, y por eso no va en `public/`, donde un `index.html`
+competiría con la ruta `/` de la app.
 
 **1.2 — Dominios en Vercel**
 
@@ -420,4 +427,4 @@ razón de más para que la Fase 1 vaya antes del despliegue de la portada.
 | `CLERK_JWT_ISSUER_DOMAIN` desincronizado entre Vercel y Convex | App carga pero sin datos; parece un bug de Convex | Prueba manual de `/operaciones/stock` tras el cambio; es el criterio de aceptación de la Fase 1 |
 | DNS propagando durante la migración | Ventana de intermitencia | Mantener `terah2o.vercel.app` activo; migrar fuera de horario de uso |
 | Las 3 herramientas viven en cuentas Vercel de él | Un borrado suyo rompe la portada sin aviso | Los tests de "destinos responden" lo detectan; correrlos periódicamente |
-| Portada estática sin control de versiones | Cambios suyos sin trazabilidad | Meter el `index.html` en `TERAH2O/portada` y desplegar desde ahí, no por drag-and-drop |
+| Portada estática sin control de versiones | Cambios suyos sin trazabilidad | ✅ resuelto: `portada/` está versionado en este repo; desplegar desde ahí, nunca por drag-and-drop |
