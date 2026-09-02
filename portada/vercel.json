@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    { "source": "/filtro-de-agua", "destination": "https://filtros-de-arena.vercel.app" },
+    { "source": "/filtro-de-agua/:path*", "destination": "https://filtros-de-arena.vercel.app/:path*" },
+    { "source": "/gradiente", "destination": "https://calculadora-gradiente.vercel.app" },
+    { "source": "/gradiente/:path*", "destination": "https://calculadora-gradiente.vercel.app/:path*" },
+    { "source": "/simulador", "destination": "https://simulador-neon.vercel.app" },
+    { "source": "/simulador/:path*", "destination": "https://simulador-neon.vercel.app/:path*" },
+    { "source": "/support.js", "destination": "https://calculadora-gradiente.vercel.app/support.js" }
+  ]
+}

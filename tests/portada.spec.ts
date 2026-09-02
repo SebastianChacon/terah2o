@@ -8,12 +8,23 @@ import { test, expect, request } from "@playwright/test";
  *
  *   DOMAIN_TESTS=1 npm run test:e2e -- portada.spec.ts
  */
-const WWW = "https://www.terah2o.com";
+// Overridables para poder verificar la portada ANTES del corte de dominio:
+//   PORTADA_URL=http://localhost:4173 APP_URL=https://terah2o.vercel.app DOMAIN_TESTS=1 ...
+// Sin ellas apuntan a la estructura final (www = portada, app = SaaS).
+const WWW = process.env.PORTADA_URL || "https://www.terah2o.com";
+const APP = process.env.APP_URL || "https://app.terah2o.com";
+// Origen que resuelve los rewrites de las herramientas. En producción es el
+// mismo WWW; antes del corte de dominio se apunta al proyecto Next que ya los
+// tiene (TOOLS_ORIGIN=http://localhost:3010).
+const TOOLS = process.env.TOOLS_ORIGIN || WWW;
 
+// Rutas del propio dominio, no los *.vercel.app: los rewrites (next.config.ts
+// para el proyecto Next, portada/vercel.json para el de la portada) las sirven
+// desde los despliegues de las herramientas sin sacar al visitante del dominio.
 const HERRAMIENTAS = [
-  { nombre: /simulador/i, href: "https://simulador-neon.vercel.app" },
-  { nombre: /filtros/i, href: "https://filtros-de-arena.vercel.app" },
-  { nombre: /gradiente/i, href: "https://calculadora-gradiente.vercel.app" },
+  { nombre: /simulador/i, href: "/simulador" },
+  { nombre: /filtros/i, href: "/filtro-de-agua" },
+  { nombre: /gradiente/i, href: "/gradiente" },
 ];
 
 test.skip(!process.env.DOMAIN_TESTS, "requiere DOMAIN_TESTS=1");
@@ -54,8 +65,13 @@ test.describe("Portada — botones de herramientas", () => {
     await ctx.dispose();
   });
 
-  test("dimensionamiento todavía NO aparece (él dijo que no está listo)", async ({ page }) => {
-    await expect(page.locator("text=/dimensionamiento/i")).toHaveCount(0);
+  test("dimensionamiento todavía NO aparece como herramienta (él dijo que no está listo)", async ({ page }) => {
+    // Scoped a la grilla de herramientas: "Dimensionamientos preliminares" sí existe
+    // como servicio (sección Servicios, footer y el select de contacto) y eso es correcto.
+    // Lo que no debe existir todavía es la tarjeta-herramienta con su botón "Abrir".
+    await expect(
+      page.locator(".tools-grid .tool", { hasText: /dimensionamiento/i }),
+    ).toHaveCount(0);
   });
 
   test("ningún enlace de la portada apunta a '#' o a vacío", async ({ page }) => {
@@ -68,7 +84,7 @@ test.describe("Portada — los destinos responden", () => {
   test("las tres herramientas devuelven 200 y no una página de error de Vercel", async () => {
     const ctx = await request.newContext();
     for (const { href } of HERRAMIENTAS) {
-      const res = await ctx.get(href);
+      const res = await ctx.get(new URL(href, TOOLS).toString());
       expect(res.status(), `${href} debe responder 200`).toBe(200);
       const html = await res.text();
       expect(html, `${href} no debe ser un 404 de Vercel`).not.toContain("DEPLOYMENT_NOT_FOUND");
@@ -78,7 +94,7 @@ test.describe("Portada — los destinos responden", () => {
 
   test("el motor exige login para un anónimo (comportamiento actual, opción (a))", async ({ page, context }) => {
     await context.clearCookies();
-    await page.goto("https://app.terah2o.com/motor-inteligencia");
+    await page.goto(`${APP}/motor-inteligencia`);
     await page.waitForURL(/\/login|\/pricing/, { timeout: 20000 });
   });
 });
