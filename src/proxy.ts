@@ -13,6 +13,14 @@ const isPublicRoute = createRouteMatcher([
   "/api/gemini-tts(.*)",
   "/api/gemini-stream(.*)",
   "/public(.*)",
+  // Herramientas de cálculo (rewrites en next.config.ts hacia sus despliegues).
+  // Son públicas a propósito: la portada las ofrece como gancho, sin cuenta.
+  // El proxy corre ANTES de los rewrites, así que sin esto Clerk las mandaría
+  // a /login y la herramienta nunca se cargaría.
+  "/filtro-de-agua(.*)",
+  "/gradiente(.*)",
+  "/simulador(.*)",
+  "/support.js",
 ]);
 
 export const proxy = clerkMiddleware(async (auth, request) => {
@@ -43,8 +51,24 @@ export const proxy = clerkMiddleware(async (auth, request) => {
     return NextResponse.next();
   }
 
-  // Proteger todas las demás rutas — Clerk redirige a /login si no hay sesión
-  await auth.protect();
+  // Proteger todas las demás rutas.
+  //
+  // NO usar auth.protect(): delega en el handshake de Clerk, y con una instancia
+  // de desarrollo (pk_test) sobre un dominio real ese handshake no puede
+  // completarse — Clerk responde `x-clerk-auth-reason: dev-browser-missing` y
+  // reescribe a 404. Resultado: un visitante anónimo que abre /operaciones ve
+  // un 404 en vez del login. El redirect explícito no depende del handshake y
+  // se comporta igual en dev, en preview y en producción.
+  const { userId } = await auth();
+  if (!userId) {
+    // Una API no puede "redirigir a login": el cliente espera JSON.
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+    }
+    const login = new URL("/login", request.url);
+    login.searchParams.set("redirect_url", pathname + request.nextUrl.search);
+    return NextResponse.redirect(login);
+  }
 
   // Panel Owner (super-admin global): requiere login pero NO suscripción activa.
   // El dueño del sistema puede no tener una suscripción propia.
