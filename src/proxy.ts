@@ -21,6 +21,12 @@ const isPublicRoute = createRouteMatcher([
   "/gradiente(.*)",
   "/simulador(.*)",
   "/support.js",
+  // Presentación institucional: la página y el PDF que descarga. Van enlazadas
+  // desde el home, que es público — sin esto el proxy las manda a /login y el
+  // visitante anónimo nunca las ve. Es material comercial, no un módulo
+  // operativo. El mismo PDF ya se sirve abierto desde la portada.
+  "/presentacion",
+  "/TERAH2O-Brochure.pdf",
 ]);
 
 export const proxy = clerkMiddleware(async (auth, request) => {
