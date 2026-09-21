@@ -53,6 +53,26 @@ export default function HomePage() {
             </NavLink>
             <NavLink href="/academia">Academia</NavLink>
           </div>
+
+          {/* Presentación institucional (versión web del brochure) */}
+          <Link
+            href="/presentacion"
+            className="mt-7 inline-flex items-center gap-2 px-5 py-2.5 font-mono text-[0.68rem] font-medium tracking-[0.2em] uppercase text-blue-300 bg-blue-500/[0.08] border border-blue-500/40 rounded-[3px] hover:bg-blue-500/[0.16] hover:text-blue-200 hover:border-blue-400 hover:shadow-[0_0_18px_rgba(59,130,246,0.25)] transition-all whitespace-nowrap animate-[fadeUp_0.9s_0.5s_ease_both] opacity-0"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-3.5 h-3.5"
+              aria-hidden="true"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+            Presentación institucional
+          </Link>
         </main>
 
         {/* Footer */}
