@@ -1,5 +1,9 @@
 # Plan — solicitudes de José Alfredo (13–14 ago 2026)
 
+> ⚠️ **Fase 1 y Fase 2 reemplazadas por `PLAN-app-y-portada.md`.** La portada ya no es el
+> `portada/index.html` estático en `www`: ahora `terah2o.com` sirve la presentación con
+> los accesos, y `app.terah2o.com` el sistema. Se conserva este archivo como historial.
+
 Fuente: chat de WhatsApp 13-ago → 17-ago. Tres pedidos distintos, con dependencias
 distintas. Uno ya está hecho.
 

@@ -1,3 +1,5 @@
+import { APP_ORIGIN } from "@/lib/hosts";
+
 export type InviteRole = "operator" | "admin";
 
 export interface SendInvitationResult {
@@ -6,11 +8,7 @@ export interface SendInvitationResult {
 }
 
 function appBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.SITE_URL ??
-    "https://terah2o.vercel.app"
-  );
+  return process.env.NEXT_PUBLIC_APP_URL ?? process.env.SITE_URL ?? APP_ORIGIN;
 }
 
 export async function sendInvitationEmail(params: {

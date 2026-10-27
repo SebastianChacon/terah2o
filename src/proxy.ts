@@ -1,5 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import {
+  APP_ORIGIN,
+  PORTADA_ORIGIN,
+  isPortadaHost,
+  isWwwHost,
+} from "@/lib/hosts";
 
 const isPublicRoute = createRouteMatcher([
   "/",
@@ -27,9 +33,69 @@ const isPublicRoute = createRouteMatcher([
   // operativo. El mismo PDF ya se sirve abierto desde la portada.
   "/presentacion",
   "/TERAH2O-Brochure.pdf",
+  // App instalable (PWA): el navegador pide el manifest, el service worker y
+  // los íconos sin cookies de sesión. Si pasaran por el login, la app no se
+  // podría instalar.
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/icons(.*)",
 ]);
 
+// Lo único que sirve la portada (terah2o.com). Todo lo demás vive en la app.
+const isPortadaRoute = createRouteMatcher([
+  "/",
+  "/filtro-de-agua(.*)",
+  "/gradiente(.*)",
+  "/simulador(.*)",
+  "/support.js",
+  "/TERAH2O-Brochure.pdf",
+  "/icons(.*)",
+]);
+
+const APP_HOST = new URL(APP_ORIGIN).host;
+
+/**
+ * Enrutado por dominio (ver PLAN-app-y-portada.md). Corre antes que Clerk:
+ * la portada es pública y no debe tocar la sesión.
+ * Devuelve null cuando el request sigue el flujo normal de la app.
+ */
+function routeByHost(request: Parameters<typeof isPublicRoute>[0]) {
+  const host = request.headers.get("host");
+  const { pathname, search } = request.nextUrl;
+
+  if (isPortadaHost(host)) {
+    if (isWwwHost(host)) {
+      return NextResponse.redirect(`${PORTADA_ORIGIN}${pathname}${search}`, 308);
+    }
+    if (pathname === "/presentacion") {
+      return NextResponse.redirect(`${PORTADA_ORIGIN}/${search}`, 308);
+    }
+    if (pathname === "/") {
+      return NextResponse.rewrite(new URL(`/presentacion${search}`, request.url));
+    }
+    if (isPortadaRoute(request)) return NextResponse.next();
+    // La portada no se instala: sin manifest ni service worker.
+    if (pathname === "/manifest.webmanifest" || pathname === "/sw.js") {
+      return new NextResponse(null, { status: 404 });
+    }
+    // El sistema (módulos, login, planes, API) vive en la app. 308 conserva
+    // método y ruta: los enlaces y marcadores viejos siguen funcionando.
+    return NextResponse.redirect(`${APP_ORIGIN}${pathname}${search}`, 308);
+  }
+
+  // En la app, la presentación vive en la portada. Solo en el dominio real:
+  // en previews y localhost /presentacion se sigue viendo para probarla.
+  if (host === APP_HOST && pathname === "/presentacion") {
+    return NextResponse.redirect(`${PORTADA_ORIGIN}/${search}`, 308);
+  }
+
+  return null;
+}
+
 export const proxy = clerkMiddleware(async (auth, request) => {
+  const byHost = routeByHost(request);
+  if (byHost) return byHost;
+
   const { pathname } = request.nextUrl;
 
   if (isPublicRoute(request)) {

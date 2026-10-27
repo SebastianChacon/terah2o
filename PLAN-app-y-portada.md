@@ -1,5 +1,13 @@
 # Plan: portada en `terah2o.com` y sistema instalable en `app.terah2o.com`
 
+> **Estado:** confirmado el mapa de dominios (el sistema va en `app.terah2o.com`).
+> Fases 1 a 4 implementadas en la rama `claude/plan-app-y-portada`. Falta la Fase 5
+> (Vercel, DNS y Clerk), que se hace desde los paneles.
+>
+> Cambio respecto al plan: no hay ruta `/offline`. La pantalla "Sin conexión" va
+> dentro de `public/sw.js`, porque una página de Next sin conexión no tendría sus
+> CSS/JS y además tendría que pasar por el proxy.
+
 Fuente: el mensaje de José Alfredo (WhatsApp, 6:22 PM):
 
 > "El sistema que está alojado en terah2o.com llevarlo al subdominio app.terah2o.com

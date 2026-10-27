@@ -16,7 +16,7 @@ import { test, expect, request as pwRequest, type APIRequestContext } from "@pla
  * baseURL configurable: sirve para local y para un despliegue.
  *
  *   npx playwright test tests/rutas-protegidas.spec.ts
- *   PLAYWRIGHT_BASE_URL=https://www.terah2o.com npx playwright test tests/rutas-protegidas.spec.ts
+ *   PLAYWRIGHT_BASE_URL=https://app.terah2o.com npx playwright test tests/rutas-protegidas.spec.ts
  *
  * `x-vercel-protection-bypass` se envía si está en el entorno, para poder
  * correrla contra un preview protegido con SSO.

@@ -18,6 +18,11 @@ const HERRAMIENTAS = {
 } as const;
 
 const nextConfig: NextConfig = {
+  // Versión del service worker (public/sw.js): una caché nueva por deploy.
+  env: {
+    NEXT_PUBLIC_BUILD_ID:
+      process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 12) ?? String(Date.now()),
+  },
   async rewrites() {
     return [
       ...Object.entries(HERRAMIENTAS).flatMap(([ruta, origen]) => [
