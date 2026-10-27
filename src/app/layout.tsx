@@ -6,6 +6,7 @@ import ConvexClientProvider from "./ConvexClientProvider";
 import { UserSync } from "@/components/auth/UserSync";
 import { SubscriptionGate } from "@/components/auth/SubscriptionGate";
 import { WhatsAppFab } from "@/components/fab/WhatsAppFab";
+import { RegisterSW } from "@/components/pwa/RegisterSW";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -23,6 +24,16 @@ export const metadata: Metadata = {
   title: "TERAH2O | Inteligencia Operativa",
   description:
     "Plataforma de optimización y control para plantas de tratamiento de agua potable.",
+  applicationName: "TeraH2O",
+  // iPhone/iPad: "Añadir a pantalla de inicio" abre a pantalla completa.
+  appleWebApp: { capable: true, title: "TeraH2O", statusBarStyle: "black-translucent" },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
 };
 
 // Without this, mobile browsers render at ~980px desktop width and zoom out,
@@ -32,6 +43,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#05051a",
 };
 
 export default function RootLayout({
@@ -49,6 +61,7 @@ export default function RootLayout({
             <UserSync />
             <SubscriptionGate>{children}</SubscriptionGate>
             <WhatsAppFab />
+            <RegisterSW />
           </ConvexClientProvider>
         </body>
       </html>

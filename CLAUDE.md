@@ -15,7 +15,9 @@ TeraH2O es una plataforma SaaS de inteligencia operacional para plantas de trata
 ```
 src/
 ├── app/                        # Next.js App Router
-│   ├── page.tsx                # Home / Landing
+│   ├── page.tsx                # Inicio del sistema (app.terah2o.com) + botón "Instalar app"
+│   ├── presentacion/           # Portada de terah2o.com (presentación + accesos a herramientas)
+│   ├── manifest.ts             # Manifest de la app instalable (PWA)
 │   ├── login/page.tsx          # Autenticación (sign-in / sign-up)
 │   ├── pricing/page.tsx        # Planes Starter ($49) y Pro ($89)
 │   ├── motor-inteligencia/     # Predicción turbidez (ruta pública)
@@ -245,9 +247,27 @@ Flujo nativo de Clerk `reset_password_email_code`, dentro del mismo `LoginConten
 ⚠️ E2E: los *test emails* de Clerk (`algo+clerk_test@example.com`) solo funcionan en instancias
 de desarrollo (`pk_test`/`sk_test`) y su código de verificación es siempre `424242`.
 
-**Rutas públicas:** `/`, `/login`, `/pricing`, `/motor-inteligencia`
+**Rutas públicas** (`isPublicRoute` en `src/proxy.ts`): `/`, `/login`, `/pricing`, `/presentacion`,
+las herramientas (`/filtro-de-agua`, `/gradiente`, `/simulador`), las APIs de IA y los
+archivos de la PWA (`/manifest.webmanifest`, `/sw.js`, `/icons/*`). `/motor-inteligencia`
+**no** es pública: requiere login y suscripción.
 
-**Prefijos bypass:** `/_next`, `/favicon`, `/api/gemini`, `/api/weather`, `/api/gemini-tts`
+### Dominios y app instalable (ver `PLAN-app-y-portada.md`)
+Un solo proyecto Vercel sirve los dos dominios; `src/proxy.ts` enruta por host
+(`src/lib/hosts.ts`) **antes** de tocar Clerk:
+- `terah2o.com` → portada: `/` es un rewrite a `/presentacion`; herramientas y brochure
+  se sirven ahí; todo lo demás → 308 a `app.terah2o.com` con la misma ruta.
+  Sin manifest ni service worker (404).
+- `www.terah2o.com` → 308 a `terah2o.com`.
+- `app.terah2o.com` → el sistema. `/presentacion` → 308 a la portada.
+- Otros hosts (previews, localhost) se comportan como la app y muestran la portada en `/presentacion`.
+
+PWA: `src/app/manifest.ts`, `public/sw.js` (solo cachea `/_next/static` e `/icons`; sin
+conexión muestra una pantalla inline; nunca cachea `/api` ni HTML), `RegisterSW` (solo en
+producción, fuera de la portada, con aviso de versión nueva) e `InstallAppButton`
+(diálogo nativo en Chrome/Edge/Android, instrucciones en iPhone/iPad). Íconos en
+`public/icons/`, generados desde `icon.svg` con
+`CHROMIUM_PATH=... node scripts/generate-icons.mjs`.
 
 ### Roles y gates de acceso
 - `admin` (org): bypass total en `AuthGuard` — siempre ve todos los módulos de su org.

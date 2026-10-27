@@ -23,7 +23,8 @@ function isGatedPath(path: string): boolean {
   if (path === "/") return false;
   // Públicas + /owner (exento del gate de plan, igual que en el proxy).
   // /motor-inteligencia NO está exento: requiere suscripción activa.
-  const exemptPrefixes = ["/login", "/pricing", "/owner"];
+  // /presentacion es la portada pública (en terah2o.com se sirve en "/").
+  const exemptPrefixes = ["/login", "/pricing", "/owner", "/presentacion"];
   for (const p of exemptPrefixes) {
     if (path === p || path.startsWith(`${p}/`)) return false;
   }

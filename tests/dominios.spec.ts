@@ -1,45 +1,73 @@
 import { test, expect, request } from "@playwright/test";
 
 /**
- * Verificación de la reestructura de dominio (Fase 1 del plan).
+ * Verificación del mapa de dominios en producción (ver PLAN-app-y-portada.md).
  *
- * Opt-in: solo corre con DOMAIN_TESTS=1, porque golpea los dominios reales en
- * producción. Sin la variable, toda la suite se salta y no estorba al desarrollo
- * local.
+ *   terah2o.com      → portada (presentación + accesos)
+ *   www.terah2o.com  → 308 a terah2o.com
+ *   app.terah2o.com  → el sistema, instalable como app
+ *
+ * Opt-in: solo corre con DOMAIN_TESTS=1, porque golpea los dominios reales.
  *
  *   DOMAIN_TESTS=1 npm run test:e2e -- dominios.spec.ts
  */
 const APP = "https://app.terah2o.com";
+const PORTADA = "https://terah2o.com";
 const WWW = "https://www.terah2o.com";
-const APEX = "https://terah2o.com";
 
 test.skip(!process.env.DOMAIN_TESTS, "requiere DOMAIN_TESTS=1");
 
 test.describe("Dominios", () => {
-  test("app.terah2o.com sirve el Next.js y no la portada", async ({ page }) => {
+  test("app.terah2o.com sirve el inicio del sistema", async ({ page }) => {
     await page.goto(APP);
     await expect(page.locator("text=INTELIGENCIA OPERATIVA")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Operaciones" })).toBeVisible();
+    await expect(page.getByText("Presentación institucional")).toHaveCount(0);
   });
 
-  test("www.terah2o.com sirve la portada estática", async ({ page }) => {
-    const res = await page.goto(WWW);
+  test("terah2o.com sirve la portada con los accesos", async ({ page }) => {
+    const res = await page.goto(PORTADA);
     expect(res?.status()).toBe(200);
-    // La portada NO debe cargar el bundle de Next.js
-    await expect(page.locator("script[src*='/_next/']")).toHaveCount(0);
+    expect(page.url()).toBe(`${PORTADA}/`);
+    await expect(page.locator("#accesos")).toBeVisible();
   });
 
-  test("el apex redirige a www", async () => {
+  test("www redirige a terah2o.com conservando la ruta", async () => {
     const ctx = await request.newContext({ maxRedirects: 0 });
-    const res = await ctx.get(APEX);
+    const res = await ctx.get(`${WWW}/gradiente`);
     expect([301, 308]).toContain(res.status());
-    expect(res.headers()["location"]).toContain("www.terah2o.com");
+    expect(res.headers()["location"]).toBe(`${PORTADA}/gradiente`);
+    await ctx.dispose();
+  });
+
+  test("los módulos en terah2o.com redirigen a la app", async () => {
+    const ctx = await request.newContext({ maxRedirects: 0 });
+    for (const ruta of ["/operaciones", "/login", "/pricing"]) {
+      const res = await ctx.get(`${PORTADA}${ruta}`);
+      expect(res.status(), ruta).toBe(308);
+      expect(res.headers()["location"], ruta).toBe(`${APP}${ruta}`);
+    }
+    await ctx.dispose();
+  });
+
+  test("app.terah2o.com/presentacion redirige a la portada", async () => {
+    const ctx = await request.newContext({ maxRedirects: 0 });
+    const res = await ctx.get(`${APP}/presentacion`);
+    expect(res.status()).toBe(308);
+    expect(res.headers()["location"]).toBe(`${PORTADA}/`);
+    await ctx.dispose();
+  });
+
+  test("solo la app publica manifest", async () => {
+    const ctx = await request.newContext();
+    expect((await ctx.get(`${APP}/manifest.webmanifest`)).status()).toBe(200);
+    expect((await ctx.get(`${PORTADA}/manifest.webmanifest`)).status()).toBe(404);
     await ctx.dispose();
   });
 
   test("los tres dominios sirven HTTPS con certificado válido", async () => {
-    // newContext falla ante un certificado inválido salvo ignoreHTTPSErrors
     const ctx = await request.newContext({ ignoreHTTPSErrors: false });
-    for (const url of [APP, WWW, APEX]) {
+    for (const url of [APP, PORTADA, WWW]) {
       const res = await ctx.get(url);
       expect(res.status(), `${url} debe responder`).toBeLessThan(400);
     }
@@ -54,15 +82,14 @@ test.describe("Dominios", () => {
   });
 });
 
-test.describe("Auth sobre el dominio nuevo (regresión de Clerk)", () => {
+test.describe("Auth sobre la app (regresión de Clerk)", () => {
   test("una ruta protegida sin sesión redirige a /login", async ({ page, context }) => {
     await context.clearCookies();
     await page.goto(`${APP}/operaciones`);
     await page.waitForURL(/\/login/, { timeout: 20000 });
-    expect(page.url()).toContain("/login");
   });
 
-  test("/login carga el formulario de Clerk en el dominio nuevo", async ({ page }) => {
+  test("/login carga el formulario de Clerk", async ({ page }) => {
     await page.goto(`${APP}/login`);
     await expect(page.getByTestId("password-input")).toBeVisible({ timeout: 20000 });
     await expect(page.getByTestId("forgot-password-link")).toBeVisible();

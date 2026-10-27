@@ -1,22 +1,67 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CONTACT_PHONE_DISPLAY, WHATSAPP_LINK } from "@/lib/constants";
+import { APP_ORIGIN, PORTADA_ORIGIN } from "@/lib/hosts";
 
 export const metadata: Metadata = {
-  title: "Presentación institucional | TERAH2O",
+  title: "TERAH2O | Inteligencia Operativa para agua potable",
   description:
     "Brochure institucional TeraH2O 2026: módulos del sistema, análisis de calidad del agua, impacto ambiental, beneficios, seguridad y modalidades de suscripción.",
+  alternates: { canonical: `${PORTADA_ORIGIN}/` },
 };
 
 /**
- * Presentación institucional — versión web del brochure PDF 2026.
+ * Portada de terah2o.com — versión web del brochure PDF 2026 más los accesos
+ * principales (sistema y herramientas de cálculo).
  *
- * El PDF sigue disponible en /TERAH2O-Brochure.pdf (mismo contenido) para
- * compartir por correo o imprimir. Esta ruta es pública (ver src/proxy.ts):
- * es material comercial, no un módulo operativo.
+ * En terah2o.com se sirve en "/" (rewrite en src/proxy.ts). En
+ * app.terah2o.com /presentacion redirige aquí; en previews y localhost se ve
+ * en /presentacion. El PDF sigue en /TERAH2O-Brochure.pdf para compartir o
+ * imprimir.
  */
 
 // ---------------------------------------------------------------- datos
+
+/**
+ * Accesos principales de la portada. Las herramientas son apps aparte
+ * servidas por rewrite (next.config.ts). Dimensionamiento de planta va vacío
+ * hasta que José Alfredo termine la herramienta: href null = "Próximamente".
+ */
+const ACCESOS: {
+  title: string;
+  body: string;
+  href: string | null;
+  external?: boolean;
+}[] = [
+  {
+    title: "Sistema TeraH2O",
+    body: "Operaciones, calidad de agua, motor hidrometeorológico y academia. Ingreso con su cuenta; se puede instalar como app.",
+    href: APP_ORIGIN,
+  },
+  {
+    title: "Diseño completo de filtro de arena",
+    body: "Pérdida de carga en medios granulares por la ecuación de Ergun: velocidad, porosidad y diámetro de partícula. Norma RAS 2000.",
+    href: "/filtro-de-agua",
+    external: true,
+  },
+  {
+    title: "Calculadora de gradiente de velocidad",
+    body: "Gradiente G, tiempo de retención y número de Camp para dimensionar mezcla rápida y floculación, tramo por tramo.",
+    href: "/gradiente",
+    external: true,
+  },
+  {
+    title: "Simulador de potabilización",
+    body: "Modela la línea de tratamiento completa y estima dosis y calidad de salida. INEN 1108, Res. 2115, DS-031, G.O. 36.395.",
+    href: "/simulador",
+    external: true,
+  },
+  {
+    title: "Dimensionamiento de planta",
+    body: "Herramienta en desarrollo.",
+    href: null,
+  },
+];
 
 const SECCIONES = [
   { id: "diagnostico", n: "01", label: "Diagnóstico" },
@@ -441,6 +486,64 @@ function Callout({ children }: { children: React.ReactNode }) {
   );
 }
 
+function Accesos() {
+  const card =
+    "flex h-full flex-col rounded-[4px] border p-5 transition-all";
+  return (
+    <section
+      id="accesos"
+      aria-labelledby="accesos-title"
+      className="scroll-mt-20 border-t border-white/[0.07] px-6 py-14"
+    >
+      <div className="mx-auto max-w-5xl">
+        <Kicker>Accesos principales</Kicker>
+        <h2
+          id="accesos-title"
+          className="mt-3 text-[clamp(1.3rem,3vw,1.8rem)] font-semibold tracking-tight"
+        >
+          Sistema y herramientas de cálculo
+        </h2>
+        <ul className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {ACCESOS.map((a) => (
+            <li key={a.title}>
+              {a.href ? (
+                <a
+                  href={a.href}
+                  {...(a.external
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                  className={`${card} border-white/[0.1] bg-white/[0.03] hover:border-blue-500 hover:bg-blue-500/[0.06]`}
+                >
+                  <span className="text-[0.95rem] font-semibold">{a.title}</span>
+                  <span className="mt-2 flex-1 text-[0.8rem] font-light leading-[1.7] text-white/60">
+                    {a.body}
+                  </span>
+                  <span className="mt-4 font-mono text-[0.6rem] uppercase tracking-[0.18em] text-blue-400">
+                    Abrir →
+                  </span>
+                </a>
+              ) : (
+                <div
+                  aria-disabled="true"
+                  className={`${card} border-dashed border-white/[0.1] text-white/45`}
+                >
+                  <span className="text-[0.95rem] font-semibold">{a.title}</span>
+                  <span className="mt-2 flex-1 text-[0.8rem] font-light leading-[1.7]">
+                    {a.body}
+                  </span>
+                  <span className="mt-4 font-mono text-[0.6rem] uppercase tracking-[0.18em]">
+                    Próximamente
+                  </span>
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 // ------------------------------------------------------------------ página
 
 export default function PresentacionPage() {
@@ -454,6 +557,12 @@ export default function PresentacionPage() {
             <span className="text-blue-500">H2O</span>
           </Link>
           <div className="flex items-center gap-2">
+            <a
+              href={APP_ORIGIN}
+              className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.12] bg-white/5 px-3.5 py-2 font-mono text-[0.6rem] font-medium uppercase tracking-[0.18em] text-white transition-all hover:border-blue-500 hover:bg-blue-500/[0.08] hover:text-blue-400"
+            >
+              Ingresar al sistema
+            </a>
             <a
               href="/TERAH2O-Brochure.pdf"
               download
@@ -526,6 +635,8 @@ export default function PresentacionPage() {
           </nav>
         </div>
       </section>
+
+      <Accesos />
 
       {/* Qué es / propósito */}
       <section className="border-t border-white/[0.07] px-6 py-16 sm:py-20">
@@ -1054,12 +1165,12 @@ export default function PresentacionPage() {
             >
               Descargar en PDF
             </a>
-            <Link
-              href="/"
+            <a
+              href={APP_ORIGIN}
               className="inline-flex items-center gap-2 rounded-[3px] border border-white/[0.12] bg-white/5 px-5 py-2.5 font-mono text-[0.68rem] font-medium uppercase tracking-[0.2em] text-white transition-all hover:border-blue-500 hover:bg-blue-500/[0.08] hover:text-blue-400"
             >
-              Volver al inicio
-            </Link>
+              Ingresar al sistema
+            </a>
           </div>
         </div>
       </section>
